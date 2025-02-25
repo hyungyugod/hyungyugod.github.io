@@ -5,7 +5,11 @@ permalink: /about/
 image: '/images/60.jpg'
 ---
 
-Hi, my name is Robert Wilson. Sin tantum modo ad indicia veteris memoriae virtute cognoscenda, curiosorum. Haec et tu ita posuisti, et verba vestra sunt. Idemne potest esse dies saepius, qui semel fuit? Ampulla enim sit necne sit, quis non iure optimo irrideatur, si laboret? Ego vero volo in virtute vim esse quam maximam. Serpere genere anguiculos, nare anaticulas, evolare merulas, cornibus uti videmus boves, nepas aculeis. Conferam tecum, quam cuique verso rem subicias; Si longus, levis. Neque enim disputari sine reprehensione nec cum iracundia aut pertinacia recte disputari disseretur inter.
+I am currently a nursing student, but I have always been passionate about creativity and self-expression. I find joy in creating—whether it's making music, writing, or exploring new ways to bring my ideas to life. My curiosity constantly pushes me to learn and grow in different fields, and right now, I am diving into the world of development, working towards becoming a developer.
+
+Honestly, I don't know exactly where my path will lead me in the future. I have so many interests and ambitions, and I believe that life is a journey of continuous discovery. What I do know for sure is that I want to keep creating, learning, and evolving, embracing every opportunity that comes my way.
+
+So, follow along and watch as my journey unfolds—I’m just getting started. 🚀
 
 ![Time to think]({{site.baseurl}}/images/501.jpg)
 *Minimalism / [Unsplash](https://unsplash.com/)*
