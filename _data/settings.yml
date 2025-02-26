@@ -15,8 +15,10 @@ menu-settings:
       url: '/about/'
     - title: 'Contact Me'
       url: '/contact/'
-    - title: 'Style Guide'
-      url: '/styleguide/'
+    - title: 'portfolio'
+      url: '/portfolio/'
+    - title: 'study'
+      url: '/study/'
 
 
 #-------------------------------

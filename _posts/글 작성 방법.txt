@@ -1,0 +1,20 @@
+글 작성 방법
+
+1. "post" 폴더 안에 md파일 생성
+    -> 2025-02-26-글-제목.md
+
+2. 생성한 파일 최상단에 아래 내용 적용
+
+---
+layout: post                                   <- 고정
+title:  2025-02-21 python                      
+description: python coding test
+date:   2025-02-21 
+image:  '/images/velog-썸네일-001 (3).png'      <- 폴더이름
+tags:   [coding]
+---
+
+3. 인용구 작성법 (예시)
+> The longer I live, the more I realize that I am never wrong about anything, and that all the pains I have so humbly taken to verify my notions have only wasted my time!
+>
+> <cite>George Bernard Shaw</cite>
