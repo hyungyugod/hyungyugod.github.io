@@ -3,7 +3,7 @@ layout: post
 title:  2025-02-24 python
 description: python coding test
 date:   2025-02-24 
-image:  '/images/velog-썸네일-001.png'
+image:  '/images/thumnail/velog-썸네일-001.png'
 tags:   [coding]
 ---
 # 1. 삼각형의 완성조건
