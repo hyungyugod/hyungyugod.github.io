@@ -1,7 +1,7 @@
 ---
 layout: page
-title: portfolio
-permalink: /portfolio/
+title: styleguide
+permalink: /styleguide/
 image: '/images/50.jpg'
 ---
 
