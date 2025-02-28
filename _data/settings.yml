@@ -15,10 +15,12 @@ menu-settings:
       url: '/about/'
     - title: 'Contact Me'
       url: '/contact/'
-    - title: 'portfolio'
-      url: '/portfolio/'
+    - title: 'styleguide'
+      url: '/styleguide/'
     - title: 'study'
       url: '/study/'
+    - title: 'portfolio'
+      url: '/portfolio/'
 
 
 #-------------------------------
@@ -64,7 +66,7 @@ social:
 
 #-------------------------------
 # Comment Section (Disqus)
-disqus-identifier: anvodstudio-demo # Add your shortname for Disqus Comment. For example anvodstudio-demo
+disqus-identifier: hg-blog-1 # Add your shortname for Disqus Comment. For example anvodstudio-demo
 
 
 #-------------------------------
