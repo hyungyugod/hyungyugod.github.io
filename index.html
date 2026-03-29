@@ -6,8 +6,112 @@ layout: linktree
 <section class="profile">
   <img class="profile__avatar" src="/images/15.jpg" alt="HyunGyu Sung">
   <h1 class="profile__name">HyunGyu Sung</h1>
-  <p class="profile__bio">Music & Code — 음악과 코드로 세상을 탐색합니다</p>
+  <div class="profile__bio">
+    <p class="profile__bio-quote">
+      I don't create to express myself.<br>
+      I create to find out who I am.
+    </p>
+    <div class="profile__bio-divider"></div>
+    <p class="profile__bio-kr">
+      자신을 표현하기 위해 만드는 게 아니다.<br>
+      만들면서 내가 누구인지 알아간다.
+    </p>
+    <p class="profile__bio-attr">becoming through making</p>
+  </div>
 </section>
+
+<!-- Writing & Dev -->
+<p class="section-label">Writing & Dev</p>
+<div class="links" style="margin-bottom: 32px;">
+
+  <!-- Velog (auto-fetch) -->
+  <div class="link-card">
+    <a class="link-card__header" href="https://velog.io/@hyungyugod/posts" target="_blank" rel="noopener">
+      <div class="link-card__icon icon--velog">
+        <i class="fa-solid fa-code"></i>
+      </div>
+      <div class="link-card__info">
+        <div class="link-card__title">Velog</div>
+        <div class="link-card__desc">개발 블로그 & 기술 포스트</div>
+      </div>
+      <i class="fa-solid fa-arrow-right link-card__arrow"></i>
+    </a>
+    <div class="link-card__divider"></div>
+    <div class="link-card__items" id="velog-items">
+      <div class="featured-item featured-item--loading"><div class="featured-item__thumb"></div><div class="featured-item__label">로딩 중...</div></div>
+      <div class="featured-item featured-item--loading"><div class="featured-item__thumb"></div><div class="featured-item__label">로딩 중...</div></div>
+      <div class="featured-item featured-item--loading"><div class="featured-item__thumb"></div><div class="featured-item__label">로딩 중...</div></div>
+    </div>
+  </div>
+
+  <!-- Brunch (auto-fetch) -->
+  <div class="link-card">
+    <a class="link-card__header" href="https://brunch.co.kr/@hyungyugood" target="_blank" rel="noopener">
+      <div class="link-card__icon icon--brunch">
+        <i class="fa-solid fa-pen-nib"></i>
+      </div>
+      <div class="link-card__info">
+        <div class="link-card__title">Brunch</div>
+        <div class="link-card__desc">에세이 & 글쓰기</div>
+      </div>
+      <i class="fa-solid fa-arrow-right link-card__arrow"></i>
+    </a>
+    <div class="link-card__divider"></div>
+    <div class="link-card__items" id="brunch-items">
+      <!-- Brunch: JS 로딩 실패 시 표시될 fallback -->
+      <a class="featured-item" href="https://brunch.co.kr/@hyungyugood" target="_blank" rel="noopener">
+        <svg class="featured-item__thumb" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+          <rect width="200" height="200" fill="#0f0e15"/>
+          <text x="48" y="100" font-family="Georgia,serif" font-size="60" fill="#444" opacity="0.4">"</text>
+          <line x1="75" y1="108" x2="155" y2="108" stroke="#333" stroke-width="1"/>
+          <line x1="75" y1="122" x2="145" y2="122" stroke="#2a2a2a" stroke-width="1"/>
+        </svg>
+        <div class="featured-item__label">Recent article</div>
+      </a>
+      <a class="featured-item" href="https://brunch.co.kr/@hyungyugood" target="_blank" rel="noopener">
+        <svg class="featured-item__thumb" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+          <rect width="200" height="200" fill="#0f0e15"/>
+          <rect x="48" y="48" width="104" height="70" rx="4" fill="none" stroke="#333" stroke-width="1"/>
+          <line x1="48" y1="132" x2="152" y2="132" stroke="#333" stroke-width="1"/>
+          <line x1="48" y1="147" x2="130" y2="147" stroke="#2a2a2a" stroke-width="1"/>
+        </svg>
+        <div class="featured-item__label">Recent article</div>
+      </a>
+      <a class="featured-item" href="https://brunch.co.kr/@hyungyugood" target="_blank" rel="noopener">
+        <svg class="featured-item__thumb" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+          <rect width="200" height="200" fill="#0f0e15"/>
+          <line x1="48" y1="72" x2="152" y2="72" stroke="#444" stroke-width="1"/>
+          <line x1="48" y1="90" x2="140" y2="90" stroke="#333" stroke-width="1"/>
+          <line x1="48" y1="108" x2="148" y2="108" stroke="#333" stroke-width="1"/>
+          <line x1="48" y1="126" x2="125" y2="126" stroke="#2a2a2a" stroke-width="1"/>
+          <rect x="48" y="55" width="28" height="3" rx="1.5" fill="#666"/>
+        </svg>
+        <div class="featured-item__label">Recent article</div>
+      </a>
+    </div>
+  </div>
+
+  <!-- GitHub (auto-fetch) -->
+  <div class="link-card">
+    <a class="link-card__header" href="https://github.com/hyungyugod" target="_blank" rel="noopener">
+      <div class="link-card__icon icon--github">
+        <i class="fa-brands fa-github"></i>
+      </div>
+      <div class="link-card__info">
+        <div class="link-card__title">GitHub</div>
+        <div class="link-card__desc">Projects & open source</div>
+      </div>
+      <i class="fa-solid fa-arrow-right link-card__arrow"></i>
+    </a>
+    <div class="link-card__divider"></div>
+    <div class="link-card__items" id="github-items">
+      <div class="featured-item featured-item--loading"><div class="featured-item__thumb"></div><div class="featured-item__label">로딩 중...</div></div>
+      <div class="featured-item featured-item--loading"><div class="featured-item__thumb"></div><div class="featured-item__label">로딩 중...</div></div>
+      <div class="featured-item featured-item--loading"><div class="featured-item__thumb"></div><div class="featured-item__label">로딩 중...</div></div>
+    </div>
+  </div>
+
+</div>
 
 <!-- Music -->
 <p class="section-label">Music</p>
@@ -27,54 +131,54 @@ layout: linktree
     </a>
     <div class="link-card__divider"></div>
     <div class="link-card__items">
-      <a class="featured-item" href="https://soundcloud.com/user-928451677" target="_blank" rel="noopener">
+      <a class="featured-item" href="https://soundcloud.com/user-928451677/need-feat-sumin" target="_blank" rel="noopener">
         <svg class="featured-item__thumb" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
           <rect width="200" height="200" fill="#170c00"/>
-          <g opacity="0.7">
-            <rect x="40" y="130" width="5" height="30" rx="2.5" fill="#ff5500" opacity="0.5"/>
-            <rect x="52" y="118" width="5" height="42" rx="2.5" fill="#ff5500" opacity="0.6"/>
-            <rect x="64" y="108" width="5" height="52" rx="2.5" fill="#ff5500" opacity="0.7"/>
-            <rect x="76" y="98" width="5" height="62" rx="2.5" fill="#ff5500" opacity="0.8"/>
-            <rect x="88" y="88" width="5" height="72" rx="2.5" fill="#ff5500" opacity="0.9"/>
-            <rect x="100" y="95" width="5" height="65" rx="2.5" fill="#ff5500" opacity="0.85"/>
-            <rect x="112" y="105" width="5" height="55" rx="2.5" fill="#ff5500" opacity="0.75"/>
-            <rect x="124" y="112" width="5" height="48" rx="2.5" fill="#ff5500" opacity="0.65"/>
-            <rect x="136" y="122" width="5" height="38" rx="2.5" fill="#ff5500" opacity="0.55"/>
-            <rect x="148" y="128" width="5" height="32" rx="2.5" fill="#ff5500" opacity="0.45"/>
+          <g opacity="0.75">
+            <rect x="38" y="132" width="5" height="28" rx="2.5" fill="#ff5500"/>
+            <rect x="50" y="120" width="5" height="40" rx="2.5" fill="#ff5500"/>
+            <rect x="62" y="110" width="5" height="50" rx="2.5" fill="#ff5500"/>
+            <rect x="74" y="100" width="5" height="60" rx="2.5" fill="#ff5500"/>
+            <rect x="86" y="90" width="5" height="70" rx="2.5" fill="#ff5500"/>
+            <rect x="98" y="96" width="5" height="64" rx="2.5" fill="#ff5500"/>
+            <rect x="110" y="106" width="5" height="54" rx="2.5" fill="#ff5500"/>
+            <rect x="122" y="115" width="5" height="45" rx="2.5" fill="#ff5500"/>
+            <rect x="134" y="124" width="5" height="36" rx="2.5" fill="#ff5500"/>
+            <rect x="146" y="130" width="5" height="30" rx="2.5" fill="#ff5500"/>
           </g>
-          <circle cx="100" cy="65" r="20" fill="none" stroke="#ff5500" stroke-width="1.5" opacity="0.3"/>
-          <circle cx="100" cy="65" r="8" fill="#ff5500" opacity="0.4"/>
+          <circle cx="100" cy="62" r="22" fill="none" stroke="#ff5500" stroke-width="1.5" opacity="0.3"/>
+          <circle cx="100" cy="62" r="8" fill="#ff5500" opacity="0.5"/>
         </svg>
-        <div class="featured-item__label">Latest Track 1</div>
+        <div class="featured-item__label">Need (feat. Sumin)</div>
       </a>
-      <a class="featured-item" href="https://soundcloud.com/user-928451677" target="_blank" rel="noopener">
+      <a class="featured-item" href="https://soundcloud.com/user-928451677/prod-chill-sebs" target="_blank" rel="noopener">
         <svg class="featured-item__thumb" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
           <rect width="200" height="200" fill="#170c00"/>
-          <path d="M30 100 Q65 50 100 100 Q135 150 170 100" fill="none" stroke="#ff5500" stroke-width="2" opacity="0.5"/>
-          <path d="M30 100 Q65 70 100 100 Q135 130 170 100" fill="none" stroke="#ff7700" stroke-width="1.5" opacity="0.3"/>
-          <circle cx="100" cy="100" r="15" fill="none" stroke="#ff5500" stroke-width="1.5" opacity="0.4"/>
-          <circle cx="100" cy="100" r="5" fill="#ff5500" opacity="0.8"/>
+          <path d="M28 100 Q65 55 100 100 Q135 145 172 100" fill="none" stroke="#ff5500" stroke-width="2" opacity="0.55"/>
+          <path d="M28 100 Q65 70 100 100 Q135 130 172 100" fill="none" stroke="#ff7700" stroke-width="1.5" opacity="0.35"/>
+          <path d="M28 100 Q65 82 100 100 Q135 118 172 100" fill="none" stroke="#ff9900" stroke-width="1" opacity="0.2"/>
+          <circle cx="100" cy="100" r="7" fill="#ff5500" opacity="0.8"/>
         </svg>
-        <div class="featured-item__label">Latest Track 2</div>
+        <div class="featured-item__label">prod. Chill Sebs</div>
       </a>
-      <a class="featured-item" href="https://soundcloud.com/user-928451677" target="_blank" rel="noopener">
+      <a class="featured-item" href="https://soundcloud.com/user-928451677/burn-it-up-feat-haram-prodsloth" target="_blank" rel="noopener">
         <svg class="featured-item__thumb" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
           <rect width="200" height="200" fill="#170c00"/>
-          <polygon points="100,40 140,75 130,120 70,120 60,75" fill="none" stroke="#ff5500" stroke-width="1.5" opacity="0.3"/>
-          <polygon points="100,60 120,78 115,105 85,105 80,78" fill="none" stroke="#ff7700" stroke-width="1" opacity="0.5"/>
-          <circle cx="100" cy="88" r="8" fill="#ff5500" opacity="0.5"/>
-          <g opacity="0.5">
-            <rect x="55" y="140" width="4" height="22" rx="2" fill="#ff5500"/>
-            <rect x="67" y="135" width="4" height="27" rx="2" fill="#ff5500"/>
-            <rect x="79" y="130" width="4" height="32" rx="2" fill="#ff5500"/>
-            <rect x="91" y="128" width="4" height="34" rx="2" fill="#ff5500"/>
-            <rect x="103" y="132" width="4" height="30" rx="2" fill="#ff5500"/>
-            <rect x="115" y="137" width="4" height="25" rx="2" fill="#ff5500"/>
-            <rect x="127" y="142" width="4" height="20" rx="2" fill="#ff5500"/>
-            <rect x="139" y="146" width="4" height="16" rx="2" fill="#ff5500"/>
+          <polygon points="100,38 142,72 130,118 70,118 58,72" fill="none" stroke="#ff5500" stroke-width="1.5" opacity="0.3"/>
+          <polygon points="100,58 122,76 116,106 84,106 78,76" fill="none" stroke="#ff7700" stroke-width="1" opacity="0.5"/>
+          <circle cx="100" cy="87" r="9" fill="#ff5500" opacity="0.6"/>
+          <g opacity="0.55">
+            <rect x="50" y="138" width="4" height="22" rx="2" fill="#ff5500"/>
+            <rect x="62" y="132" width="4" height="28" rx="2" fill="#ff5500"/>
+            <rect x="74" y="128" width="4" height="32" rx="2" fill="#ff5500"/>
+            <rect x="86" y="126" width="4" height="34" rx="2" fill="#ff5500"/>
+            <rect x="98" y="129" width="4" height="31" rx="2" fill="#ff5500"/>
+            <rect x="110" y="133" width="4" height="27" rx="2" fill="#ff5500"/>
+            <rect x="122" y="138" width="4" height="22" rx="2" fill="#ff5500"/>
+            <rect x="134" y="142" width="4" height="18" rx="2" fill="#ff5500"/>
           </g>
         </svg>
-        <div class="featured-item__label">Latest Track 3</div>
+        <div class="featured-item__label">Burn It Up (feat. Haram)</div>
       </a>
     </div>
   </div>
@@ -93,37 +197,37 @@ layout: linktree
     </a>
     <div class="link-card__divider"></div>
     <div class="link-card__items">
-      <a class="featured-item" href="https://www.melon.com/artist/timeline.htm?artistId=4347369" target="_blank" rel="noopener">
+      <a class="featured-item" href="https://www.melon.com/song/detail.htm?songId=600864946" target="_blank" rel="noopener">
         <svg class="featured-item__thumb" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
           <rect width="200" height="200" fill="#001a08"/>
           <circle cx="100" cy="100" r="55" fill="none" stroke="#00cd3c" stroke-width="1" opacity="0.2"/>
-          <circle cx="100" cy="100" r="35" fill="none" stroke="#00cd3c" stroke-width="1.5" opacity="0.4"/>
-          <circle cx="100" cy="100" r="15" fill="none" stroke="#00cd3c" stroke-width="1" opacity="0.6"/>
-          <circle cx="100" cy="100" r="5" fill="#00cd3c" opacity="0.8"/>
-          <line x1="100" y1="45" x2="100" y2="65" stroke="#00cd3c" stroke-width="1" opacity="0.3"/>
+          <circle cx="100" cy="100" r="36" fill="none" stroke="#00cd3c" stroke-width="1.5" opacity="0.4"/>
+          <circle cx="100" cy="100" r="17" fill="none" stroke="#00cd3c" stroke-width="1" opacity="0.65"/>
+          <circle cx="100" cy="100" r="5" fill="#00cd3c" opacity="0.85"/>
+          <line x1="100" y1="45" x2="100" y2="64" stroke="#00cd3c" stroke-width="1.5" opacity="0.3"/>
         </svg>
-        <div class="featured-item__label">Latest Release 1</div>
+        <div class="featured-item__label">Release 1</div>
       </a>
-      <a class="featured-item" href="https://www.melon.com/artist/timeline.htm?artistId=4347369" target="_blank" rel="noopener">
+      <a class="featured-item" href="https://www.melon.com/song/detail.htm?songId=39154106" target="_blank" rel="noopener">
         <svg class="featured-item__thumb" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
           <rect width="200" height="200" fill="#001a08"/>
           <rect x="55" y="55" width="90" height="90" rx="8" fill="none" stroke="#00cd3c" stroke-width="1" opacity="0.3"/>
-          <circle cx="100" cy="100" r="25" fill="none" stroke="#00cd3c" stroke-width="1.5" opacity="0.5"/>
-          <circle cx="100" cy="100" r="8" fill="#00cd3c" opacity="0.6"/>
-          <polygon points="97,95 107,100 97,105" fill="#001a08"/>
+          <circle cx="100" cy="100" r="26" fill="none" stroke="#00cd3c" stroke-width="1.5" opacity="0.5"/>
+          <circle cx="100" cy="100" r="8" fill="#00cd3c" opacity="0.65"/>
+          <polygon points="97,96 109,100 97,104" fill="#001a08"/>
         </svg>
-        <div class="featured-item__label">Latest Release 2</div>
+        <div class="featured-item__label">Release 2</div>
       </a>
-      <a class="featured-item" href="https://www.melon.com/artist/timeline.htm?artistId=4347369" target="_blank" rel="noopener">
+      <a class="featured-item" href="https://www.melon.com/song/detail.htm?songId=600864948" target="_blank" rel="noopener">
         <svg class="featured-item__thumb" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
           <rect width="200" height="200" fill="#001a08"/>
-          <path d="M75 135 L75 75 L135 75" fill="none" stroke="#00cd3c" stroke-width="1.5" opacity="0.3"/>
-          <circle cx="75" cy="135" r="18" fill="none" stroke="#00cd3c" stroke-width="1" opacity="0.4"/>
-          <circle cx="135" cy="75" r="18" fill="none" stroke="#00cd3c" stroke-width="1" opacity="0.4"/>
-          <circle cx="75" cy="135" r="5" fill="#00cd3c" opacity="0.6"/>
-          <circle cx="135" cy="75" r="5" fill="#00cd3c" opacity="0.6"/>
+          <path d="M72 132 L72 72 L132 72" fill="none" stroke="#00cd3c" stroke-width="1.5" opacity="0.3"/>
+          <circle cx="72" cy="132" r="20" fill="none" stroke="#00cd3c" stroke-width="1" opacity="0.45"/>
+          <circle cx="132" cy="72" r="20" fill="none" stroke="#00cd3c" stroke-width="1" opacity="0.45"/>
+          <circle cx="72" cy="132" r="5" fill="#00cd3c" opacity="0.65"/>
+          <circle cx="132" cy="72" r="5" fill="#00cd3c" opacity="0.65"/>
         </svg>
-        <div class="featured-item__label">Latest Release 3</div>
+        <div class="featured-item__label">Release 3</div>
       </a>
     </div>
   </div>
@@ -132,7 +236,7 @@ layout: linktree
 
 <!-- Social -->
 <p class="section-label">Social</p>
-<div class="links" style="margin-bottom: 32px;">
+<div class="links">
 
   <!-- Instagram 본계정 -->
   <div class="link-card">
@@ -153,7 +257,7 @@ layout: linktree
           <rect width="200" height="200" fill="#1a0a14"/>
           <rect x="40" y="40" width="120" height="120" rx="28" fill="none" stroke="#E1306C" stroke-width="1.5" opacity="0.3"/>
           <circle cx="100" cy="100" r="32" fill="none" stroke="#E1306C" stroke-width="1.5" opacity="0.5"/>
-          <circle cx="100" cy="100" r="10" fill="#E1306C" opacity="0.25"/>
+          <circle cx="100" cy="100" r="10" fill="#E1306C" opacity="0.2"/>
           <circle cx="140" cy="60" r="5" fill="#E1306C" opacity="0.4"/>
         </svg>
         <div class="featured-item__label">Recent post</div>
@@ -161,9 +265,9 @@ layout: linktree
       <a class="featured-item" href="https://www.instagram.com/hy_nxx9/" target="_blank" rel="noopener">
         <svg class="featured-item__thumb" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
           <rect width="200" height="200" fill="#1a0a14"/>
-          <circle cx="75" cy="90" r="20" fill="#E1306C" opacity="0.12"/>
-          <circle cx="125" cy="110" r="25" fill="#833AB4" opacity="0.12"/>
-          <circle cx="100" cy="80" r="15" fill="#F77737" opacity="0.12"/>
+          <circle cx="75" cy="90" r="22" fill="#E1306C" opacity="0.1"/>
+          <circle cx="125" cy="110" r="28" fill="#833AB4" opacity="0.1"/>
+          <circle cx="100" cy="78" r="16" fill="#F77737" opacity="0.1"/>
         </svg>
         <div class="featured-item__label">Recent post</div>
       </a>
@@ -208,132 +312,19 @@ layout: linktree
       <a class="featured-item" href="https://www.instagram.com/knowledge_stroll/" target="_blank" rel="noopener">
         <svg class="featured-item__thumb" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
           <rect width="200" height="200" fill="#0e0a1a"/>
-          <circle cx="70" cy="100" r="28" fill="none" stroke="#5851DB" stroke-width="1" opacity="0.3"/>
-          <circle cx="130" cy="100" r="28" fill="none" stroke="#833AB4" stroke-width="1" opacity="0.3"/>
+          <circle cx="72" cy="100" r="30" fill="none" stroke="#5851DB" stroke-width="1" opacity="0.3"/>
+          <circle cx="128" cy="100" r="30" fill="none" stroke="#833AB4" stroke-width="1" opacity="0.3"/>
         </svg>
         <div class="featured-item__label">Recent post</div>
       </a>
       <a class="featured-item" href="https://www.instagram.com/knowledge_stroll/" target="_blank" rel="noopener">
         <svg class="featured-item__thumb" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
           <rect width="200" height="200" fill="#0e0a1a"/>
-          <path d="M50 145 L100 60 L150 145 Z" fill="none" stroke="#5851DB" stroke-width="1" opacity="0.3"/>
-          <circle cx="100" cy="115" r="12" fill="#833AB4" opacity="0.15"/>
+          <path d="M50 148 L100 58 L150 148 Z" fill="none" stroke="#5851DB" stroke-width="1" opacity="0.3"/>
+          <circle cx="100" cy="118" r="13" fill="#833AB4" opacity="0.12"/>
         </svg>
         <div class="featured-item__label">Recent post</div>
       </a>
-    </div>
-  </div>
-
-</div>
-
-<!-- Writing & Dev -->
-<p class="section-label">Writing & Dev</p>
-<div class="links">
-
-  <!-- Brunch -->
-  <div class="link-card">
-    <a class="link-card__header" href="https://brunch.co.kr/@hyungyugood" target="_blank" rel="noopener">
-      <div class="link-card__icon icon--brunch">
-        <i class="fa-solid fa-pen-nib"></i>
-      </div>
-      <div class="link-card__info">
-        <div class="link-card__title">Brunch</div>
-        <div class="link-card__desc">에세이 & 글쓰기</div>
-      </div>
-      <i class="fa-solid fa-arrow-right link-card__arrow"></i>
-    </a>
-    <div class="link-card__divider"></div>
-    <div class="link-card__items">
-      <a class="featured-item" href="https://brunch.co.kr/@hyungyugood" target="_blank" rel="noopener">
-        <svg class="featured-item__thumb" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-          <rect width="200" height="200" fill="#0f0e15"/>
-          <line x1="48" y1="72" x2="152" y2="72" stroke="#444" stroke-width="1"/>
-          <line x1="48" y1="90" x2="140" y2="90" stroke="#333" stroke-width="1"/>
-          <line x1="48" y1="108" x2="148" y2="108" stroke="#333" stroke-width="1"/>
-          <line x1="48" y1="126" x2="125" y2="126" stroke="#333" stroke-width="1"/>
-          <rect x="48" y="55" width="28" height="3" rx="1.5" fill="#666"/>
-        </svg>
-        <div class="featured-item__label">Recent article</div>
-      </a>
-      <a class="featured-item" href="https://brunch.co.kr/@hyungyugood" target="_blank" rel="noopener">
-        <svg class="featured-item__thumb" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-          <rect width="200" height="200" fill="#0f0e15"/>
-          <rect x="45" y="45" width="110" height="68" rx="4" fill="none" stroke="#333" stroke-width="1"/>
-          <line x1="48" y1="128" x2="152" y2="128" stroke="#333" stroke-width="1"/>
-          <line x1="48" y1="143" x2="130" y2="143" stroke="#2a2a2a" stroke-width="1"/>
-        </svg>
-        <div class="featured-item__label">Recent article</div>
-      </a>
-      <a class="featured-item" href="https://brunch.co.kr/@hyungyugood" target="_blank" rel="noopener">
-        <svg class="featured-item__thumb" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-          <rect width="200" height="200" fill="#0f0e15"/>
-          <text x="48" y="95" font-family="Georgia, serif" font-size="48" fill="#333" opacity="0.5">"</text>
-          <line x1="75" y1="98" x2="152" y2="98" stroke="#333" stroke-width="1"/>
-          <line x1="75" y1="113" x2="140" y2="113" stroke="#2a2a2a" stroke-width="1"/>
-          <line x1="75" y1="128" x2="118" y2="128" stroke="#222" stroke-width="1"/>
-        </svg>
-        <div class="featured-item__label">Recent article</div>
-      </a>
-    </div>
-  </div>
-
-  <!-- Velog (auto-fetch) -->
-  <div class="link-card">
-    <a class="link-card__header" href="https://velog.io/@hyungyugod/posts" target="_blank" rel="noopener">
-      <div class="link-card__icon icon--velog">
-        <i class="fa-solid fa-code"></i>
-      </div>
-      <div class="link-card__info">
-        <div class="link-card__title">Velog</div>
-        <div class="link-card__desc">개발 블로그 & 기술 포스트</div>
-      </div>
-      <i class="fa-solid fa-arrow-right link-card__arrow"></i>
-    </a>
-    <div class="link-card__divider"></div>
-    <div class="link-card__items" id="velog-items">
-      <!-- Loading skeleton -->
-      <div class="featured-item featured-item--loading">
-        <div class="featured-item__thumb"></div>
-        <div class="featured-item__label">Loading...</div>
-      </div>
-      <div class="featured-item featured-item--loading">
-        <div class="featured-item__thumb"></div>
-        <div class="featured-item__label">Loading...</div>
-      </div>
-      <div class="featured-item featured-item--loading">
-        <div class="featured-item__thumb"></div>
-        <div class="featured-item__label">Loading...</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- GitHub (auto-fetch) -->
-  <div class="link-card">
-    <a class="link-card__header" href="https://github.com/hyungyugod" target="_blank" rel="noopener">
-      <div class="link-card__icon icon--github">
-        <i class="fa-brands fa-github"></i>
-      </div>
-      <div class="link-card__info">
-        <div class="link-card__title">GitHub</div>
-        <div class="link-card__desc">Projects & open source</div>
-      </div>
-      <i class="fa-solid fa-arrow-right link-card__arrow"></i>
-    </a>
-    <div class="link-card__divider"></div>
-    <div class="link-card__items" id="github-items">
-      <!-- Loading skeleton -->
-      <div class="featured-item featured-item--loading">
-        <div class="featured-item__thumb"></div>
-        <div class="featured-item__label">Loading...</div>
-      </div>
-      <div class="featured-item featured-item--loading">
-        <div class="featured-item__thumb"></div>
-        <div class="featured-item__label">Loading...</div>
-      </div>
-      <div class="featured-item featured-item--loading">
-        <div class="featured-item__thumb"></div>
-        <div class="featured-item__label">Loading...</div>
-      </div>
     </div>
   </div>
 
@@ -347,5 +338,5 @@ layout: linktree
     <a href="https://www.instagram.com/hy_nxx9/" target="_blank" rel="noopener" title="Instagram"><i class="fa-brands fa-instagram"></i></a>
     <a href="https://github.com/hyungyugod" target="_blank" rel="noopener" title="GitHub"><i class="fa-brands fa-github"></i></a>
   </div>
-  <p class="footer__text">&copy; 2025 HyunGyu Sung</p>
+  <p class="footer__text">&copy; 2026 HyunGyu Sung</p>
 </footer>
