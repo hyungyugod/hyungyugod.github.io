@@ -328,6 +328,86 @@
     .icon--github { background: #f0f0f0; color: #0a0a0a; }
     .icon--naver { background: #03C75A; color: #fff; }
 
+    /* ---- Social Grid (link-only, no posts) ---- */
+    .social-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 32px;
+    }
+
+    .social-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px 16px 20px;
+      text-decoration: none;
+      color: inherit;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 12px;
+      transition: all 0.25s ease;
+    }
+
+    .social-card:hover {
+      background: var(--bg-card-hover);
+      border-color: var(--border-hover);
+      transform: translateY(-3px);
+      box-shadow: 0 8px 40px rgba(0,0,0,0.4);
+    }
+
+    .social-card__icon {
+      width: 52px;
+      height: 52px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      transition: transform 0.3s;
+    }
+
+    .social-card:hover .social-card__icon {
+      transform: scale(1.08);
+    }
+
+    .social-card__name {
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: -0.2px;
+      line-height: 1.3;
+    }
+
+    .social-card__handle {
+      font-size: 11px;
+      color: var(--text-dim);
+      font-weight: 400;
+      margin-top: -4px;
+    }
+
+    @media (max-width: 520px) {
+      .social-grid {
+        grid-template-columns: 1fr;
+        gap: 10px;
+      }
+      .social-card {
+        flex-direction: row;
+        text-align: left;
+        padding: 16px 20px;
+        gap: 14px;
+      }
+      .social-card__icon {
+        width: 44px;
+        height: 44px;
+        font-size: 20px;
+        flex-shrink: 0;
+      }
+      .social-card__texts { flex: 1; }
+      .social-card__name { font-size: 14px; }
+    }
+
     /* ---- Footer ---- */
     .footer {
       text-align: center;
