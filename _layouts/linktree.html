@@ -529,6 +529,160 @@
     .social-card:nth-child(2) { animation-delay: 0.52s; }
     .social-card:nth-child(3) { animation-delay: 0.56s; }
 
+    /* ---- Profile Modal ---- */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.38s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    }
+
+    .modal-backdrop.is-open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(9, 8, 15, 0.75);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+    }
+
+    .modal-box {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 380px;
+      background: rgba(20, 18, 28, 0.92);
+      backdrop-filter: blur(24px) saturate(1.2);
+      -webkit-backdrop-filter: blur(24px) saturate(1.2);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 24px;
+      overflow: hidden;
+      transform: scale(0.94) translateY(12px);
+      transition:
+        transform 0.42s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+        opacity 0.38s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+      opacity: 0;
+    }
+
+    .modal-backdrop.is-open .modal-box {
+      transform: scale(1) translateY(0);
+      opacity: 1;
+    }
+
+    .modal-close {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      z-index: 2;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.08);
+      border: none;
+      color: var(--text-muted);
+      font-size: 15px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background var(--transition), color var(--transition);
+    }
+
+    .modal-close:hover {
+      background: rgba(255,255,255,0.15);
+      color: var(--text);
+    }
+
+    .modal-photo {
+      width: 100%;
+      aspect-ratio: 1;
+      object-fit: cover;
+      object-position: center top;
+      display: block;
+    }
+
+    .modal-photo-wrap {
+      position: relative;
+    }
+
+    .modal-photo-wrap::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 60%;
+      background: linear-gradient(to top, rgba(20,18,28,0.92) 0%, transparent 100%);
+    }
+
+    .modal-body {
+      padding: 20px 28px 32px;
+    }
+
+    .modal-name {
+      font-size: 26px;
+      font-weight: 900;
+      letter-spacing: -1px;
+      line-height: 1;
+      margin-bottom: 4px;
+      background: linear-gradient(135deg, #fff 50%, #ff9b9b 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .modal-eng {
+      font-size: 12px;
+      color: var(--text-dim);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-bottom: 20px;
+    }
+
+    .modal-divider {
+      height: 1px;
+      background: var(--border);
+      margin-bottom: 20px;
+    }
+
+    .modal-info {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .modal-info li {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    .modal-info li .modal-info__icon {
+      color: var(--brand);
+      opacity: 0.7;
+      font-size: 12px;
+      margin-top: 2px;
+      flex-shrink: 0;
+      width: 14px;
+    }
+
+    /* cursor hint on avatar */
+    .profile__avatar {
+      cursor: pointer;
+    }
+
     /* ---- Accessibility: respect reduced motion ---- */
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after {
@@ -659,7 +813,81 @@
   document.addEventListener('DOMContentLoaded', () => {
     fetchGitHub();
     fetchVelog();
+    initModal();
   });
+
+  // =============================================
+  // Profile Modal
+  // =============================================
+  function initModal() {
+    const backdrop = document.getElementById('profileModal');
+    const avatar   = document.getElementById('profileAvatar');
+    if (!backdrop || !avatar) return;
+
+    const focusable = backdrop.querySelector('.modal-close');
+
+    function open() {
+      backdrop.classList.add('is-open');
+      document.body.style.overflow = 'hidden';
+      focusable?.focus();
+    }
+
+    function close() {
+      backdrop.classList.remove('is-open');
+      document.body.style.overflow = '';
+      avatar.focus();
+    }
+
+    avatar.addEventListener('click', open);
+
+    // Close on overlay click
+    backdrop.querySelector('.modal-overlay').addEventListener('click', close);
+
+    // Close on X button
+    backdrop.querySelector('.modal-close').addEventListener('click', close);
+
+    // Close on Escape
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape' && backdrop.classList.contains('is-open')) close();
+    });
+  }
   </script>
+
+  <!-- Profile Modal -->
+  <div class="modal-backdrop" id="profileModal" role="dialog" aria-modal="true" aria-label="프로필">
+    <div class="modal-overlay"></div>
+    <div class="modal-box">
+      <button class="modal-close" aria-label="닫기"><i class="fa-solid fa-xmark"></i></button>
+      <div class="modal-photo-wrap">
+        <img class="modal-photo" src="/images/15.jpg" alt="성현규">
+      </div>
+      <div class="modal-body">
+        <h2 class="modal-name">성현규</h2>
+        <p class="modal-eng">HG &nbsp;·&nbsp; Hyunggyu Sung</p>
+        <div class="modal-divider"></div>
+        <ul class="modal-info">
+          <li>
+            <span class="modal-info__icon"><i class="fa-solid fa-graduation-cap"></i></span>
+            가천대학교 간호학과
+          </li>
+          <li>
+            <span class="modal-info__icon"><i class="fa-solid fa-microphone-lines"></i></span>
+            Singer-Songwriter · Rapper<br>
+            <span style="font-size:11px;opacity:0.6;">Melon · SoundCloud</span>
+          </li>
+          <li>
+            <span class="modal-info__icon"><i class="fa-solid fa-pen-nib"></i></span>
+            에세이 작가<br>
+            <span style="font-size:11px;opacity:0.6;">Brunch</span>
+          </li>
+          <li>
+            <span class="modal-info__icon"><i class="fa-solid fa-code"></i></span>
+            개발 · 학습 기록<br>
+            <span style="font-size:11px;opacity:0.6;">Velog · GitHub</span>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
 </body>
 </html>
