@@ -326,6 +326,7 @@
     .icon--brunch { background: var(--bg-dark); color: #fff; border: 1px solid rgba(255,255,255,0.1); }
     .icon--velog { background: linear-gradient(135deg, #20c997, #12b886); color: #fff; }
     .icon--github { background: #f0f0f0; color: #0a0a0a; }
+    .icon--naver { background: #03C75A; color: #fff; }
 
     /* ---- Footer ---- */
     .footer {
@@ -438,54 +439,55 @@
 
   // =============================================
   // Auto-fetch: Velog posts (latest 3 via RSS)
+  // codetabs proxy: returns raw XML text (no JSON wrapper)
   // =============================================
   async function fetchVelog() {
     const container = document.getElementById('velog-items');
     if (!container) return;
     try {
       const rssUrl = 'https://v2.velog.io/rss/@hyungyugod';
-      const proxyUrl = 'https://api.allorigins.win/get?url=' + encodeURIComponent(rssUrl);
+      const proxyUrl = 'https://api.codetabs.com/v1/proxy/?quest=' + encodeURIComponent(rssUrl);
       const res = await fetch(proxyUrl);
-      if (!res.ok) throw new Error('Velog RSS error');
-      const data = await res.json();
+      if (!res.ok) throw new Error('Velog proxy ' + res.status);
+      const xmlText = await res.text();
+
       const parser = new DOMParser();
-      const xml = parser.parseFromString(data.contents, 'text/xml');
-      const items = xml.querySelectorAll('item');
-      const posts = Array.from(items).slice(0, 3);
+      const xml = parser.parseFromString(xmlText, 'text/xml');
+      const items = Array.from(xml.querySelectorAll('item')).slice(0, 3);
+      if (items.length === 0) throw new Error('No items');
 
-      if (posts.length === 0) throw new Error('No posts');
+      container.innerHTML = items.map(item => {
+        const title = item.querySelector('title')?.textContent?.trim() || 'Untitled';
 
-      container.innerHTML = posts.map(item => {
-        const title = item.querySelector('title')?.textContent || 'Untitled';
-        // link 노드는 텍스트 노드로 오는 경우가 많음
-        const linkNode = item.querySelector('link');
-        const link = linkNode ? (linkNode.textContent || linkNode.nextSibling?.nodeValue || '#') : '#';
+        // <link> in RSS is a sibling text node, not element content
+        let link = '#';
+        const linkEl = item.querySelector('link');
+        if (linkEl) {
+          // Try textContent first, then nextSibling (text node)
+          link = linkEl.textContent?.trim()
+            || (linkEl.nextSibling?.nodeValue?.trim())
+            || '#';
+        }
 
-        // 이미지: description > enclosure > media:content 순서로 탐색
-        const desc = item.querySelector('description')?.textContent || '';
-        const contentEncoded = item.querySelector('encoded')?.textContent || '';
-        const rawText = desc + contentEncoded;
-        const imgMatch = rawText.match(/<img[^>]+src=["']([^"']+)["']/);
-        const enclosure = item.querySelector('enclosure');
-        const mediaContent = item.querySelector('content');
-        const imgUrl = imgMatch?.[1]
-          || enclosure?.getAttribute('url')
-          || mediaContent?.getAttribute('url')
-          || '';
+        // Image: try description HTML, then enclosure, then media:content
+        const descRaw = item.querySelector('description')?.textContent || '';
+        const imgMatch = descRaw.match(/<img[^>]+src=["']([^"']+)["']/i);
+        const encUrl = item.querySelector('enclosure')?.getAttribute('url') || '';
+        const mediaUrl = item.querySelector('content')?.getAttribute('url') || '';
+        const imgUrl = imgMatch?.[1] || encUrl || mediaUrl;
 
         const thumbHtml = imgUrl
-          ? `<img class="featured-item__thumb" src="${imgUrl}" alt="" loading="lazy" onerror="this.style.display='none'">`
+          ? `<img class="featured-item__thumb" src="${imgUrl}" alt="" loading="lazy">`
           : `<svg class="featured-item__thumb" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
               <rect width="200" height="200" fill="#0a1a14"/>
               <text x="100" y="95" text-anchor="middle" font-family="Inter,sans-serif" font-size="52" font-weight="800" fill="#20c997" opacity="0.2">V</text>
-              <text x="100" y="120" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#20c997" opacity="0.4">velog</text>
+              <text x="100" y="118" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#20c997" opacity="0.35">velog</text>
             </svg>`;
 
-        return `
-          <a class="featured-item" href="${link.trim()}" target="_blank" rel="noopener">
-            ${thumbHtml}
-            <div class="featured-item__label">${title}</div>
-          </a>`;
+        return `<a class="featured-item" href="${link}" target="_blank" rel="noopener">
+          ${thumbHtml}
+          <div class="featured-item__label">${title}</div>
+        </a>`;
       }).join('');
     } catch (e) {
       console.warn('Velog fetch failed:', e);
@@ -493,59 +495,10 @@
     }
   }
 
-  // =============================================
-  // Auto-fetch: Brunch posts (latest 3 via RSS)
-  // =============================================
-  async function fetchBrunch() {
-    const container = document.getElementById('brunch-items');
-    if (!container) return;
-    try {
-      const rssUrl = 'https://brunch.co.kr/rss/@hyungyugood';
-      const proxyUrl = 'https://api.allorigins.win/get?url=' + encodeURIComponent(rssUrl);
-      const res = await fetch(proxyUrl);
-      if (!res.ok) throw new Error('Brunch RSS error');
-      const data = await res.json();
-      const parser = new DOMParser();
-      const xml = parser.parseFromString(data.contents, 'text/xml');
-      const items = xml.querySelectorAll('item');
-      const posts = Array.from(items).slice(0, 3);
-
-      if (posts.length === 0) throw new Error('No posts');
-
-      container.innerHTML = posts.map(item => {
-        const title = item.querySelector('title')?.textContent || 'Untitled';
-        const link = item.querySelector('link')?.textContent?.trim() || '#';
-
-        const desc = item.querySelector('description')?.textContent || '';
-        const imgMatch = desc.match(/<img[^>]+src=["']([^"']+)["']/);
-        const imgUrl = imgMatch?.[1] || '';
-
-        const thumbHtml = imgUrl
-          ? `<img class="featured-item__thumb" src="${imgUrl}" alt="" loading="lazy" onerror="this.style.display='none'">`
-          : `<svg class="featured-item__thumb" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-              <rect width="200" height="200" fill="#0f0e15"/>
-              <text x="48" y="100" font-family="Georgia,serif" font-size="60" fill="#444" opacity="0.4">"</text>
-              <line x1="75" y1="108" x2="155" y2="108" stroke="#333" stroke-width="1"/>
-              <line x1="75" y1="122" x2="145" y2="122" stroke="#2a2a2a" stroke-width="1"/>
-            </svg>`;
-
-        return `
-          <a class="featured-item" href="${link}" target="_blank" rel="noopener">
-            ${thumbHtml}
-            <div class="featured-item__label">${title}</div>
-          </a>`;
-      }).join('');
-    } catch (e) {
-      console.warn('Brunch fetch failed:', e);
-      // 실패 시 정적 fallback 표시 (숨김 처리 없이 유지)
-    }
-  }
-
   // Run on page load
   document.addEventListener('DOMContentLoaded', () => {
     fetchGitHub();
     fetchVelog();
-    fetchBrunch();
   });
   </script>
 </body>
