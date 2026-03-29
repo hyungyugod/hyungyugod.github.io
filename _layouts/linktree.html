@@ -59,6 +59,7 @@
       height: 45vh;
       z-index: 0;
       overflow: hidden;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
     }
 
     .hero-bg img {
@@ -249,6 +250,9 @@
       font-weight: 700;
       letter-spacing: -0.2px;
       margin-bottom: 1px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     .link-card__desc {
@@ -363,7 +367,7 @@
       position: absolute;
       inset: 0;
       background: radial-gradient(circle at 50% 50%, rgba(255,123,123,0.06) 0%, transparent 70%);
-      animation: pulse-glow 2.8s ease-in-out infinite;
+      animation: pulse-glow 2.2s ease-in-out infinite;
       z-index: 1;
     }
 
@@ -552,6 +556,7 @@
       .link-card__items   { padding: 10px 16px 14px; gap: 8px; }
       .link-card__icon    { width: 40px; height: 40px; font-size: 18px; border-radius: 10px; }
       .featured-item__label { padding: 8px; font-size: 10px; }
+      .modal-box { max-width: 92vw; }
 
       .social-grid {
         grid-template-columns: 1fr;
@@ -800,7 +805,7 @@
   }
 
   function showFetchError(container, msg) {
-    container.innerHTML = `<div class="fetch-error">${msg}</div>`;
+    container.innerHTML = `<div class="fetch-error"><i class="fa-solid fa-triangle-exclamation"></i> ${msg}</div>`;
   }
 
   // =============================================
