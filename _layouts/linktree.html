@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ site.data.settings.title }} — Links</title>
+  <meta name="description" content="{{ site.data.settings.description }}">
+
+  <link rel="canonical" href="{{ page.url | replace:'index.html','' | absolute_url }}">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="{{ site.data.settings.title }}">
+  <meta name="twitter:description" content="{{ site.data.settings.description }}">
+
+  <!-- Facebook OpenGraph -->
+  <meta property="og:title" content="{{ site.data.settings.title }}">
+  <meta property="og:description" content="{{ site.data.settings.description }}">
+
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg: #0f0e15;
+      --bg-dark: #09080f;
+      --bg-card: #17151E;
+      --bg-card-hover: #1e1c28;
+      --brand: #ff7b7b;
+      --text: #eee;
+      --text-muted: #aaa;
+      --text-dim: #666;
+      --border: rgba(255,255,255,0.06);
+      --border-hover: rgba(255,255,255,0.12);
+      --radius: 16px;
+      --radius-sm: 10px;
+      --font: 'Inter', 'Noto Sans KR', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+
+      /* Platform colors */
+      --soundcloud: #ff5500;
+      --instagram: #E1306C;
+      --melon: #00cd3c;
+      --velog: #20c997;
+      --github: #f0f0f0;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    /* ---- Hero Background ---- */
+    .hero-bg {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      height: 45vh;
+      z-index: 0;
+      overflow: hidden;
+    }
+
+    .hero-bg img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: brightness(0.4) saturate(0.7);
+    }
+
+    .hero-bg::after {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: linear-gradient(180deg,
+        rgba(15, 14, 21, 0.3) 0%,
+        rgba(15, 14, 21, 0.7) 50%,
+        #0f0e15 100%);
+    }
+
+    .page-wrapper {
+      position: relative;
+      z-index: 1;
+      max-width: 680px;
+      margin: 0 auto;
+      padding: 80px 24px 80px;
+    }
+
+    /* ---- Profile Section ---- */
+    .profile {
+      text-align: center;
+      margin-bottom: 48px;
+    }
+
+    .profile__avatar {
+      width: 110px;
+      height: 110px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 3px solid rgba(255,123,123,0.3);
+      margin-bottom: 20px;
+      transition: border-color 0.4s;
+    }
+
+    .profile__avatar:hover {
+      border-color: var(--brand);
+    }
+
+    .profile__name {
+      font-size: 36px;
+      font-weight: 900;
+      letter-spacing: -1px;
+      line-height: 1;
+      margin-bottom: 10px;
+      color: #fff;
+    }
+
+    .profile__bio {
+      font-size: 15px;
+      color: var(--text-muted);
+      font-weight: 400;
+      line-height: 1.6;
+    }
+
+    /* ---- Section Title ---- */
+    .section-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: var(--text-dim);
+      margin-bottom: 16px;
+      padding-left: 4px;
+    }
+
+    /* ---- Link Cards ---- */
+    .links {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .link-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      transition: all 0.25s ease;
+    }
+
+    .link-card:hover {
+      background: var(--bg-card-hover);
+      border-color: var(--border-hover);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 40px rgba(0,0,0,0.4);
+    }
+
+    .link-card__header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 18px 20px;
+      text-decoration: none;
+      color: inherit;
+      cursor: pointer;
+    }
+
+    .link-card__icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      flex-shrink: 0;
+      transition: transform 0.3s;
+    }
+
+    .link-card:hover .link-card__icon {
+      transform: scale(1.05);
+    }
+
+    .link-card__info { flex: 1; min-width: 0; }
+
+    .link-card__title {
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: -0.2px;
+      margin-bottom: 1px;
+    }
+
+    .link-card__desc {
+      font-size: 12px;
+      color: var(--text-muted);
+      font-weight: 400;
+    }
+
+    .link-card__arrow {
+      color: var(--text-dim);
+      font-size: 13px;
+      transition: transform 0.3s, color 0.3s;
+      flex-shrink: 0;
+    }
+
+    .link-card:hover .link-card__arrow {
+      color: var(--brand);
+      transform: translateX(3px);
+    }
+
+    /* ---- Featured Items ---- */
+    .link-card__divider {
+      height: 1px;
+      background: var(--border);
+      margin: 0 20px;
+    }
+
+    .link-card__items {
+      padding: 14px 20px 18px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+
+    .featured-item {
+      text-decoration: none;
+      color: inherit;
+      display: block;
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+      background: var(--bg-dark);
+      border: 1px solid var(--border);
+      transition: all 0.25s;
+    }
+
+    .featured-item:hover {
+      border-color: var(--border-hover);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+    }
+
+    .featured-item__thumb {
+      width: 100%;
+      aspect-ratio: 1;
+      object-fit: cover;
+      display: block;
+      background: var(--bg-dark);
+    }
+
+    .featured-item__label {
+      padding: 10px;
+      font-size: 11px;
+      font-weight: 500;
+      line-height: 1.4;
+      color: var(--text-muted);
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    /* Loading skeleton */
+    .featured-item--loading .featured-item__thumb,
+    .featured-item--loading .featured-item__label {
+      background: linear-gradient(90deg, var(--bg-dark) 25%, #1a1825 50%, var(--bg-dark) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+    }
+
+    .featured-item--loading .featured-item__label {
+      color: transparent;
+      border-radius: 4px;
+      margin: 10px;
+      padding: 0;
+      height: 14px;
+      width: 70%;
+    }
+
+    @keyframes shimmer {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    /* ---- Platform Icon Colors ---- */
+    .icon--soundcloud { background: linear-gradient(135deg, #ff5500, #ff7700); color: #fff; }
+    .icon--instagram { background: linear-gradient(135deg, #833AB4, #E1306C, #F77737); color: #fff; }
+    .icon--instagram2 { background: linear-gradient(135deg, #405DE6, #5851DB, #833AB4); color: #fff; }
+    .icon--melon { background: linear-gradient(135deg, #00cd3c, #00a832); color: #fff; }
+    .icon--brunch { background: var(--bg-dark); color: #fff; border: 1px solid rgba(255,255,255,0.1); }
+    .icon--velog { background: linear-gradient(135deg, #20c997, #12b886); color: #fff; }
+    .icon--github { background: #f0f0f0; color: #0a0a0a; }
+
+    /* ---- Footer ---- */
+    .footer {
+      text-align: center;
+      margin-top: 56px;
+      padding-top: 28px;
+      border-top: 1px solid var(--border);
+    }
+
+    .footer__social {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      margin-bottom: 14px;
+    }
+
+    .footer__social a {
+      color: var(--text-dim);
+      font-size: 17px;
+      transition: color 0.3s, transform 0.3s;
+    }
+
+    .footer__social a:hover {
+      color: var(--brand);
+      transform: translateY(-2px);
+    }
+
+    .footer__text {
+      font-size: 12px;
+      color: var(--text-dim);
+    }
+
+    /* ---- Responsive ---- */
+    @media (max-width: 520px) {
+      .page-wrapper { padding: 60px 16px 60px; }
+      .profile__name { font-size: 28px; }
+      .profile__avatar { width: 90px; height: 90px; }
+      .link-card__header { padding: 14px 16px; gap: 12px; }
+      .link-card__items { padding: 10px 16px 14px; gap: 8px; }
+      .link-card__icon { width: 40px; height: 40px; font-size: 18px; border-radius: 10px; }
+      .featured-item__label { padding: 8px; font-size: 10px; }
+    }
+
+    /* ---- Entrance Animations ---- */
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .profile { animation: fadeInUp 0.6s ease-out; }
+
+    .link-card {
+      opacity: 0;
+      animation: fadeInUp 0.5s ease-out forwards;
+    }
+
+    .link-card:nth-child(1) { animation-delay: 0.08s; }
+    .link-card:nth-child(2) { animation-delay: 0.14s; }
+    .link-card:nth-child(3) { animation-delay: 0.20s; }
+    .link-card:nth-child(4) { animation-delay: 0.26s; }
+    .link-card:nth-child(5) { animation-delay: 0.32s; }
+    .link-card:nth-child(6) { animation-delay: 0.38s; }
+    .link-card:nth-child(7) { animation-delay: 0.44s; }
+  </style>
+</head>
+<body>
+
+  <!-- Hero background image -->
+  <div class="hero-bg">
+    <img src="{{ site.data.settings.hero.image | relative_url }}" alt="">
+  </div>
+
+  <div class="page-wrapper">
+    {{ content }}
+  </div>
+
+  <script>
+  // =============================================
+  // Auto-fetch: GitHub repos (latest 3)
+  // =============================================
+  async function fetchGitHub() {
+    const container = document.getElementById('github-items');
+    if (!container) return;
+    try {
+      const res = await fetch('https://api.github.com/users/hyungyugod/repos?sort=pushed&per_page=3');
+      if (!res.ok) throw new Error('GitHub API error');
+      const repos = await res.json();
+      container.innerHTML = repos.map(repo => `
+        <a class="featured-item" href="${repo.html_url}" target="_blank" rel="noopener">
+          <svg class="featured-item__thumb" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+            <rect width="200" height="200" fill="#0d1117"/>
+            <text x="100" y="88" text-anchor="middle" font-family="Inter, sans-serif" font-size="42" font-weight="800" fill="#30363d">${repo.language ? repo.language.substring(0,2).toUpperCase() : '&lt;/&gt;'}</text>
+            <text x="100" y="115" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" fill="#58a6ff" opacity="0.7">${repo.language || 'Code'}</text>
+            <g transform="translate(68, 140)">
+              <circle r="3" fill="#3fb950" opacity="0.7"/>
+              <text x="8" font-family="Inter, sans-serif" font-size="10" fill="#8b949e" dominant-baseline="central">${repo.stargazers_count}</text>
+              <text x="32" font-family="Inter, sans-serif" font-size="10" fill="#8b949e" dominant-baseline="central">★</text>
+            </g>
+          </svg>
+          <div class="featured-item__label">${repo.name}</div>
+        </a>
+      `).join('');
+    } catch (e) {
+      console.warn('GitHub fetch failed:', e);
+      container.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:16px;color:#666;font-size:12px;">불러오기 실패</div>';
+    }
+  }
+
+  // =============================================
+  // Auto-fetch: Velog posts (latest 3 via RSS)
+  // =============================================
+  async function fetchVelog() {
+    const container = document.getElementById('velog-items');
+    if (!container) return;
+    try {
+      const rssUrl = 'https://v2.velog.io/rss/@hyungyugod';
+      const proxyUrl = 'https://api.allorigins.win/get?url=' + encodeURIComponent(rssUrl);
+      const res = await fetch(proxyUrl);
+      if (!res.ok) throw new Error('Velog RSS error');
+      const data = await res.json();
+      const parser = new DOMParser();
+      const xml = parser.parseFromString(data.contents, 'text/xml');
+      const items = xml.querySelectorAll('item');
+      const posts = Array.from(items).slice(0, 3);
+
+      container.innerHTML = posts.map(item => {
+        const title = item.querySelector('title')?.textContent || 'Untitled';
+        const link = item.querySelector('link')?.textContent || '#';
+        // Try to extract image from description/content
+        const desc = item.querySelector('description')?.textContent || '';
+        const imgMatch = desc.match(/<img[^>]+src="([^"]+)"/);
+        const imgUrl = imgMatch ? imgMatch[1] : '';
+
+        const thumbHtml = imgUrl
+          ? `<img class="featured-item__thumb" src="${imgUrl}" alt="" loading="lazy">`
+          : `<svg class="featured-item__thumb" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+              <rect width="200" height="200" fill="#0a1a14"/>
+              <text x="100" y="105" text-anchor="middle" font-family="Inter, sans-serif" font-size="40" fill="#20c997" opacity="0.3">V</text>
+            </svg>`;
+
+        return `
+          <a class="featured-item" href="${link}" target="_blank" rel="noopener">
+            ${thumbHtml}
+            <div class="featured-item__label">${title}</div>
+          </a>`;
+      }).join('');
+    } catch (e) {
+      console.warn('Velog fetch failed:', e);
+      container.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:16px;color:#666;font-size:12px;">불러오기 실패</div>';
+    }
+  }
+
+  // Run on page load
+  document.addEventListener('DOMContentLoaded', () => {
+    fetchGitHub();
+    fetchVelog();
+  });
+  </script>
+</body>
+</html>
