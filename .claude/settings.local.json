@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -sL \"https://cdnimg.melon.co.kr/cm2/album/images/124/76/527/12476527_20260109162039_500.jpg\" -o cover-afterglow.jpg)",
+      "Bash(curl -sL \"https://cdnimg.melon.co.kr/cm2/album/images/118/56/698/11856698_20250616121001_500.jpg\" -o cover-analogue.jpg)"
+    ]
+  }
+}
