@@ -45,7 +45,7 @@ function fetchWithTimeout(url, ms = 5000) {
  * @param {string} msg - 표시할 메시지
  */
 function showFetchError(container, msg) {
-  container.innerHTML = `<div class="fetch-error"><i class="fa-solid fa-triangle-exclamation"></i> ${msg}</div>`;
+  container.innerHTML = `<div class="fetch-error"><i class="fa-solid fa-triangle-exclamation"></i> ${esc(msg)}</div>`;
 }
 
 // -------------------------------------------------------
