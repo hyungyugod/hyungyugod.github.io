@@ -24,6 +24,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
   <link rel="stylesheet" href="/assets/css/style.css">
+  <script>if(localStorage.getItem('theme')==='light')document.documentElement.classList.add('light');</script>
 </head>
 <body>
 
@@ -31,6 +32,12 @@
   </div>
 
   <div class="page-wrapper">
+
+    <!-- Theme Toggle -->
+    <button class="theme-toggle js-theme-toggle" type="button" aria-label="테마 전환">
+      <i class="fa-solid fa-sun theme-toggle__icon theme-toggle__icon--light"></i>
+      <i class="fa-solid fa-moon theme-toggle__icon theme-toggle__icon--dark"></i>
+    </button>
 
     <!-- Profile -->
     <section class="profile">

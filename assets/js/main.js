@@ -163,6 +163,7 @@ document.addEventListener('DOMContentLoaded', () => {
   fetchVelog();
   initModal();
   initCategoryFilter();
+  initThemeToggle();
 });
 
 // -------------------------------------------------------
@@ -194,6 +195,33 @@ function initCategoryFilter() {
         }
       });
     });
+  });
+}
+
+// -------------------------------------------------------
+// 테마 토글 (다크/라이트)
+// -------------------------------------------------------
+
+/**
+ * 다크/라이트 테마 전환 토글 초기화
+ * localStorage에 사용자 선택을 저장하여 재방문 시 복원
+ */
+function initThemeToggle() {
+  const btn = document.querySelector('.js-theme-toggle');
+  if (!btn) return;
+
+  const root = document.documentElement;
+  const STORAGE_KEY = 'theme';
+
+  // 저장된 테마 복원
+  const saved = localStorage.getItem(STORAGE_KEY);
+  if (saved === 'light') {
+    root.classList.add('light');
+  }
+
+  btn.addEventListener('click', () => {
+    const isLight = root.classList.toggle('light');
+    localStorage.setItem(STORAGE_KEY, isLight ? 'light' : 'dark');
   });
 }
 
