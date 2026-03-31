@@ -1,226 +1,304 @@
----
-layout: linktree
----
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>HG — Links</title>
+  <meta name="description" content="Thoughts, stories and ideas of code">
 
-<!-- Profile -->
-<section class="profile">
-  <img class="profile__avatar js-open-profile" id="profileAvatar" src="/images/15.jpg" alt="HG" tabindex="0" style="cursor:pointer;">
-  <h1 class="profile__name">HG</h1>
-  <div class="profile__bio">
-    <p class="profile__bio-quote">
-      I don't create to express myself.<br>
-      I create to find out who I am.
-    </p>
-    <div class="profile__bio-divider"></div>
-    <p class="profile__bio-kr">
-      표현하기 위해 창조하는 것이 아니다.<br>
-      창조하며 스스로를 알아간다.
-    </p>
-    <p class="profile__bio-attr">becoming through making</p>
-  </div>
-  <button class="profile__btn js-open-profile" type="button">
-    <i class="fa-regular fa-id-card"></i> 프로필 보기
-  </button>
-</section>
+  <link rel="canonical" href="https://hyungyugod.github.io/">
 
-<!-- Category Tabs -->
-<nav class="category-nav" id="categoryNav">
-  <button class="category-nav__btn is-active" data-filter="all" type="button">All</button>
-  <button class="category-nav__btn" data-filter="writing" type="button">Study & Writing & Dev</button>
-  <button class="category-nav__btn" data-filter="music" type="button">Music</button>
-  <button class="category-nav__btn" data-filter="social" type="button">Social</button>
-</nav>
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="HG">
+  <meta name="twitter:description" content="Thoughts, stories and ideas of code">
 
-<!-- Study & Writing & Dev  -->
-<div class="category-section" data-category="writing">
-<p class="section-label">Study & Writing & Dev</p>
-<div class="links links--section">
+  <!-- Facebook OpenGraph -->
+  <meta property="og:title" content="HG">
+  <meta property="og:description" content="Thoughts, stories and ideas of code">
 
-  <!-- Velog (auto-fetch) -->
-  <div class="link-card">
-    <a class="link-card__header" href="https://velog.io/@hyungyugod/posts" target="_blank" rel="noopener">
-      <div class="link-card__icon icon--velog">
-        <i class="fa-solid fa-code"></i>
-      </div>
-      <div class="link-card__info">
-        <div class="link-card__title">Velog</div>
-        <div class="link-card__desc">개발 블로그 & 기술 포스트</div>
-      </div>
-      <i class="fa-solid fa-arrow-right link-card__arrow"></i>
-    </a>
-    <div class="link-card__divider"></div>
-    <div class="link-card__items" id="velog-items">
-      <div class="featured-item featured-item--loading"><div class="featured-item__thumb"></div><div class="featured-item__label">로딩 중...</div></div>
-      <div class="featured-item featured-item--loading"><div class="featured-item__thumb"></div><div class="featured-item__label">로딩 중...</div></div>
-      <div class="featured-item featured-item--loading"><div class="featured-item__thumb"></div><div class="featured-item__label">로딩 중...</div></div>
-    </div>
+  <!-- Fonts: only used weights -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700;800;900&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <link rel="stylesheet" href="/assets/css/style.css">
+</head>
+<body>
+
+  <div class="hero-bg">
   </div>
 
-  <!-- Brunch -->
-  <div class="link-card">
-    <a class="link-card__header" href="https://brunch.co.kr/@hyungyugood" target="_blank" rel="noopener">
-      <div class="link-card__icon icon--brunch">
-        <i class="fa-solid fa-pen-nib"></i>
+  <div class="page-wrapper">
+
+    <!-- Profile -->
+    <section class="profile">
+      <img class="profile__avatar js-open-profile" id="profileAvatar" src="/assets/img/15.jpg" alt="HG" tabindex="0" style="cursor:pointer;">
+      <h1 class="profile__name">HG</h1>
+      <div class="profile__bio">
+        <p class="profile__bio-quote">
+          I don't create to express myself.<br>
+          I create to find out who I am.
+        </p>
+        <div class="profile__bio-divider"></div>
+        <p class="profile__bio-kr">
+          표현하기 위해 창조하는 것이 아니다.<br>
+          창조하며 스스로를 알아간다.
+        </p>
+        <p class="profile__bio-attr">becoming through making</p>
       </div>
-      <div class="link-card__info">
-        <div class="link-card__title">Brunch</div>
-        <div class="link-card__desc">에세이 & 글쓰기</div>
+      <button class="profile__btn js-open-profile" type="button">
+        <i class="fa-regular fa-id-card"></i> 프로필 보기
+      </button>
+    </section>
+
+    <!-- Category Tabs -->
+    <nav class="category-nav" id="categoryNav">
+      <button class="category-nav__btn is-active" data-filter="all" type="button">All</button>
+      <button class="category-nav__btn" data-filter="writing" type="button">Study & Writing & Dev</button>
+      <button class="category-nav__btn" data-filter="music" type="button">Music</button>
+      <button class="category-nav__btn" data-filter="social" type="button">Social</button>
+    </nav>
+
+    <!-- Study & Writing & Dev  -->
+    <div class="category-section" data-category="writing">
+    <p class="section-label">Study & Writing & Dev</p>
+    <div class="links links--section">
+
+      <!-- Velog (auto-fetch) -->
+      <div class="link-card">
+        <a class="link-card__header" href="https://velog.io/@hyungyugod/posts" target="_blank" rel="noopener">
+          <div class="link-card__icon icon--velog">
+            <i class="fa-solid fa-code"></i>
+          </div>
+          <div class="link-card__info">
+            <div class="link-card__title">Velog</div>
+            <div class="link-card__desc">개발 블로그 & 기술 포스트</div>
+          </div>
+          <i class="fa-solid fa-arrow-right link-card__arrow"></i>
+        </a>
+        <div class="link-card__divider"></div>
+        <div class="link-card__items" id="velog-items">
+          <div class="featured-item featured-item--loading"><div class="featured-item__thumb"></div><div class="featured-item__label">로딩 중...</div></div>
+          <div class="featured-item featured-item--loading"><div class="featured-item__thumb"></div><div class="featured-item__label">로딩 중...</div></div>
+          <div class="featured-item featured-item--loading"><div class="featured-item__thumb"></div><div class="featured-item__label">로딩 중...</div></div>
+        </div>
       </div>
-      <i class="fa-solid fa-arrow-right link-card__arrow"></i>
-    </a>
-    <div class="link-card__divider"></div>
-    <div class="link-card__items">
-      <a class="featured-item" href="https://brunch.co.kr/@hyungyugood/20" target="_blank" rel="noopener">
-        <img class="featured-item__thumb" src="/images/cover-brunch1.jpg" alt="자기배반과 미실현의 삶에 대하여" loading="lazy">
-        <div class="featured-item__label">자기배반과 미실현의 삶에 대하여</div>
-      </a>
-      <a class="featured-item" href="https://brunch.co.kr/@hyungyugood/19" target="_blank" rel="noopener">
-        <img class="featured-item__thumb" src="/images/cover-brunch2.jpg" alt="연을 띄우며" loading="lazy">
-        <div class="featured-item__label">연을 띄우며</div>
-      </a>
-      <a class="featured-item" href="https://brunch.co.kr/@hyungyugood/18" target="_blank" rel="noopener">
-        <img class="featured-item__thumb" src="/images/cover-brunch3.jpg" alt="'미술관'" loading="lazy">
-        <div class="featured-item__label">미술관</div>
-      </a>
+
+      <!-- Brunch -->
+      <div class="link-card">
+        <a class="link-card__header" href="https://brunch.co.kr/@hyungyugood" target="_blank" rel="noopener">
+          <div class="link-card__icon icon--brunch">
+            <i class="fa-solid fa-pen-nib"></i>
+          </div>
+          <div class="link-card__info">
+            <div class="link-card__title">Brunch</div>
+            <div class="link-card__desc">에세이 & 글쓰기</div>
+          </div>
+          <i class="fa-solid fa-arrow-right link-card__arrow"></i>
+        </a>
+        <div class="link-card__divider"></div>
+        <div class="link-card__items">
+          <a class="featured-item" href="https://brunch.co.kr/@hyungyugood/20" target="_blank" rel="noopener">
+            <img class="featured-item__thumb" src="/assets/img/cover-brunch1.jpg" alt="자기배반과 미실현의 삶에 대하여" loading="lazy">
+            <div class="featured-item__label">자기배반과 미실현의 삶에 대하여</div>
+          </a>
+          <a class="featured-item" href="https://brunch.co.kr/@hyungyugood/19" target="_blank" rel="noopener">
+            <img class="featured-item__thumb" src="/assets/img/cover-brunch2.jpg" alt="연을 띄우며" loading="lazy">
+            <div class="featured-item__label">연을 띄우며</div>
+          </a>
+          <a class="featured-item" href="https://brunch.co.kr/@hyungyugood/18" target="_blank" rel="noopener">
+            <img class="featured-item__thumb" src="/assets/img/cover-brunch3.jpg" alt="'미술관'" loading="lazy">
+            <div class="featured-item__label">미술관</div>
+          </a>
+        </div>
+      </div>
+
+      <!-- GitHub (auto-fetch) -->
+      <div class="link-card">
+        <a class="link-card__header" href="https://github.com/hyungyugod" target="_blank" rel="noopener">
+          <div class="link-card__icon icon--github">
+            <i class="fa-brands fa-github"></i>
+          </div>
+          <div class="link-card__info">
+            <div class="link-card__title">GitHub</div>
+            <div class="link-card__desc">Projects & open source</div>
+          </div>
+          <i class="fa-solid fa-arrow-right link-card__arrow"></i>
+        </a>
+        <div class="link-card__divider"></div>
+        <div class="link-card__items" id="github-items">
+          <div class="featured-item featured-item--loading"><div class="featured-item__thumb"></div><div class="featured-item__label">로딩 중...</div></div>
+          <div class="featured-item featured-item--loading"><div class="featured-item__thumb"></div><div class="featured-item__label">로딩 중...</div></div>
+          <div class="featured-item featured-item--loading"><div class="featured-item__thumb"></div><div class="featured-item__label">로딩 중...</div></div>
+        </div>
+      </div>
+
     </div>
+    </div>
+
+    <!-- Music -->
+    <div class="category-section" data-category="music">
+    <p class="section-label">Music</p>
+    <div class="links links--section">
+
+      <!-- Melon (먼저) -->
+      <div class="link-card">
+        <a class="link-card__header" href="https://www.melon.com/artist/timeline.htm?artistId=4347369" target="_blank" rel="noopener">
+          <div class="link-card__icon icon--melon">
+            <i class="fa-solid fa-music"></i>
+          </div>
+          <div class="link-card__info">
+            <div class="link-card__title">Melon</div>
+            <div class="link-card__desc">Official releases</div>
+          </div>
+          <i class="fa-solid fa-arrow-right link-card__arrow"></i>
+        </a>
+        <div class="link-card__divider"></div>
+        <div class="link-card__items">
+          <a class="featured-item" href="https://www.melon.com/song/detail.htm?songId=600864946" target="_blank" rel="noopener">
+            <img class="featured-item__thumb" src="/assets/img/cover-afterglow.jpg" alt="연" loading="lazy">
+            <div class="featured-item__label">연 (feat. 이안, SOPHiA, sumin)</div>
+          </a>
+          <a class="featured-item" href="https://www.melon.com/song/detail.htm?songId=39154106" target="_blank" rel="noopener">
+            <img class="featured-item__thumb" src="/assets/img/cover-analogue.jpg" alt="Oh Love!" loading="lazy">
+            <div class="featured-item__label">Oh Love ! (feat. One, 이안, WORLDWIDEKINGHYUNJU, sumin)</div>
+          </a>
+          <a class="featured-item" href="https://www.melon.com/song/detail.htm?songId=600864948" target="_blank" rel="noopener">
+            <img class="featured-item__thumb" src="/assets/img/cover-afterglow.jpg" alt="Don't worry" loading="lazy">
+            <div class="featured-item__label">Don't worry (feat. 김용주, 민소희)</div>
+          </a>
+        </div>
+      </div>
+
+      <!-- SoundCloud -->
+      <div class="link-card">
+        <a class="link-card__header" href="https://soundcloud.com/user-928451677?utm_source=clipboard&utm_medium=text&utm_campaign=social_sharing" target="_blank" rel="noopener">
+          <div class="link-card__icon icon--soundcloud">
+            <i class="fa-brands fa-soundcloud"></i>
+          </div>
+          <div class="link-card__info">
+            <div class="link-card__title">SoundCloud</div>
+            <div class="link-card__desc">Original tracks & beats</div>
+          </div>
+          <i class="fa-solid fa-arrow-right link-card__arrow"></i>
+        </a>
+        <div class="link-card__divider"></div>
+        <div class="link-card__items">
+          <a class="featured-item" href="https://soundcloud.com/user-928451677/need-feat-sumin" target="_blank" rel="noopener">
+            <img class="featured-item__thumb" src="/assets/img/cover-need.jpg" alt="Need" loading="lazy">
+            <div class="featured-item__label">Need (feat. sumin, worldwidekinghyunju)</div>
+          </a>
+          <a class="featured-item" href="https://soundcloud.com/user-928451677/prod-chill-sebs" target="_blank" rel="noopener">
+            <img class="featured-item__thumb" src="/assets/img/cover-crocodile.jpg" alt="악어는 하늘을 나는 꿈을 꾸었다" loading="lazy">
+            <div class="featured-item__label">악어는 하늘을 나는 꿈을 꾸었다 (Prod. Chill Sebs)</div>
+          </a>
+          <a class="featured-item" href="https://soundcloud.com/user-928451677/burn-it-up-feat-haram-prodsloth" target="_blank" rel="noopener">
+            <img class="featured-item__thumb" src="/assets/img/cover-burnup.jpg" alt="Burn It Up" loading="lazy">
+            <div class="featured-item__label">Burn It Up (feat. Haram, 예찬, 유혁, 정재훈, 채원, 석준) (Prod.SLOTH)</div>
+          </a>
+        </div>
+      </div>
+
+    </div>
+    </div>
+
+    <!-- Social -->
+    <div class="category-section" data-category="social">
+    <p class="section-label">Social</p>
+    <div class="social-grid">
+
+      <a class="social-card social-card--instagram" href="https://www.instagram.com/hy_nxx9/" target="_blank" rel="noopener">
+        <div class="social-card__icon icon--instagram">
+          <i class="fa-brands fa-instagram"></i>
+        </div>
+        <div class="social-card__texts">
+          <div class="social-card__name">Instagram</div>
+          <div class="social-card__handle">@hy_nxx9</div>
+        </div>
+      </a>
+
+      <a class="social-card social-card--instagram2" href="https://www.instagram.com/knowledge_stroll/" target="_blank" rel="noopener">
+        <div class="social-card__icon icon--instagram2">
+          <i class="fa-brands fa-instagram"></i>
+        </div>
+        <div class="social-card__texts">
+          <div class="social-card__name">지식산책</div>
+          <div class="social-card__handle">@knowledge_stroll</div>
+        </div>
+      </a>
+
+      <a class="social-card social-card--naver" href="https://search.naver.com/search.naver?where=nexearch&sm=tab_etc&mra=bjky&pkid=1&os=40432738&qvt=0&query=%EC%84%B1%ED%98%84%EA%B7%9C" target="_blank" rel="noopener">
+        <div class="social-card__icon icon--naver">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path d="M13.6 12.47L10.27 7H7v10h3.4v-5.47L13.73 17H17V7h-3.4z"/>
+          </svg>
+        </div>
+        <div class="social-card__texts">
+          <div class="social-card__name">네이버</div>
+          <div class="social-card__handle">성현규</div>
+        </div>
+      </a>
+
+    </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <div class="footer__social">
+        <a href="mailto:hyungyugod@naver.com" title="Email" aria-label="이메일 보내기"><i class="fa-solid fa-envelope"></i></a>
+        <a href="https://soundcloud.com/user-928451677" target="_blank" rel="noopener" title="SoundCloud" aria-label="SoundCloud 프로필"><i class="fa-brands fa-soundcloud"></i></a>
+        <a href="https://www.instagram.com/hy_nxx9/" target="_blank" rel="noopener" title="Instagram" aria-label="Instagram 프로필"><i class="fa-brands fa-instagram"></i></a>
+        <a href="https://github.com/hyungyugod" target="_blank" rel="noopener" title="GitHub" aria-label="GitHub 프로필"><i class="fa-brands fa-github"></i></a>
+      </div>
+      <p class="footer__text">&copy; 2026 HyunGyu Sung</p>
+    </footer>
+
   </div>
 
-  <!-- GitHub (auto-fetch) -->
-  <div class="link-card">
-    <a class="link-card__header" href="https://github.com/hyungyugod" target="_blank" rel="noopener">
-      <div class="link-card__icon icon--github">
-        <i class="fa-brands fa-github"></i>
+  <script src="/assets/js/main.js"></script>
+
+  <!-- Profile Modal -->
+  <div class="modal-backdrop" id="profileModal" role="dialog" aria-modal="true" aria-label="프로필">
+    <div class="modal-overlay"></div>
+    <div class="modal-box">
+      <button class="modal-close" aria-label="닫기"><i class="fa-solid fa-xmark"></i></button>
+      <div class="modal-photo-wrap">
+        <img class="modal-photo" src="/assets/img/imgi_x.jpg" alt="성현규">
       </div>
-      <div class="link-card__info">
-        <div class="link-card__title">GitHub</div>
-        <div class="link-card__desc">Projects & open source</div>
+      <div class="modal-body">
+        <h2 class="modal-name">성현규</h2>
+        <p class="modal-eng">HG &nbsp;·&nbsp; Hyung gyu Sung</p>
+        <div class="modal-divider"></div>
+        <ul class="modal-info">
+          <li>
+            <span class="modal-info__icon"><i class="fa-solid fa-graduation-cap"></i></span>
+            가천대학교 간호학과
+          </li>
+          <li>
+            <span class="modal-info__icon"><i class="fa-solid fa-code"></i></span>
+            Learner. Developer. Thinker.<br>
+            <span style="font-size:11px;opacity:0.6;"><a href="https://velog.io/@hyungyugod/posts" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline;">Velog</a> · <a href="https://github.com/hyungyugod" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline;">GitHub</a></span>
+          </li>
+          <li>
+            <span class="modal-info__icon"><i class="fa-solid fa-microphone-lines"></i></span>
+            Music Producer<br>
+            <span style="font-size:11px;opacity:0.6;"><a href="https://www.melon.com/artist/timeline.htm?artistId=4347369" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline;">Melon</a> · <a href="https://soundcloud.com/user-928451677" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline;">SoundCloud</a></span>
+          </li>
+          <li>
+            <span class="modal-info__icon"><i class="fa-solid fa-pen-nib"></i></span>
+            에세이 작가<br>
+            <span style="font-size:11px;opacity:0.6;"><a href="https://brunch.co.kr/@hyungyugood" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline;">Brunch</a></span>
+          </li>
+          <li>
+            <span class="modal-info__icon"><i class="fa-solid fa-id-card"></i></span>
+            보유 자격증<br>
+            <span style="font-size:11px;opacity:0.6;">정보처리기사 · 빅데이터분석기사 · ADSP · SQLD</span>
+          </li>
+        </ul>
       </div>
-      <i class="fa-solid fa-arrow-right link-card__arrow"></i>
-    </a>
-    <div class="link-card__divider"></div>
-    <div class="link-card__items" id="github-items">
-      <div class="featured-item featured-item--loading"><div class="featured-item__thumb"></div><div class="featured-item__label">로딩 중...</div></div>
-      <div class="featured-item featured-item--loading"><div class="featured-item__thumb"></div><div class="featured-item__label">로딩 중...</div></div>
-      <div class="featured-item featured-item--loading"><div class="featured-item__thumb"></div><div class="featured-item__label">로딩 중...</div></div>
     </div>
   </div>
-
-</div>
-</div>
-
-<!-- Music -->
-<div class="category-section" data-category="music">
-<p class="section-label">Music</p>
-<div class="links links--section">
-
-  <!-- Melon (먼저) -->
-  <div class="link-card">
-    <a class="link-card__header" href="https://www.melon.com/artist/timeline.htm?artistId=4347369" target="_blank" rel="noopener">
-      <div class="link-card__icon icon--melon">
-        <i class="fa-solid fa-music"></i>
-      </div>
-      <div class="link-card__info">
-        <div class="link-card__title">Melon</div>
-        <div class="link-card__desc">Official releases</div>
-      </div>
-      <i class="fa-solid fa-arrow-right link-card__arrow"></i>
-    </a>
-    <div class="link-card__divider"></div>
-    <div class="link-card__items">
-      <a class="featured-item" href="https://www.melon.com/song/detail.htm?songId=600864946" target="_blank" rel="noopener">
-        <img class="featured-item__thumb" src="/images/cover-afterglow.jpg" alt="연" loading="lazy">
-        <div class="featured-item__label">연 (feat. 이안, SOPHiA, sumin)</div>
-      </a>
-      <a class="featured-item" href="https://www.melon.com/song/detail.htm?songId=39154106" target="_blank" rel="noopener">
-        <img class="featured-item__thumb" src="/images/cover-analogue.jpg" alt="Oh Love!" loading="lazy">
-        <div class="featured-item__label">Oh Love ! (feat. One, 이안, WORLDWIDEKINGHYUNJU, sumin)</div>
-      </a>
-      <a class="featured-item" href="https://www.melon.com/song/detail.htm?songId=600864948" target="_blank" rel="noopener">
-        <img class="featured-item__thumb" src="/images/cover-afterglow.jpg" alt="Don't worry" loading="lazy">
-        <div class="featured-item__label">Don't worry (feat. 김용주, 민소희)</div>
-      </a>
-    </div>
-  </div>
-
-  <!-- SoundCloud -->
-  <div class="link-card">
-    <a class="link-card__header" href="https://soundcloud.com/user-928451677?utm_source=clipboard&utm_medium=text&utm_campaign=social_sharing" target="_blank" rel="noopener">
-      <div class="link-card__icon icon--soundcloud">
-        <i class="fa-brands fa-soundcloud"></i>
-      </div>
-      <div class="link-card__info">
-        <div class="link-card__title">SoundCloud</div>
-        <div class="link-card__desc">Original tracks & beats</div>
-      </div>
-      <i class="fa-solid fa-arrow-right link-card__arrow"></i>
-    </a>
-    <div class="link-card__divider"></div>
-    <div class="link-card__items">
-      <a class="featured-item" href="https://soundcloud.com/user-928451677/need-feat-sumin" target="_blank" rel="noopener">
-        <img class="featured-item__thumb" src="/images/cover-need.jpg" alt="Need" loading="lazy">
-        <div class="featured-item__label">Need (feat. sumin, worldwidekinghyunju)</div>
-      </a>
-      <a class="featured-item" href="https://soundcloud.com/user-928451677/prod-chill-sebs" target="_blank" rel="noopener">
-        <img class="featured-item__thumb" src="/images/cover-crocodile.jpg" alt="악어는 하늘을 나는 꿈을 꾸었다" loading="lazy">
-        <div class="featured-item__label">악어는 하늘을 나는 꿈을 꾸었다 (Prod. Chill Sebs)</div>
-      </a>
-      <a class="featured-item" href="https://soundcloud.com/user-928451677/burn-it-up-feat-haram-prodsloth" target="_blank" rel="noopener">
-        <img class="featured-item__thumb" src="/images/cover-burnup.jpg" alt="Burn It Up" loading="lazy">
-        <div class="featured-item__label">Burn It Up (feat. Haram, 예찬, 유혁, 정재훈, 채원, 석준) (Prod.SLOTH)</div>
-      </a>
-    </div>
-  </div>
-
-</div>
-</div>
-
-<!-- Social -->
-<div class="category-section" data-category="social">
-<p class="section-label">Social</p>
-<div class="social-grid">
-
-  <a class="social-card social-card--instagram" href="https://www.instagram.com/hy_nxx9/" target="_blank" rel="noopener">
-    <div class="social-card__icon icon--instagram">
-      <i class="fa-brands fa-instagram"></i>
-    </div>
-    <div class="social-card__texts">
-      <div class="social-card__name">Instagram</div>
-      <div class="social-card__handle">@hy_nxx9</div>
-    </div>
-  </a>
-
-  <a class="social-card social-card--instagram2" href="https://www.instagram.com/knowledge_stroll/" target="_blank" rel="noopener">
-    <div class="social-card__icon icon--instagram2">
-      <i class="fa-brands fa-instagram"></i>
-    </div>
-    <div class="social-card__texts">
-      <div class="social-card__name">지식산책</div>
-      <div class="social-card__handle">@knowledge_stroll</div>
-    </div>
-  </a>
-
-  <a class="social-card social-card--naver" href="https://search.naver.com/search.naver?where=nexearch&sm=tab_etc&mra=bjky&pkid=1&os=40432738&qvt=0&query=%EC%84%B1%ED%98%84%EA%B7%9C" target="_blank" rel="noopener">
-    <div class="social-card__icon icon--naver">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-        <path d="M13.6 12.47L10.27 7H7v10h3.4v-5.47L13.73 17H17V7h-3.4z"/>
-      </svg>
-    </div>
-    <div class="social-card__texts">
-      <div class="social-card__name">네이버</div>
-      <div class="social-card__handle">성현규</div>
-    </div>
-  </a>
-
-</div>
-</div>
-
-<!-- Footer -->
-<footer class="footer">
-  <div class="footer__social">
-    <a href="mailto:hyungyugod@naver.com" title="Email" aria-label="이메일 보내기"><i class="fa-solid fa-envelope"></i></a>
-    <a href="https://soundcloud.com/user-928451677" target="_blank" rel="noopener" title="SoundCloud" aria-label="SoundCloud 프로필"><i class="fa-brands fa-soundcloud"></i></a>
-    <a href="https://www.instagram.com/hy_nxx9/" target="_blank" rel="noopener" title="Instagram" aria-label="Instagram 프로필"><i class="fa-brands fa-instagram"></i></a>
-    <a href="https://github.com/hyungyugod" target="_blank" rel="noopener" title="GitHub" aria-label="GitHub 프로필"><i class="fa-brands fa-github"></i></a>
-  </div>
-  <p class="footer__text">&copy; 2026 HyunGyu Sung</p>
-</footer>
+</body>
+</html>
