@@ -159,6 +159,30 @@
       text-transform: uppercase;
     }
 
+    .profile__btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      margin-top: 28px;
+      padding: 9px 22px;
+      border: 1px solid rgba(255,123,123,0.35);
+      border-radius: 999px;
+      background: rgba(255,123,123,0.06);
+      color: rgba(255,160,160,0.85);
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.6px;
+      cursor: pointer;
+      transition: background 0.25s, border-color 0.25s, color 0.25s, box-shadow 0.25s;
+    }
+
+    .profile__btn:hover {
+      background: rgba(255,123,123,0.14);
+      border-color: rgba(255,123,123,0.6);
+      color: #ff9b9b;
+      box-shadow: 0 0 18px rgba(255,123,123,0.12);
+    }
+
     /* ---- Section Label ---- */
     .section-label {
       display: flex;
@@ -910,8 +934,8 @@
   // =============================================
   function initModal() {
     const backdrop = document.getElementById('profileModal');
-    const avatar   = document.getElementById('profileAvatar');
-    if (!backdrop || !avatar) return;
+    if (!backdrop) return;
+    const avatar = document.getElementById('profileAvatar');
 
     const FOCUSABLE = 'a[href],button:not([disabled]),input,textarea,select,[tabindex]:not([tabindex="-1"])';
 
@@ -928,10 +952,10 @@
     function close() {
       backdrop.classList.remove('is-open');
       document.body.style.overflow = '';
-      avatar.focus();
+      avatar?.focus();
     }
 
-    avatar.addEventListener('click', open);
+    document.querySelectorAll('.js-open-profile').forEach(el => el.addEventListener('click', open));
     backdrop.querySelector('.modal-overlay').addEventListener('click', close);
     backdrop.querySelector('.modal-close').addEventListener('click', close);
 
