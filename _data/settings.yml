@@ -17,10 +17,6 @@ menu-settings:
       url: '/contact/'
     - title: 'styleguide'
       url: '/styleguide/'
-    - title: 'study'
-      url: '/study/'
-    - title: 'portfolio'
-      url: '/portfolio/'
 
 
 #-------------------------------

@@ -23,7 +23,16 @@ layout: linktree
   </button>
 </section>
 
+<!-- Category Tabs -->
+<nav class="category-nav" id="categoryNav">
+  <button class="category-nav__btn is-active" data-filter="all" type="button">All</button>
+  <button class="category-nav__btn" data-filter="writing" type="button">Writing & Dev</button>
+  <button class="category-nav__btn" data-filter="music" type="button">Music</button>
+  <button class="category-nav__btn" data-filter="social" type="button">Social</button>
+</nav>
+
 <!-- Study & Writing & Dev  -->
+<div class="category-section" data-category="writing">
 <p class="section-label">Study & Writing & Dev</p>
 <div class="links links--section">
 
@@ -97,8 +106,10 @@ layout: linktree
   </div>
 
 </div>
+</div>
 
 <!-- Music -->
+<div class="category-section" data-category="music">
 <p class="section-label">Music</p>
 <div class="links links--section">
 
@@ -161,8 +172,10 @@ layout: linktree
   </div>
 
 </div>
+</div>
 
 <!-- Social -->
+<div class="category-section" data-category="social">
 <p class="section-label">Social</p>
 <div class="social-grid">
 
@@ -198,6 +211,7 @@ layout: linktree
     </div>
   </a>
 
+</div>
 </div>
 
 <!-- Footer -->
