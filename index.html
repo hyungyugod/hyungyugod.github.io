@@ -45,19 +45,25 @@
 
     <!-- Profile -->
     <section class="profile">
-      <img class="profile__avatar js-open-profile" id="profileAvatar" src="/assets/img/15.jpg" alt="HG" tabindex="0" >
+      <div class="profile__avatar-wrap">
+        <img class="profile__avatar js-open-profile" id="profileAvatar" src="/assets/img/15.jpg" alt="HG" tabindex="0">
+      </div>
       <h1 class="profile__name">HG</h1>
+      <p class="profile__subtitle">Developer · Producer · Writer</p>
       <div class="profile__bio">
         <p class="profile__bio-quote">
-          I don't create to express myself.<br>
-          I create to find out who I am.
+          <strong>Once. Everything.</strong><br>
+          In this one life, I want to keep being moved.<br>
+          To experience widely, to learn steadily,<br>
+          and to ride the waves as they come.
         </p>
         <div class="profile__bio-divider"></div>
         <p class="profile__bio-kr">
-          표현하기 위해 창조하는 것이 아니다.<br>
-          창조하며 스스로를 알아간다.
+          한번 뿐인 삶에서 저는 꾸준히 흔들리고 싶습니다.<br>
+          하여 다양하게 경험하고, 꾸준히 배우며,<br>
+          인생의 파도를 한번 타보려합니다.
         </p>
-        <p class="profile__bio-attr">becoming through making</p>
+        <p class="profile__bio-attr"><span class="typing" id="typingText"></span><span class="typing-cursor">|</span></p>
       </div>
       <button class="profile__btn js-open-profile" type="button">
         <i class="fa-regular fa-id-card"></i> 프로필 보기
@@ -268,8 +274,6 @@
 
   </div>
 
-  <script src="/assets/js/main.js"></script>
-
   <!-- Profile Modal -->
   <div class="modal-backdrop" id="profileModal" role="dialog" aria-modal="true" aria-label="프로필">
     <div class="modal-overlay"></div>
@@ -290,26 +294,27 @@
           <li>
             <span class="modal-info__icon"><i class="fa-solid fa-code"></i></span>
             Learner. Developer. Thinker.<br>
-            <span style="font-size:11px;opacity:0.6;"><a href="https://velog.io/@hyungyugod/posts" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline;">Velog</a> · <a href="https://github.com/hyungyugod" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline;">GitHub</a></span>
+            <span class="modal-info__sub"><a href="https://velog.io/@hyungyugod/posts" target="_blank" rel="noopener">Velog</a> · <a href="https://github.com/hyungyugod" target="_blank" rel="noopener">GitHub</a></span>
           </li>
           <li>
             <span class="modal-info__icon"><i class="fa-solid fa-microphone-lines"></i></span>
             Music Producer<br>
-            <span style="font-size:11px;opacity:0.6;"><a href="https://www.melon.com/artist/timeline.htm?artistId=4347369" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline;">Melon</a> · <a href="https://soundcloud.com/user-928451677" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline;">SoundCloud</a></span>
+            <span class="modal-info__sub"><a href="https://www.melon.com/artist/timeline.htm?artistId=4347369" target="_blank" rel="noopener">Melon</a> · <a href="https://soundcloud.com/user-928451677" target="_blank" rel="noopener">SoundCloud</a></span>
           </li>
           <li>
             <span class="modal-info__icon"><i class="fa-solid fa-pen-nib"></i></span>
             에세이 작가<br>
-            <span style="font-size:11px;opacity:0.6;"><a href="https://brunch.co.kr/@hyungyugood" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline;">Brunch</a></span>
+            <span class="modal-info__sub"><a href="https://brunch.co.kr/@hyungyugood" target="_blank" rel="noopener">Brunch</a></span>
           </li>
           <li>
             <span class="modal-info__icon"><i class="fa-solid fa-id-card"></i></span>
             보유 자격증<br>
-            <span style="font-size:11px;opacity:0.6;">정보처리기사 · 빅데이터분석기사 · ADSP · SQLD</span>
+            <span class="modal-info__sub">정보처리기사 · 빅데이터분석기사 · ADSP · SQLD</span>
           </li>
         </ul>
       </div>
     </div>
   </div>
+  <script src="/assets/js/main.js" defer></script>
 </body>
 </html>

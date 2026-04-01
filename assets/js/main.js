@@ -133,7 +133,7 @@ async function fetchVelog() {
         || '';
 
       const thumbHtml = imgUrl
-        ? `<img class="featured-item__thumb" src="${esc(imgUrl)}" alt="" loading="lazy">`
+        ? `<img class="featured-item__thumb" src="${esc(safeUrl(imgUrl))}" alt="" loading="lazy">`
         : `<svg class="featured-item__thumb" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
             <rect width="200" height="200" fill="#0a1a14"/>
             <text x="100" y="97" text-anchor="middle" font-family="Inter,sans-serif" font-size="52" font-weight="800" fill="#20c997" opacity="0.18">V</text>
@@ -164,7 +164,83 @@ document.addEventListener('DOMContentLoaded', () => {
   initModal();
   initCategoryFilter();
   initThemeToggle();
+  initTyping();
+  initScrollReveal();
 });
+
+// -------------------------------------------------------
+// 타이핑 인트로 애니메이션
+// -------------------------------------------------------
+
+function initTyping() {
+  const el = document.getElementById('typingText');
+  if (!el) return;
+
+  // prefers-reduced-motion 시 정적 표시
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    el.textContent = 'Developer';
+    return;
+  }
+
+  const words = ['Developer', 'Music Producer', 'Writer', 'Thinker'];
+  let wordIdx = 0;
+  let charIdx = 0;
+  let deleting = false;
+
+  function tick() {
+    const word = words[wordIdx];
+
+    if (!deleting) {
+      charIdx++;
+      el.textContent = word.substring(0, charIdx);
+
+      if (charIdx === word.length) {
+        deleting = true;
+        setTimeout(tick, 1500);
+        return;
+      }
+      setTimeout(tick, 80);
+    } else {
+      charIdx--;
+      el.textContent = word.substring(0, charIdx);
+
+      if (charIdx === 0) {
+        deleting = false;
+        wordIdx = (wordIdx + 1) % words.length;
+        setTimeout(tick, 400);
+        return;
+      }
+      setTimeout(tick, 50);
+    }
+  }
+
+  setTimeout(tick, 600);
+}
+
+// -------------------------------------------------------
+// 스크롤 페이드인 (Intersection Observer)
+// -------------------------------------------------------
+
+function initScrollReveal() {
+  const targets = document.querySelectorAll('.link-card, .social-card, .section-label');
+
+  // prefers-reduced-motion 시 즉시 표시
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    targets.forEach(el => el.classList.add('is-visible'));
+    return;
+  }
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('is-visible');
+        observer.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.15 });
+
+  targets.forEach(el => observer.observe(el));
+}
 
 // -------------------------------------------------------
 // 카테고리 필터
@@ -190,6 +266,8 @@ function initCategoryFilter() {
       sections.forEach(sec => {
         if (filter === 'all' || sec.dataset.category === filter) {
           sec.classList.remove('is-hidden');
+          sec.querySelectorAll('.link-card, .social-card, .section-label')
+             .forEach(el => el.classList.add('is-visible'));
         } else {
           sec.classList.add('is-hidden');
         }
@@ -212,12 +290,6 @@ function initThemeToggle() {
 
   const root = document.documentElement;
   const STORAGE_KEY = 'theme';
-
-  // 저장된 테마 복원
-  const saved = localStorage.getItem(STORAGE_KEY);
-  if (saved === 'light') {
-    root.classList.add('light');
-  }
 
   btn.addEventListener('click', () => {
     const isLight = root.classList.toggle('light');
