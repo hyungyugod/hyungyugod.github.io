@@ -1,0 +1,121 @@
+# CLAUDE.md
+
+Personal portfolio website at [hgfolio.com](https://hgfolio.com), hosted on GitHub Pages.
+Zero-build static site — pure HTML, CSS, and JavaScript with no npm, bundlers, or frameworks.
+
+## Development
+
+```bash
+python -m http.server 8000
+# visit http://localhost:8000
+```
+
+Deploy by pushing to `main` — GitHub Pages serves files directly.
+
+## Architecture
+
+All code lives in three files:
+
+| File | Role |
+|---|---|
+| `index.html` | Single HTML page. Category filtering shows/hides sections with JS. |
+| `assets/css/style.css` | All styling (~1100 lines). CSS custom properties for dark/light theming. BEM naming. |
+| `assets/js/main.js` | All client-side logic (~360 lines). Standalone functions in `DOMContentLoaded`. |
+
+## Reference Docs
+
+Detailed specs in `docs/` — Claude reads these on-demand when relevant:
+
+- `docs/css-rules.md` — CSS conventions: native nesting, color system, BEM, glassmorphism, responsive
+- `docs/js-rules.md` — JS patterns: DOM selection, async, security (`esc`/`safeUrl`), init pattern
+- `docs/components.md` — Project structure, component inventory, theme system, work checklist
+
+---
+
+## Harness: 기능 변경 파이프라인
+
+사용자가 **기능 변경/추가**를 요청하면, 아래 3-Agent 파이프라인을 자동 실행합니다.
+(단순 질문, 설명 요청, 버그 수정 등은 하네스 없이 직접 처리)
+
+```
+[사용자 요청]
+      ↓
+ ① Planner    → SPEC.md
+      ↓
+ ② Generator  → 3개 파일 수정 + SELF_CHECK.md
+      ↓
+ ③ Evaluator  → QA_REPORT.md
+      ↓
+ ④ 판정: 합격 → 완료 / 불합격 → ②로 (최대 3회)
+```
+
+### 단계 1: Planner 호출
+
+subagent_type: `planner`
+
+```
+.claude/agents/evaluation_criteria.md 파일을 읽고 참고하라.
+index.html, assets/css/style.css, assets/js/main.js를 읽고 현재 구조를 파악하라.
+
+사용자 요청: [사용자가 준 프롬프트]
+
+결과를 SPEC.md 파일로 저장하라.
+```
+
+### 단계 2: Generator 호출
+
+subagent_type: `generator`
+
+최초 실행:
+```
+SPEC.md 파일을 읽고, 설계대로 구현하라.
+완료 후 SELF_CHECK.md를 작성하라.
+```
+
+피드백 반영 (2회차+):
+```
+SPEC.md와 QA_REPORT.md를 읽어라.
+QA 피드백의 "구체적 개선 지시"를 모두 반영하여 코드를 수정하라.
+완료 후 SELF_CHECK.md를 업데이트하라.
+```
+
+### 단계 3: Evaluator 호출
+
+subagent_type: `evaluator`
+
+```
+SPEC.md를 읽어라. 이것이 설계서다.
+SELF_CHECK.md를 읽어라. 이것이 Generator의 자체 점검 결과다.
+index.html, assets/css/style.css, assets/js/main.js를 읽어라. 이것이 검수 대상이다.
+
+결과를 QA_REPORT.md 파일로 저장하라.
+```
+
+### 단계 4: 판정 확인
+
+QA_REPORT.md를 읽고:
+- **합격** → 완료 보고
+- **조건부/불합격** → 단계 2로 돌아가 피드백 반영
+- 최대 **3회** 반복. 3회 후에도 불합격이면 현재 상태로 보고
+
+### 완료 보고
+
+```
+## 하네스 실행 완료
+
+**변경 내용**: [한 줄 요약]
+**QA 반복**: X회
+**최종 점수**: 패턴 X/10, 보안 X/10, UI X/10, 기능 X/10 (가중 X.X/10)
+
+**실행 흐름**:
+1. Planner: [한 줄]
+2. Generator R1: [한 줄]
+3. Evaluator R1: [한 줄]
+...
+```
+
+### 주의사항
+
+- Generator와 Evaluator는 반드시 **다른 서브에이전트**로 호출 (분리가 핵심)
+- 각 단계 완료 후, 생성된 파일 존재 확인
+- 에이전트들은 `docs/` 규칙 파일을 자체적으로 읽으므로 프롬프트에 규칙을 복사하지 않음

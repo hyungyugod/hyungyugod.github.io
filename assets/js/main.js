@@ -166,6 +166,9 @@ document.addEventListener('DOMContentLoaded', () => {
   initThemeToggle();
   initTyping();
   initScrollReveal();
+  initScrollProgress();
+  initMouseParallax();
+  initCardTilt();
 });
 
 // -------------------------------------------------------
@@ -247,7 +250,24 @@ function initScrollReveal() {
 // -------------------------------------------------------
 
 /**
- * 카테고리 탭 클릭 시 섹션 표시/숨김 필터 초기화
+ * 섹션 필터링 헬퍼 — 카테고리에 따라 섹션을 표시/숨김
+ * @param {NodeList} sections - 카테고리 섹션 목록
+ * @param {string} filter - 적용할 필터 값 ('all' 또는 카테고리명)
+ */
+function applyFilter(sections, filter) {
+  sections.forEach(sec => {
+    if (filter === 'all' || sec.dataset.category === filter) {
+      sec.classList.remove('is-hidden');
+      sec.querySelectorAll('.link-card, .social-card, .section-label')
+         .forEach(el => el.classList.add('is-visible'));
+    } else {
+      sec.classList.add('is-hidden');
+    }
+  });
+}
+
+/**
+ * 카테고리 탭 클릭 시 리플 이펙트 + 페이드 전환 + 섹션 필터 초기화
  */
 function initCategoryFilter() {
   const nav = document.getElementById('categoryNav');
@@ -257,21 +277,44 @@ function initCategoryFilter() {
   const sections = document.querySelectorAll('.category-section');
 
   btns.forEach(btn => {
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', (e) => {
       const filter = btn.dataset.filter;
 
+      // 리플 이펙트
+      const ripple = document.createElement('span');
+      ripple.className = 'ripple';
+      const rect = btn.getBoundingClientRect();
+      const size = Math.max(rect.width, rect.height) * 2;
+      ripple.style.cssText = `width:${size}px;height:${size}px;left:${e.clientX - rect.left - size / 2}px;top:${e.clientY - rect.top - size / 2}px`;
+      btn.appendChild(ripple);
+      ripple.addEventListener('animationend', () => ripple.remove());
+
+      // 활성 탭 업데이트
       btns.forEach(b => b.classList.remove('is-active'));
       btn.classList.add('is-active');
 
-      sections.forEach(sec => {
-        if (filter === 'all' || sec.dataset.category === filter) {
-          sec.classList.remove('is-hidden');
-          sec.querySelectorAll('.link-card, .social-card, .section-label')
-             .forEach(el => el.classList.add('is-visible'));
-        } else {
-          sec.classList.add('is-hidden');
-        }
+      // 페이드 전환
+      const visible = Array.from(sections).filter(s => !s.classList.contains('is-hidden'));
+
+      if (!visible.length || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        applyFilter(sections, filter);
+        return;
+      }
+
+      visible.forEach(sec => {
+        sec.style.opacity = '0';
+        sec.style.transform = 'translateY(-10px)';
+        sec.style.transition = 'opacity 0.18s ease, transform 0.18s ease';
       });
+
+      setTimeout(() => {
+        visible.forEach(sec => {
+          sec.style.opacity = '';
+          sec.style.transform = '';
+          sec.style.transition = '';
+        });
+        applyFilter(sections, filter);
+      }, 200);
     });
   });
 }
@@ -356,5 +399,90 @@ function initModal() {
         if (document.activeElement === last)  { e.preventDefault(); first.focus(); }
       }
     }
+  });
+}
+
+// -------------------------------------------------------
+// 스크롤 진행 바
+// -------------------------------------------------------
+
+/**
+ * 페이지 스크롤 진행률에 따라 상단 프로그레스 바를 업데이트
+ */
+function initScrollProgress() {
+  const bar = document.getElementById('scrollProgress');
+  if (!bar) return;
+
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    bar.style.display = 'none';
+    return;
+  }
+
+  window.addEventListener('scroll', () => {
+    const total = document.documentElement.scrollHeight - window.innerHeight;
+    bar.style.transform = `scaleX(${total > 0 ? document.documentElement.scrollTop / total : 0})`;
+  }, { passive: true });
+}
+
+// -------------------------------------------------------
+// 히어로 마우스 패럴랙스
+// -------------------------------------------------------
+
+/**
+ * 마우스 움직임에 따라 히어로 배경을 미세하게 이동시키는 패럴랙스 효과
+ */
+function initMouseParallax() {
+  const heroBg = document.querySelector('.hero-bg');
+  if (!heroBg) return;
+  if (window.matchMedia('(hover: none)').matches) return;
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+  heroBg.style.transform = 'scale(1.08)';
+  let targetX = 0, targetY = 0, currentX = 0, currentY = 0;
+
+  document.addEventListener('mousemove', (e) => {
+    targetX = (e.clientX / window.innerWidth - 0.5) * 18;
+    targetY = (e.clientY / window.innerHeight - 0.5) * 18;
+  }, { passive: true });
+
+  (function tick() {
+    currentX += (targetX - currentX) * 0.07;
+    currentY += (targetY - currentY) * 0.07;
+    heroBg.style.transform = `scale(1.08) translate(${currentX}px, ${currentY}px)`;
+    requestAnimationFrame(tick);
+  })();
+}
+
+// -------------------------------------------------------
+// 카드 3D 틸트
+// -------------------------------------------------------
+
+/**
+ * 마우스 위치에 따라 카드에 3D 기울기 효과를 적용
+ */
+function initCardTilt() {
+  if (window.matchMedia('(hover: none)').matches) return;
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+  document.querySelectorAll('.link-card, .social-card').forEach(card => {
+    const hoverShift = card.classList.contains('social-card') ? -3 : -2;
+    let rafId = null;
+
+    card.addEventListener('mousemove', (e) => {
+      if (rafId) cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(() => {
+        rafId = null;
+        const r = card.getBoundingClientRect();
+        const x = (e.clientX - r.left) / r.width - 0.5;
+        const y = (e.clientY - r.top) / r.height - 0.5;
+        card.style.transform =
+          `perspective(700px) rotateY(${x * 8}deg) rotateX(${-y * 5}deg) translateY(${hoverShift}px)`;
+      });
+    });
+
+    card.addEventListener('mouseleave', () => {
+      if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+      card.style.transform = '';
+    });
   });
 }
