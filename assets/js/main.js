@@ -158,17 +158,27 @@ async function fetchVelog() {
 // 초기화
 // -------------------------------------------------------
 
+/**
+ * 각 init 함수를 독립 try-catch로 감싸 하나의 실패가 전체를 중단시키지 않게 함
+ * @param {Function} fn - 실행할 초기화 함수
+ * @param {string} name - 디버그용 함수 이름
+ */
+const safeInit = (fn, name) => {
+  try { fn(); } catch (e) { console.warn(`[${name}] init failed:`, e); }
+};
+
 document.addEventListener('DOMContentLoaded', () => {
-  fetchGitHub();
-  fetchVelog();
-  initModal();
-  initCategoryFilter();
-  initThemeToggle();
-  initTyping();
-  initScrollReveal();
-  initScrollProgress();
-  initMouseParallax();
-  initCardTilt();
+  safeInit(fetchGitHub, 'fetchGitHub');
+  safeInit(fetchVelog, 'fetchVelog');
+  safeInit(initModal, 'initModal');
+  safeInit(initCategoryFilter, 'initCategoryFilter');
+  safeInit(initThemeToggle, 'initThemeToggle');
+  safeInit(initTyping, 'initTyping');
+  safeInit(initScrollReveal, 'initScrollReveal');
+  safeInit(initScrollProgress, 'initScrollProgress');
+  safeInit(initMouseParallax, 'initMouseParallax');
+  safeInit(initCardTilt, 'initCardTilt');
+  safeInit(initMagneticButtons, 'initMagneticButtons');
 });
 
 // -------------------------------------------------------
@@ -372,12 +382,33 @@ function initModal() {
   };
 
   /**
-   * 모달 닫기 — is-open 클래스 제거 및 아바타로 포커스 복귀
+   * 모달 닫기 — is-closing 애니메이션 후 is-open 클래스 제거 및 아바타로 포커스 복귀
    */
   const close = () => {
-    backdrop.classList.remove('is-open');
+    if (!backdrop.classList.contains('is-open')) return;
+    backdrop.classList.add('is-closing');
     document.body.style.overflow = '';
-    avatar?.focus();
+
+    const onEnd = () => {
+      backdrop.classList.remove('is-open', 'is-closing');
+      avatar?.focus();
+    };
+
+    const box = backdrop.querySelector('.modal-box');
+    if (box) {
+      const handler = () => {
+        box.removeEventListener('transitionend', handler);
+        onEnd();
+      };
+      box.addEventListener('transitionend', handler);
+    }
+
+    // 500ms fallback timeout
+    setTimeout(() => {
+      if (backdrop.classList.contains('is-closing')) {
+        onEnd();
+      }
+    }, 500);
   };
 
   document.querySelectorAll('.js-open-profile').forEach(el => el.addEventListener('click', open));
@@ -451,6 +482,32 @@ function initMouseParallax() {
     heroBg.style.transform = `scale(1.08) translate(${currentX}px, ${currentY}px)`;
     requestAnimationFrame(tick);
   })();
+}
+
+// -------------------------------------------------------
+// 마그네틱 버튼 효과
+// -------------------------------------------------------
+
+/**
+ * 마우스 위치에 따라 버튼이 미세하게 따라오는 마그네틱 효과
+ */
+function initMagneticButtons() {
+  if (window.matchMedia('(hover: none)').matches) return;
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+  const btns = document.querySelectorAll('.profile__btn, .category-nav__btn');
+  btns.forEach(btn => {
+    btn.addEventListener('mousemove', (e) => {
+      const r = btn.getBoundingClientRect();
+      const x = e.clientX - r.left - r.width / 2;
+      const y = e.clientY - r.top - r.height / 2;
+      btn.style.transform = `translate(${x * 0.3}px, ${y * 0.3}px)`;
+    });
+
+    btn.addEventListener('mouseleave', () => {
+      btn.style.transform = '';
+    });
+  });
 }
 
 // -------------------------------------------------------
