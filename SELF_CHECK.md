@@ -1,37 +1,30 @@
 # 자체 점검
 
-## SPEC 기능 체크
-- [x] 기능 1 (타이핑 CSS): `.typing`에 `display: inline-block; min-width: 1ch` 추가
-- [x] 기능 2A (모달 스프링 오픈): `.modal-box` transform을 `scale(0.92) translateY(24px)`으로, timing을 `var(--spring-bounce)`, duration `0.5s`로 변경
-- [x] 기능 2B (모달 시차 진입): `.modal-photo-wrap`, `.modal-name`, `.modal-eng`, `.modal-divider`, `.modal-info li`에 순차 transition-delay 적용, 기본 상태에서 opacity:0/transform으로 숨김
-- [x] 기능 2C (백드롭 강화): `.modal-overlay` blur를 12px로 변경, `::after` pseudo-element에 radial-gradient 브랜드 글로우 추가
-- [x] 기능 2D (닫기 애니메이션): `.is-closing` 클래스에 exit transition 정의 (CSS), JS에서 `is-closing` 추가 후 `transitionend` + 500ms fallback으로 제거
-- [x] 기능 3 (배경 그라디언트 애니메이션): `.hero-bg`에 `background-size: 400% 400%` + `animation: gradient-shift 15s ease infinite`, 라이트 테마에도 동일 적용
-- [x] 기능 4 (프로필 아바타 부유): `.profile__avatar-wrap`에 `animation: float-gentle 6s ease-in-out infinite`
-- [x] 기능 5 (카드 그라디언트 보더): `@property --angle` 등록, `rotate-angle` keyframe, `.link-card::before` conic-gradient, 호버 시 opacity:1, 내부 요소에 z-index:1 부여. overflow:hidden 제거하여 ::before가 보이도록 처리
-- [x] 기능 6 (플랫폼별 글로우): `:has()` 셀렉터로 velog/brunch/github/melon/soundcloud 각각 box-shadow 적용
-- [x] 기능 7 (섹션 라벨 와이프 리빌): `.section-label`에 `clip-path: inset(0 100% 0 0)` 기본, `.is-visible`에서 `inset(0 0 0 0)`
-- [x] 기능 8 (카드 진입 다양화): odd/even에 미세 회전(0.5deg/-0.5deg), 호버 시 rotate(0deg) 복귀, 시차 딜레이 0s/0.12s/0.24s
-- [x] 기능 9 (마그네틱 버튼): CSS에 `transform 0.25s var(--spring-bounce)` 추가, JS에 `initMagneticButtons()` 구현 + DOMContentLoaded 등록
-- [x] 기능 10 (푸터 아이콘 호버 강화): `scale(1.15) translateY(-3px)` + `drop-shadow`, transition에 filter 추가
+## SPEC 기능 체크 (이번 라운드: CSS 비주얼 강화 10개 항목)
+- [x] 변경 1: `.link-card:hover`에서 `background: var(--bg-card-hover)`와 `border-color: var(--border-hover)` 삭제 완료
+- [x] 변경 2: `::after` glass sweep 의사요소 추가 — `.link-card::after`에 그라디언트 오버레이, hover 시 `glass-sweep` 애니메이션 트리거
+- [x] 변경 3: `@keyframes glass-sweep` 추가 — translateX(-100%) -> translateX(100%) 스윕 효과
+- [x] 변경 4: 라이트 테마 오버라이드 — `html.light .link-card::after`에 라이트 모드용 그라디언트 색상 적용
+- [x] 변경 5: `.featured-item__label` 패딩 `10px` -> `8px 10px`, 폰트 크기 `11px` -> `10.5px` 변경
+- [x] 변경 6: CSS counter 번호 뱃지 — `counter-reset: feat-counter` + `counter-increment` + `::before`로 1/2/3 번호 표시, hover 시 스프링 바운스로 등장
+- [x] 변경 7: 디바이더 호버 그라디언트 — `.link-card:hover .link-card__divider`에 `linear-gradient(90deg, transparent, var(--brand-35), transparent)` 적용 + transition 추가
+- [x] 변경 8: featured-item 호버 강화 — `translateY(-3px) scale(1.02)` + 강화된 box-shadow `0 8px 28px` + thumb `scale(1.08)`
+- [x] 변경 9: 시차 트랜지션 웨이브 — `.featured-item` nth-child(1~3)에 0s/0.06s/0.12s transition-delay 적용
+- [x] 변경 10: 모바일 반응형 업데이트 — 520px 이하에서 `.featured-item__label` 패딩 `6px 8px`/폰트 `9.5px` 축소, 카운터 뱃지 크기 `16px`/폰트 `8px` 축소
 
-## CSS 변수 추가
-- [x] `:root`에 `--spring-bounce`, `--glow-velog/brunch/github/melon/soundcloud` 추가
-- [x] `html.light`에 동일 glow 변수를 낮은 불투명도로 오버라이드
-
-## JS 변경
-- [x] `safeInit` 헬퍼 추가, DOMContentLoaded 내 모든 init 함수를 safeInit으로 감쌈
-- [x] 모달 close 함수에 `is-closing` 클래스 + transitionend + 500ms fallback
-- [x] `initMagneticButtons()` 함수 추가 (hover:none, reduced-motion 가드)
+## 이전 SPEC 기능 (이미 구현됨, 유지 확인)
+- [x] 기능 1~10 (모달 리뉴얼, 배경 애니메이션, 아바타 부유, 카드 그라디언트 보더, 플랫폼 글로우, 와이프 리빌, 카드 진입 다양화, 마그네틱 버튼, 푸터 호버 등) 모두 유지됨
 
 ## 패턴 준수 확인
-- BEM 네이밍: 준수 -- 기존 클래스명 그대로 사용, 새 클래스 `is-closing`은 상태 클래스 패턴 준수
-- CSS 변수 사용: 준수 -- 모든 새 색상은 `:root` 변수로 정의, 하드코딩 없음
-- CSS 네이티브 중첩: 준수 -- 모든 중첩에 `&` 문법 사용
-- 반응형 520px: 기존 반응형 블록 유지, 새 기능은 추가 브레이크포인트 불필요 (애니메이션/호버 기반)
-- reduced-motion: 대응 -- `.hero-bg`, `.profile__avatar-wrap`, `.link-card::before`, `.section-label` clip-path 모두 비활성화 추가
-- esc()/safeUrl(): 해당 없음 (새 외부 데이터 삽입 없음)
-- 가드 클래스: 적용 -- `initMagneticButtons()`에 hover:none + reduced-motion 가드, 모달 close에 is-open 가드
-- DOMContentLoaded 등록: 등록 -- `safeInit(initMagneticButtons, 'initMagneticButtons')` 추가
-- -webkit-backdrop-filter: 기존 사용 유지, 새 backdrop-filter 추가 시 `-webkit-` 함께 작성 (modal-overlay는 기존에 이미 있었으므로 blur 값만 변경)
-- 파일 간 정합성: 일치 -- HTML 변경 없음, CSS 클래스명(`is-closing`, `is-open`, `is-visible`)과 JS에서 사용하는 클래스명 일치
+- BEM 네이밍: 준수 — 기존 `.link-card__divider`, `.featured-item__label` 등 BEM 패턴 유지
+- CSS 변수 사용: 준수 — 모든 색상에 `var(--brand-06)`, `var(--brand-35)`, `var(--brand-40)` 등 변수 사용, 하드코딩 없음
+- CSS 네이티브 중첩: 준수 — `&:hover`, `&::after`, `&::before`, `&:nth-child()`, `&--loading` 등 모두 `&` 문법 사용
+- 반응형 520px: 대응 완료 — featured-item label과 counter badge 모바일 크기 조정 추가
+- reduced-motion: 대응 완료 — `.link-card:hover::after { animation: none; opacity: 0; }`, `.featured-item::before { display: none; }` 추가
+- esc()/safeUrl(): 해당 없음 (CSS 전용 변경)
+- 가드 클래스: 해당 없음 (JS 변경 없음)
+- DOMContentLoaded 등록: 해당 없음 (JS 변경 없음)
+- -webkit-backdrop-filter: 기존 코드에 이미 적용됨, 새 추가 사항에 backdrop-filter 없음
+- 파일 간 정합성: 일치 — HTML 구조 변경 없음, 기존 클래스명 그대로 활용
+- 기존 :root 변수 삭제/변경: 없음 (추가만 수행)
+- loading skeleton 충돌 방지: `&--loading` 내부에 `&::before { display: none; }` 추가하여 counter badge 숨김

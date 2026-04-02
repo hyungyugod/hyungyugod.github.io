@@ -211,6 +211,10 @@ html.light .link-card:hover {
   box-shadow: 0 8px 40px rgba(0,0,0,0.1);
 }
 
+html.light .link-card::after {
+  background: linear-gradient(105deg, transparent 40%, rgba(224,90,90,0.08) 50%, transparent 60%);
+}
+
 html.light .social-card:hover {
   box-shadow: 0 10px 40px rgba(0,0,0,0.1);
 }
@@ -440,6 +444,12 @@ html.light .social-card:hover {
   to { --angle: 360deg; }
 }
 
+@keyframes glass-sweep {
+  0%   { opacity: 0; transform: translateX(-100%); }
+  50%  { opacity: 1; }
+  100% { opacity: 0; transform: translateX(100%); }
+}
+
 /* ---- Category Tabs ---- */
 .category-nav {
   display: flex;
@@ -558,8 +568,6 @@ html.light .social-card:hover {
   &:nth-child(even).is-visible { transform: rotate(-0.5deg) translateY(0); }
 
   &:hover {
-    background: var(--bg-card-hover);
-    border-color: var(--border-hover);
     transform: rotate(0deg) translateY(-2px);
     box-shadow: 0 8px 40px rgba(0,0,0,0.35);
 
@@ -571,6 +579,25 @@ html.light .social-card:hover {
       color: var(--brand);
       transform: translateX(4px);
     }
+
+    & .link-card__divider {
+      background: linear-gradient(90deg, transparent, var(--brand-35), transparent);
+    }
+
+    &::after {
+      animation: glass-sweep 0.6s ease-out forwards;
+    }
+  }
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: var(--radius);
+    background: linear-gradient(105deg, transparent 40%, var(--brand-06) 50%, transparent 60%);
+    opacity: 0;
+    pointer-events: none;
+    z-index: 2;
   }
 
   &:nth-child(1) { transition-delay: 0s; }
@@ -634,6 +661,7 @@ html.light .social-card:hover {
     margin: 0 20px;
     position: relative;
     z-index: 1;
+    transition: background var(--transition);
   }
 
   & .link-card__items {
@@ -668,6 +696,10 @@ html.light .social-card:hover {
 }
 
 /* ---- Featured Items ---- */
+.link-card__items {
+  counter-reset: feat-counter;
+}
+
 .featured-item {
   text-decoration: none;
   color: inherit;
@@ -676,20 +708,53 @@ html.light .social-card:hover {
   overflow: hidden;
   background: var(--bg-dark);
   border: 1px solid var(--border);
+  position: relative;
+  counter-increment: feat-counter;
   transition:
     border-color var(--transition),
     transform var(--transition),
     box-shadow var(--transition);
 
+  &::before {
+    content: counter(feat-counter);
+    position: absolute;
+    top: 6px;
+    left: 6px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--brand-40);
+    color: var(--text);
+    font-size: 9px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 3;
+    opacity: 0;
+    transform: scale(0.5);
+    transition: opacity 0.3s ease, transform 0.3s var(--spring-bounce);
+    pointer-events: none;
+  }
+
+  &:hover::before {
+    opacity: 1;
+    transform: scale(1);
+  }
+
   &:hover {
     border-color: var(--border-hover);
-    transform: translateY(-2px);
-    box-shadow: 0 6px 24px rgba(0,0,0,0.45);
+    transform: translateY(-3px) scale(1.02);
+    box-shadow: 0 8px 28px rgba(0,0,0,0.5);
 
     & .featured-item__thumb {
-      transform: scale(1.05);
+      transform: scale(1.08);
     }
   }
+
+  &:nth-child(1) { transition-delay: 0s; }
+  &:nth-child(2) { transition-delay: 0.06s; }
+  &:nth-child(3) { transition-delay: 0.12s; }
 
   & .featured-item__thumb {
     width: 100%;
@@ -701,8 +766,8 @@ html.light .social-card:hover {
   }
 
   & .featured-item__label {
-    padding: 10px;
-    font-size: 11px;
+    padding: 8px 10px;
+    font-size: 10.5px;
     font-weight: 500;
     line-height: 1.4;
     color: var(--text-muted);
@@ -717,6 +782,10 @@ html.light .social-card:hover {
     pointer-events: none;
     position: relative;
     overflow: hidden;
+
+    &::before {
+      display: none;
+    }
 
     & .featured-item__thumb {
       position: relative;
@@ -956,7 +1025,15 @@ html.light .social-card:hover {
   }
 
   .featured-item {
-    & .featured-item__label { padding: 8px; font-size: 10px; }
+    & .featured-item__label { padding: 6px 8px; font-size: 9.5px; }
+
+    &::before {
+      top: 4px;
+      left: 4px;
+      width: 16px;
+      height: 16px;
+      font-size: 8px;
+    }
   }
 
   .theme-toggle {
@@ -1254,7 +1331,9 @@ html.light .social-card:hover {
   .hero-bg { animation: none; }
   .profile__avatar-wrap { animation: none; }
   .link-card::before { animation: none; opacity: 0; }
+  .link-card:hover::after { animation: none; opacity: 0; }
   .section-label { clip-path: none; }
+  .featured-item::before { display: none; }
 }
 
 /* ---- Scroll Progress Bar ---- */
