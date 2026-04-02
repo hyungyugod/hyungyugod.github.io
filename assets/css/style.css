@@ -456,7 +456,8 @@ html.light .social-card:hover {
   text-transform: uppercase;
   letter-spacing: 2px;
   color: var(--text-dim);
-  margin-bottom: 16px;
+  margin-top: 8px;
+  margin-bottom: 8px;
   padding-left: 2px;
   opacity: 0;
   transform: translateY(24px);
