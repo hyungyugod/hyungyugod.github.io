@@ -25,6 +25,11 @@ tools: Read, Glob, Grep, Bash
 - 한 항목이 좋아도 다른 항목 문제를 상쇄하지 마라
 - 세부 항목을 반드시 하나씩 검증하라
 
+**경고 신호 — 이 생각이 들면 재검토하라**:
+- "전체적으로 잘 만들어져서 이 부분은 넘어가도 될 것 같다"
+- "이 정도 패턴 위반은 사소하다"
+- 최종 점수 8.0 이상 → "내가 관대하게 본 것은 아닌가?" 한 번 더 검토
+
 ---
 
 ## 1. 작업 흐름
@@ -41,9 +46,40 @@ tools: Read, Glob, Grep, Bash
 
 4. **코드 읽기**: `index.html`, `assets/css/style.css`, `assets/js/main.js`를 읽고 변경사항을 분석한다
 
-5. **6개 영역 검수**: 아래 체크리스트를 순서대로 검사한다
+5. **UI 동작 검증 (Playwright)**: SPEC.md 변경 유형이 "디자인", "기능", "혼합"이면 실행. 판단 불가 시에도 실행.
 
-6. **채점 + 판정**: evaluation_criteria.md에 따라 채점하고 QA_REPORT.md를 작성한다
+   ```bash
+   cd /c/Users/user/Desktop/hyungyugod.github.io && npm run ui-check
+   ```
+
+   - `npm`이 없거나 playwright 미설치 시: `npm install` 실행 후 재시도
+   - `SERVER_UNAVAILABLE` 출력 시: "UI 검증 불가 — 서버 미실행"으로 기록하고 정적 분석만 진행, 반응형&UI 품질과 기능완성도(또는 D4·D5) 항목에서 각 -1점 패널티 적용
+   - stdout 전체를 QA_REPORT.md의 **UI 동작 검증** 섹션에 기록
+
+   **Playwright 결과 → 채점 반영**
+
+   디자인 변경 기준 적용 시:
+
+   | UI 체크 실패 | 영향 항목 | 감점 | 등급 |
+   |---|---|---|---|
+   | 테마 토글 | D1 디자인 품질 | -2 | P1 |
+   | 모바일 뷰포트 깨짐 | D4 반응형 & 접근성 | -2 | P1 |
+   | 모달/필터 동작 실패 | D5 기능 보전 | -2 | P1 |
+   | 콘솔 에러 (JS 런타임) | D5 기능 보전 | -1/건 | P0 검토 |
+   | 콘솔 에러 (외부 fetch 실패) | D5 기능 보전 | -1 | P2 |
+
+   기능 변경 기준 적용 시:
+
+   | UI 체크 실패 | 영향 항목 | 감점 | 등급 |
+   |---|---|---|---|
+   | 테마 토글/기존 기능 | 기능 완성도 | -2 | P1 |
+   | SPEC 기능 동작 실패 | 기능 완성도 | -3 | P1 |
+   | 모바일 뷰포트 깨짐 | 반응형 & UI 품질 | -2 | P1 |
+   | 콘솔 에러 (JS 런타임) | 패턴 일관성 | -1/건 (최대 -3) | P0 검토 |
+
+6. **6개 영역 검수**: 아래 체크리스트를 순서대로 검사한다
+
+7. **채점 + 판정**: evaluation_criteria.md에 따라 채점하고 QA_REPORT.md를 작성한다
 
 ---
 
@@ -124,6 +160,17 @@ grep -n "backdrop-filter" assets/css/style.css
 - [ ] 미사용 CSS 클래스 없음
 - [ ] 미사용 JS 함수 없음
 
+### 3-7. Sprint 범위 준수
+
+- [ ] SPEC.md에 "변경 유형"(디자인/기능/혼합)이 명시되어 있는가
+- [ ] Generator가 SPEC에 없는 독립적 기능을 추가했는가 (있으면 P1)
+- [ ] SPEC에 없는 변경이 있다면 — SPEC 기능의 정상 동작에 필수적인가?
+  - 필수적이면: 허용 (기록만)
+  - 독립적이면: **P1 이슈**, 기능완성도 -1점 적용
+
+예: SPEC에 카드 `::before` 그라디언트 보더가 있고, Generator가 내부 요소에 `z-index: 1`을 추가 → 허용
+반례: SPEC에 카드 보더만 있는데, Generator가 CSS counter 번호 뱃지를 추가 → P1
+
 ---
 
 ## 4. 판정 기준
@@ -192,6 +239,19 @@ git diff HEAD~1 -- assets/css/style.css assets/js/main.js index.html
 
 ```markdown
 # QA 검수 보고서
+
+## UI 동작 검증 (Playwright)
+
+| 체크 항목 | 결과 | 비고 |
+|---|---|---|
+| 테마 토글 | PASS/FAIL | |
+| 카테고리 필터 (4종) | PASS/FAIL | |
+| 프로필 모달 | PASS/FAIL | |
+| 링크카드 href | PASS/FAIL | |
+| 모바일 520px | PASS/FAIL | |
+| 콘솔 에러 | PASS/FAIL | |
+
+스크린샷: `tests/screenshots/`
 
 ## SPEC 기능 검증
 - [PASS/FAIL] 기능 1: [상세]

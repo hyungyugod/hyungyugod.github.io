@@ -5,3 +5,5 @@ _site
 Gemfile.lock
 .DS_Store
 .claude/worktrees/
+node_modules/
+tests/screenshots/
