@@ -326,8 +326,62 @@ html.light .social-card:hover {
     letter-spacing: 2.5px;
     text-transform: uppercase;
     color: var(--text-dim);
-    margin-bottom: 28px;
+    margin-bottom: 20px;
     font-weight: 500;
+  }
+
+  & .profile__motto {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    max-width: 440px;
+    margin: 0 auto 24px;
+  }
+
+  & .profile__motto-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 12px 8px 10px;
+    background: var(--bg-card);
+    backdrop-filter: blur(14px) saturate(1.1);
+    -webkit-backdrop-filter: blur(14px) saturate(1.1);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    transition: transform var(--transition), border-color var(--transition), box-shadow var(--transition);
+
+    &:hover {
+      transform: translateY(-2px);
+      border-color: var(--brand-25);
+      box-shadow: 0 0 14px var(--brand-12);
+    }
+  }
+
+  & .profile__motto-letter {
+    font-size: 28px;
+    font-weight: 700;
+    line-height: 1;
+    background: linear-gradient(135deg, var(--brand-light) 0%, var(--brand) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  & .profile__motto-word {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  & .profile__motto-kr {
+    font-size: 9px;
+    color: var(--text-dim);
+    letter-spacing: 0.2px;
+    text-align: center;
+    line-height: 1.4;
   }
 
   & .profile__bio {
@@ -1011,11 +1065,16 @@ html.light .social-card:hover {
   .page-wrapper { padding: 56px 16px 56px; }
 
   .profile {
-    & .profile__name      { font-size: 34px; }
-    & .profile__avatar    { width: 96px; height: 96px; }
-    & .profile__bio       { padding: 22px 20px; }
-    & .profile__bio-quote { font-size: 14px; }
-    & .profile__bio-kr    { font-size: 12px; }
+    & .profile__name         { font-size: 34px; }
+    & .profile__avatar       { width: 96px; height: 96px; }
+    & .profile__bio          { padding: 22px 20px; }
+    & .profile__bio-quote    { font-size: 14px; }
+    & .profile__bio-kr       { font-size: 12px; }
+    & .profile__motto        { gap: 6px; }
+    & .profile__motto-item   { padding: 10px 6px 8px; }
+    & .profile__motto-letter { font-size: 22px; }
+    & .profile__motto-word   { font-size: 9px; letter-spacing: 1px; }
+    & .profile__motto-kr     { font-size: 8px; }
   }
 
   .link-card {
@@ -1334,6 +1393,11 @@ html.light .social-card:hover {
   .link-card:hover::after { animation: none; opacity: 0; }
   .section-label { clip-path: none; }
   .featured-item::before { display: none; }
+
+  .profile__motto-item {
+    transition: border-color var(--transition), box-shadow var(--transition);
+    &:hover { transform: none; }
+  }
 }
 
 /* ---- Scroll Progress Bar ---- */

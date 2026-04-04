@@ -1,121 +1,136 @@
 # QA 검수 보고서
 
+**검수 회차**: 1회  
+**SPEC 변경 유형**: 디자인  
+**평가 기준**: 디자인 변경 평가 기준 (D1~D5)
+
+---
+
+## UI 동작 검증 (Playwright)
+
+| 체크 항목 | 결과 | 비고 |
+|---|---|---|
+| 테마 토글 | PASS | 다크→라이트→다크 전환 정상 |
+| 카테고리 필터 (writing) | PASS | 2개 섹션 숨김 확인 |
+| 카테고리 필터 (music) | PASS | 2개 섹션 숨김 확인 |
+| 카테고리 필터 (social) | PASS | 2개 섹션 숨김 확인 |
+| 카테고리 필터 (all) | PASS | 0개 섹션 숨김 확인 |
+| 프로필 모달 열기 | PASS | #profileModal.is-open 추가 확인 |
+| 프로필 모달 닫기 | PASS | is-open 클래스 정상 제거 |
+| 링크카드 href 유효성 | PASS | 5개 링크 모두 유효 |
+| 모바일 520px | PASS | 핵심 요소 3개 모두 visible |
+| 콘솔 에러 | PASS | 0건 |
+
+스크린샷: `tests/screenshots/`
+
+**결과: 10/10 통과**
+
+---
+
 ## SPEC 기능 검증
 
-### 원본 SPEC (대대적 비주얼 개선 10개)
-- [PASS] 기능 1 (타이핑 CSS 수정): `.typing`에 `display: inline-block; min-width: 1ch` 추가됨 (style.css:382-384)
-- [PASS] 기능 2 (모달 리뉴얼): 스프링 오픈(spring-bounce), 시차 진입, 백드롭 강화, 닫기 애니메이션 모두 구현됨 (style.css:1078-1319, main.js:387-411)
-- [PASS] 기능 3 (배경 그라디언트 애니메이션): `gradient-shift` keyframes + `background-size: 400% 400%` 적용 (style.css:229-231, 425-430)
-- [PASS] 기능 4 (아바타 부유 애니메이션): `float-gentle` keyframes + `.profile__avatar-wrap` 적용 (style.css:270, 432-435)
-- [PASS] 기능 5 (카드 그라디언트 보더): `@property --angle`, `rotate-angle`, `.link-card::before` conic-gradient 구현 (style.css:437-445, 676-688)
-- [PASS] 기능 6 (플랫폼별 글로우): `:has()` 셀렉터로 5개 플랫폼 box-shadow 적용 (style.css:691-695)
-- [PASS] 기능 7 (섹션 라벨 와이프 리빌): `clip-path: inset(0 100% 0 0)` → `inset(0 0 0 0)` 전환 (style.css:514-521)
-- [PASS] 기능 8 (카드 진입 다양화): odd/even 미세 회전 + 호버 시 복귀 + 시차 딜레이 0/0.12/0.24s (style.css:567-568, 571, 603-605)
-- [PASS] 기능 9 (마그네틱 버튼): CSS transition에 spring-bounce 추가 + JS `initMagneticButtons()` 구현 (style.css:408, 474, main.js:494-511)
-- [PASS] 기능 10 (푸터 아이콘 호버 강화): `scale(1.15) translateY(-3px)` + `drop-shadow` + filter transition 추가 (style.css:993-998)
+- [PASS] `.profile__motto` HTML: `<p class="profile__subtitle">` 직후, `<div class="profile__bio">` 직전에 정확히 배치 (index.html:54)
+- [PASS] Consistency / Curiosity / Confrontation 세 항목: 각각 letter/word/kr 스팬 구조로 구현
+- [PASS] `aria-label="개인 모토"` 접근성 속성: `.profile__motto`에 부여 (index.html:54)
+- [PASS] `aria-hidden="true"` 장식용 이니셜: `.profile__motto-letter`에 부여 (index.html:56, 62, 68)
+- [PASS] `.profile__subtitle` margin-bottom 28px → 20px 변경 (style.css:329)
+- [PASS] `.profile__motto` 그리드 CSS: `repeat(3,1fr)`, gap 8px, max-width 440px, margin 0 auto 24px (style.css:333~339)
+- [PASS] `.profile__motto-item` 글래스모피즘 카드: backdrop-filter + -webkit-backdrop-filter, border, border-radius var(--radius-sm) (style.css:341~359)
+- [PASS] `.profile__motto-item` 호버: translateY(-2px) + border-color var(--brand-25) + box-shadow 0 0 14px var(--brand-12) (style.css:354~358)
+- [PASS] `.profile__motto-letter` 브랜드 그라디언트 텍스트: brand-light → brand, -webkit-background-clip (style.css:361~369)
+- [PASS] 반응형 `@media (max-width: 520px)`: gap/padding/font-size 축소 규칙 추가 (style.css:1073~1077)
+- [PASS] `@media (prefers-reduced-motion: reduce)`: hover transform 제거 처리 (style.css:1397~1400)
 
-### SELF_CHECK 추가 변경사항 (카드 인터랙션 강화)
-- [PASS] glass-sweep `::after` 의사요소 + 호버 애니메이션 (style.css:587-601)
-- [PASS] CSS counter 번호 뱃지 (style.css:700-701, 718-738)
-- [PASS] 디바이더 호버 그라디언트 (style.css:583-585)
-- [PASS] featured-item 호버 강화 (style.css:745-753)
-- [PASS] 시차 트랜지션 웨이브 (style.css:755-757)
-- [PASS] 모바일 반응형 업데이트 (style.css:1027-1037)
+---
 
 ## 검수 결과 요약
 
 | 등급 | 건수 |
 |---|---|
 | P0 치명 | 0건 |
-| P1 중요 | 2건 |
-| P2 권장 | 4건 |
+| P1 중요 | 0건 |
+| P2 권장 | 1건 |
 
-## P0 -- 치명적 이슈
+---
+
+## P0 — 치명적 이슈
 
 없음.
 
-## P1 -- 중요 이슈
+---
 
-### 1. 하드코딩 색상: 테마 토글 아이콘 및 라이트 테마 컴포넌트
-- **파일**: `style.css:116`
-- **위반 규칙**: CSS 규칙 2조 "모든 색상은 `:root` 변수를 사용한다. 하드코딩 금지"
-- **현재 코드**: `color: #f0c040;` (태양 아이콘 색상)
-- **분석**: 태양 아이콘 색상 `#f0c040`은 플랫폼 아이콘에 해당하지 않는 UI 요소 색상이므로 예외에 포함되지 않는다. 이 색상은 이전 커밋부터 존재하던 문제이나 규칙 위반임에는 변함없다.
-- **수정 제안**: `:root`에 `--icon-sun: #f0c040;` 변수를 추가하고, `color: var(--icon-sun);`으로 변경
+## P1 — 중요 이슈
 
-### 2. 하드코딩 색상: 라이트 테마 featured-item 배경
-- **파일**: `style.css:207`
-- **위반 규칙**: CSS 규칙 2조 "하드코딩 금지"
-- **현재 코드**: `html.light .featured-item { background: #f0eff4; }`
-- **분석**: 라이트 테마 전용 배경색이 변수 없이 하드코딩되어 있다. 새로 추가된 코드는 아니지만, 이번 변경에서 `.featured-item` 관련 코드를 대폭 수정하면서 함께 정리해야 했다.
-- **수정 제안**: `html.light` 블록에 `--bg-featured: #f0eff4;`를 추가하고 `background: var(--bg-featured);`으로 변경. 다크 테마 `:root`에도 `--bg-featured: var(--bg-dark);` 추가.
+없음.
 
-## P2 -- 권장 사항
+---
 
-### 1. `safeInit`이 화살표 함수로 선언됨
-- **파일**: `main.js:166`
-- **위반 규칙**: JS 규칙 4조 "유틸/헬퍼/init은 function 선언식"
-- **현재 코드**: `const safeInit = (fn, name) => { ... };`
-- **분석**: `safeInit`은 DOMContentLoaded 블록 바깥에서 정의된 유틸리티 헬퍼 함수이므로 `function` 선언식이어야 한다. 화살표 함수는 콜백/클로저에 사용.
-- **수정 제안**: `function safeInit(fn, name) { try { fn(); } catch (e) { console.warn(\`[\${name}] init failed:\`, e); } }`
+## P2 — 권장 사항
 
-### 2. `element.style` 직접 조작이 다수 존재
-- **파일**: `main.js:315-317` (카테고리 필터 페이드), `main.js:471,482` (패럴랙스), `main.js:504` (마그네틱)
-- **위반 규칙**: JS 규칙 10조 "시각적 변경은 CSS 클래스로 처리. element.style은 overflow 제어 등 최소한만"
-- **분석**: 카테고리 필터의 페이드 전환(opacity, transform, transition)은 CSS 클래스로 처리할 수 있다. 패럴랙스와 마그네틱은 마우스 좌표 기반이므로 `element.style` 사용이 합리적이나, 카테고리 필터의 `sec.style.opacity/transform/transition` 설정은 `is-fading` 같은 CSS 클래스로 대체 가능하다.
-- **수정 제안**: `.category-section.is-fading { opacity: 0; transform: translateY(-10px); transition: opacity 0.18s ease, transform 0.18s ease; }` CSS 클래스를 추가하고, JS에서 `sec.classList.add('is-fading')` / `sec.classList.remove('is-fading')`으로 변경. 패럴랙스/마그네틱/틸트의 동적 좌표 기반 `element.style`은 허용.
+### 1. reduced-motion 블록 내 불필요한 transition 재선언
 
-### 3. 코드 배치 순서 미세 위반: `safeInit`의 위치
-- **파일**: `main.js:166`
-- **위반 규칙**: JS 규칙 9조 코드 배치 순서 "유틸리티 함수 → Auto-fetch → DOMContentLoaded → init"
-- **분석**: `safeInit`은 유틸리티 성격이나 DOMContentLoaded 블록 바로 위에 위치한다. 엄밀히는 `showFetchError` 아래 유틸리티 섹션(줄 1-49 부근)에 배치되어야 한다.
-- **수정 제안**: `safeInit` 함수를 `showFetchError` 함수 아래(줄 49 이후), "초기화" 섹션 구분선 전으로 이동
+- **파일**: `assets/css/style.css:1397~1398`
+- **위반 규칙**: 코드 중복 (기능적 무효)
+- **현재 코드**:
+  ```css
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      transition-duration: 0.01ms !important; /* 1384~1386행 — 모든 transition 무력화 */
+    }
+    .profile__motto-item {
+      transition: border-color var(--transition), box-shadow var(--transition); /* 이 선언은 효과 없음 */
+      &:hover { transform: none; }
+    }
+  }
+  ```
+- **설명**: 블록 상단에서 `transition-duration: 0.01ms !important`로 모든 transition이 이미 사실상 제거된 상태이므로, 이후 `transition` 재선언은 실제 동작에 영향을 주지 않는다. `&:hover { transform: none; }` 만으로 충분하다.
+- **수정 제안**:
+  ```css
+  .profile__motto-item {
+    &:hover { transform: none; }
+  }
+  ```
+- **비고**: SPEC.md가 이 패턴을 그대로 명시했으므로 Generator 귀책이 아님. 향후 SPEC 개선 권장.
 
-### 4. `section-label` margin 사용
-- **파일**: `style.css:509-510`
-- **위반 규칙**: CSS 규칙 4조 "간격: gap 속성만 사용 (margin 간격 조절 지양)"
-- **현재 코드**: `margin-top: 8px; margin-bottom: 8px;`
-- **분석**: `.section-label`은 flex/grid 컨테이너의 자식이 아닌 독립 블록이므로 margin 사용이 불가피한 측면이 있으나, 상위 컨테이너(`.category-section`)에 flex + gap을 적용하여 대체할 수 있다.
-- **수정 제안**: `.category-section`에 `display: flex; flex-direction: column; gap: 8px;`을 적용하고, `.section-label`에서 margin-top/bottom 제거
+---
 
 ## 통과 항목
 
-- **보안**: `esc()`, `safeUrl()` 외부 데이터에 모두 적용됨. `eval()`, `document.write()` 미사용. 인라인 이벤트 핸들러 없음.
-- **CSS 네이티브 중첩**: 모든 중첩에 `&` 문법 사용. SCSS 문법 없음.
-- **!important**: `prefers-reduced-motion` 미디어쿼리 내부에서만 사용 (허용 예외).
-- **BEM 네이밍**: 신규 클래스 모두 BEM 패턴 + `is-` 상태 클래스 준수.
-- **-webkit-backdrop-filter**: 모든 `backdrop-filter` 사용처에 `-webkit-` 접두사 동반 (6쌍 확인).
-- **가드 클래스**: 모든 init/fetch 함수에 `if (!el) return;` 패턴 적용.
-- **`console.warn` 사용**: `console.error` 미사용 확인.
-- **`fetchWithTimeout()` + try/catch/finally**: fetchGitHub, fetchVelog 모두 적용.
-- **JSDoc + 섹션 구분선**: 모든 함수에 JSDoc 주석 + 구분선 존재.
-- **DOMContentLoaded 등록**: `initMagneticButtons` 포함 모든 init 함수 등록됨.
-- **target="_blank" + rel="noopener"**: 모든 외부 링크에 적용 (HTML 검증 완료).
-- **모달 접근성**: `role="dialog"`, `aria-modal="true"`, `aria-label`, 포커스 트랩, Escape 닫기, 포커스 복귀 모두 구현.
-- **img alt 속성**: 모든 `<img>` 태그에 `alt` 존재.
-- **반응형 520px**: 신규 `.featured-item__label`, `::before` 카운터 뱃지 모바일 대응 추가됨.
-- **prefers-reduced-motion**: 전역 `*, *::before, *::after` 비활성화 + 개별 요소 `animation: none` / `display: none` 적용. JS에서도 `matchMedia` 체크.
-- **파일 간 정합성**: HTML 클래스 → CSS 정의 일치, JS getElementById → HTML ID 존재 확인.
+- **보안**: `esc()` / `safeUrl()` 모든 외부 데이터에 적용. `eval()`, `document.write()`, 인라인 이벤트 핸들러 없음.
+- **CSS 패턴**: CSS 네이티브 중첩 `&` 문법 준수. 하드코딩 색상 없음 (전량 CSS 변수). `!important` 미사용 (접근성 미디어쿼리 예외). BEM 네이밍 완전 준수. `-webkit-backdrop-filter` 쌍으로 작성. `gap` 속성 사용.
+- **HTML 구조**: `target="_blank"` + `rel="noopener"` 모두 준수. `aria-label`, `aria-hidden` 접근성 속성 적용. 새 인라인 스타일 없음. JS에서 사용하는 모든 ID가 HTML에 존재.
+- **반응형 & 접근성**: `@media (max-width: 520px)` 5개 하위 클래스 모두 대응. `prefers-reduced-motion` 처리 구현. Playwright 모바일 520px PASS.
+- **파일 간 정합성**: HTML 클래스 → CSS 정의 완전 일치. 미사용 클래스 없음.
+- **Sprint 범위 준수**: SPEC에 없는 독립 기능 추가 없음. `profile__subtitle` margin-bottom 조정 및 motto 컴포넌트만 변경. JS 변경 없음.
+- **AI 슬롭 패턴**: 보라-청록 그라디언트 없음. 과대 그림자 없음(`box-shadow: 0 0 14px var(--brand-12)` — 적절한 크기). 임의 `border-radius: 20px` 이상 없음 (`var(--radius-sm)` 사용). `setTimeout`으로 애니메이션 완료 처리 없음.
 
 ---
 
 ## 채점
 
-**항목별 점수**:
-- 패턴 일관성: 7/10 → 하드코딩 색상 2건(P1), safeInit 선언 방식/배치 위반(P2), margin 사용(P2)
-- 보안 & 접근성: 9/10 → 보안 취약점 없음, 접근성 전반적으로 우수, 모달 포커스 트랩 완비
-- 반응형 & UI 품질: 9/10 → 520px 브레이크포인트 대응, reduced-motion 대응, 호버 효과 일관
-- 기능 완성도: 10/10 → SPEC 10개 기능 + SELF_CHECK 추가 6개 변경사항 모두 구현 완료
+**기준**: 디자인 변경 평가 기준 (D1~D5)
 
-**가중 점수**: (7 x 0.4) + (9 x 0.25) + (9 x 0.2) + (10 x 0.15) = 2.8 + 2.25 + 1.8 + 1.5 = **8.35/10**
+**항목별 점수**:
+
+| 항목 | 점수 | 비중 | 코멘트 |
+|---|---|---|---|
+| D1 디자인 품질 | 8/10 | 30% | glassmorphism 톤 유지, hover/focus 명확, 다크/라이트 모두 대응. 완성도 높음. |
+| D2 독창성 | 7/10 | 30% | 사이트 코럴핑크 브랜드 그라디언트를 이니셜 텍스트에 활용. 3열 글래스카드 구조는 흔하나 사이트 정체성과 연결된 활용. |
+| D3 패턴 일관성 | 8/10 | 20% | BEM/CSS변수/네이티브중첩 완전 준수. P2 수준 불필요 코드 1건. |
+| D4 반응형 & 접근성 | 9/10 | 15% | 520px 5개 하위 클래스 대응, prefers-reduced-motion 처리, aria 속성 정확히 적용. |
+| D5 기능 보전 | 10/10 | 5% | Playwright 10/10 전체 통과. 기존 기능 완전 보전. |
+
+**가중 점수 계산**:
+(8 × 0.30) + (7 × 0.30) + (8 × 0.20) + (9 × 0.15) + (10 × 0.05)
+= 2.40 + 2.10 + 1.60 + 1.35 + 0.50
+= **7.95 / 10**
+
+**이슈 건수 기준**: P0 0건, P1 0건 → 강제 하락 조건 없음
+
+---
 
 ## 최종 판정: 합격
 
-P0: 0건, P1: 2건 (3건 미만), 가중 점수: 8.35 (7.0 이상) -- 합격 기준 충족.
+**가중 점수 7.95/10 — 합격 기준(7.0) 초과**
 
-**구체적 개선 지시** (합격이나 코드 품질 향상을 위해 권장):
-1. `style.css:116` — `#f0c040`을 `:root`에 `--icon-sun` 변수로 등록하고 참조로 변경
-2. `style.css:207` — `#f0eff4`를 `html.light` 블록에 `--bg-featured` 변수로 등록하고 참조로 변경
-3. `main.js:166` — `const safeInit = (fn, name) => {...}`를 `function safeInit(fn, name) {...}` 선언식으로 변경하고, 유틸리티 섹션(줄 49 이후)으로 이동
-4. `main.js:315-317` — 카테고리 필터 페이드 전환을 CSS 클래스 `.is-fading`으로 대체
-5. `style.css:509-510` — `.section-label`의 margin을 부모 컨테이너의 gap으로 대체 검토
+**구체적 개선 지시**: 없음 (P2 권장 사항 1건 — 향후 SPEC 작성 시 불필요 코드 제거 방향으로 개선 권장)
