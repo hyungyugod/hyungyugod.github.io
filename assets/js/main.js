@@ -177,8 +177,6 @@ document.addEventListener('DOMContentLoaded', () => {
   safeInit(initScrollReveal, 'initScrollReveal');
   safeInit(initScrollProgress, 'initScrollProgress');
   safeInit(initMouseParallax, 'initMouseParallax');
-  safeInit(initCardTilt, 'initCardTilt');
-  safeInit(initMagneticButtons, 'initMagneticButtons');
 });
 
 // -------------------------------------------------------
@@ -484,62 +482,3 @@ function initMouseParallax() {
   })();
 }
 
-// -------------------------------------------------------
-// 마그네틱 버튼 효과
-// -------------------------------------------------------
-
-/**
- * 마우스 위치에 따라 버튼이 미세하게 따라오는 마그네틱 효과
- */
-function initMagneticButtons() {
-  if (window.matchMedia('(hover: none)').matches) return;
-  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-
-  const btns = document.querySelectorAll('.profile__btn, .category-nav__btn');
-  btns.forEach(btn => {
-    btn.addEventListener('mousemove', (e) => {
-      const r = btn.getBoundingClientRect();
-      const x = e.clientX - r.left - r.width / 2;
-      const y = e.clientY - r.top - r.height / 2;
-      btn.style.transform = `translate(${x * 0.3}px, ${y * 0.3}px)`;
-    });
-
-    btn.addEventListener('mouseleave', () => {
-      btn.style.transform = '';
-    });
-  });
-}
-
-// -------------------------------------------------------
-// 카드 3D 틸트
-// -------------------------------------------------------
-
-/**
- * 마우스 위치에 따라 카드에 3D 기울기 효과를 적용
- */
-function initCardTilt() {
-  if (window.matchMedia('(hover: none)').matches) return;
-  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-
-  document.querySelectorAll('.link-card, .social-card').forEach(card => {
-    const hoverShift = card.classList.contains('social-card') ? -3 : -2;
-    let rafId = null;
-
-    card.addEventListener('mousemove', (e) => {
-      if (rafId) cancelAnimationFrame(rafId);
-      rafId = requestAnimationFrame(() => {
-        rafId = null;
-        const r = card.getBoundingClientRect();
-        const x = (e.clientX - r.left) / r.width - 0.5;
-        const y = (e.clientY - r.top) / r.height - 0.5;
-        card.style.transform =
-          `perspective(700px) rotateY(${x * 8}deg) rotateX(${-y * 5}deg) translateY(${hoverShift}px)`;
-      });
-    });
-
-    card.addEventListener('mouseleave', () => {
-      if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
-      card.style.transform = '';
-    });
-  });
-}
