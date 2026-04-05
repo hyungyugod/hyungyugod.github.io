@@ -34,6 +34,12 @@
   --glow-melon: rgba(0, 205, 60, 0.18);
   --glow-soundcloud: rgba(255, 85, 0, 0.18);
   --font-serif: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
+  --hero-name-size: 80px;
+  --hero-name-size-mobile: 52px;
+  --hero-entrance-offset: 28px;
+  --hero-entrance-duration: 0.7s;
+
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 /* ---- Light Theme Override ---- */
@@ -83,7 +89,7 @@ body {
 
 /* ---- Theme Toggle Button ---- */
 .theme-toggle {
-  position: absolute;
+  position: fixed;
   top: 24px;
   right: 24px;
   width: 42px;
@@ -97,7 +103,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 10;
+  z-index: 50;
   transition: background 0.25s, border-color 0.25s, box-shadow 0.25s, transform 0.25s;
 
   &:hover {
@@ -220,7 +226,7 @@ html.light .social-card:hover {
 .hero-bg {
   position: fixed;
   top: 0; left: 0; right: 0;
-  height: 45vh;
+  height: 100vh;
   z-index: 0;
   overflow: hidden;
   background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
@@ -250,15 +256,14 @@ html.light .social-card:hover {
   z-index: 1;
   max-width: 680px;
   margin: 0 auto;
-  padding: 80px 24px 80px;
+  padding: 48px 24px 80px;
 }
 
 /* ---- Profile Section ---- */
 .profile {
   text-align: center;
-  margin-bottom: 100px;
-  padding-top: 16px;
-  animation: fadeInUp 0.55s ease-out;
+  margin-bottom: 0;
+  padding-top: 0;
 
   & .profile__avatar-wrap {
     position: relative;
@@ -306,7 +311,7 @@ html.light .social-card:hover {
 
   & .profile__name {
     font-family: var(--font-serif);
-    font-size: 42px;
+    font-size: var(--hero-name-size);
     font-weight: 700;
     letter-spacing: -1.5px;
     line-height: 1;
@@ -318,8 +323,8 @@ html.light .social-card:hover {
   }
 
   & .profile__subtitle {
-    font-size: 11px;
-    letter-spacing: 2.5px;
+    font-size: 14px;
+    letter-spacing: 3px;
     text-transform: uppercase;
     color: var(--text-dim);
     margin-bottom: 20px;
@@ -330,7 +335,7 @@ html.light .social-card:hover {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 8px;
-    max-width: 440px;
+    max-width: 540px;
     margin: 0 auto 24px;
   }
 
@@ -381,7 +386,7 @@ html.light .social-card:hover {
   }
 
   & .profile__bio {
-    max-width: 440px;
+    max-width: 540px;
     margin: 0 auto;
     background: var(--bg-card);
     backdrop-filter: blur(14px) saturate(1.1);
@@ -475,6 +480,82 @@ html.light .social-card:hover {
   75%      { background-position: 0% 100%; }
 }
 
+/* ---- Hero Section ---- */
+.hero {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 24px 48px;
+}
+
+@keyframes heroEntrance {
+  from { opacity: 0; transform: translateY(var(--hero-entrance-offset)); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.hero .profile__avatar-wrap {
+  opacity: 0;
+  animation: heroEntrance var(--hero-entrance-duration) var(--ease-out-expo) 0s both;
+}
+
+.hero .profile__name {
+  opacity: 0;
+  animation: heroEntrance var(--hero-entrance-duration) var(--ease-out-expo) 0.12s both;
+}
+
+.hero .profile__subtitle {
+  opacity: 0;
+  animation: heroEntrance var(--hero-entrance-duration) var(--ease-out-expo) 0.24s both;
+}
+
+.hero .profile__motto {
+  opacity: 0;
+  animation: heroEntrance var(--hero-entrance-duration) var(--ease-out-expo) 0.36s both;
+}
+
+.hero .profile__bio {
+  opacity: 0;
+  animation: heroEntrance var(--hero-entrance-duration) var(--ease-out-expo) 0.48s both;
+}
+
+.hero .profile__btn {
+  opacity: 0;
+  animation: heroEntrance var(--hero-entrance-duration) var(--ease-out-expo) 0.60s both;
+}
+
+/* ---- Scroll Hint ---- */
+.hero__scroll-hint {
+  position: absolute;
+  bottom: 32px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2;
+  opacity: 0;
+  animation: heroEntrance 0.7s var(--ease-out-expo) 1s forwards;
+}
+
+.hero__scroll-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid var(--brand-25);
+  color: var(--brand-light);
+  font-size: 14px;
+  animation: heroBounce 2s ease-in-out infinite;
+}
+
+@keyframes heroBounce {
+  0%, 100% { transform: translateY(0); opacity: 0.6; }
+  50%      { transform: translateY(8px); opacity: 1; }
+}
 
 /* ---- Category Tabs ---- */
 .category-nav {
@@ -1018,11 +1099,19 @@ html.light .social-card:hover {
 
 /* ---- Responsive ---- */
 @media (max-width: 520px) {
-  .page-wrapper { padding: 56px 16px 56px; }
+  .page-wrapper { padding: 40px 16px 56px; }
+
+  .hero { padding: 56px 16px 40px; }
+  .hero .profile__name { font-size: var(--hero-name-size-mobile); }
+  .hero .profile__subtitle { font-size: 12px; }
+  .hero .profile__motto { max-width: 100%; }
+  .hero .profile__bio { max-width: 100%; }
+  .hero__scroll-hint { bottom: 24px; }
+  .hero__scroll-arrow { width: 32px; height: 32px; font-size: 12px; }
 
   .profile {
     margin-bottom: 72px;
-    & .profile__name         { font-size: 34px; }
+    & .profile__name         { font-size: var(--hero-name-size-mobile); }
     & .profile__avatar       { width: 96px; height: 96px; }
     & .profile__bio          { padding: 24px 24px; }
     & .profile__bio-quote    { font-size: 14px; }
@@ -1355,6 +1444,15 @@ html.light .social-card:hover {
     transition: border-color var(--transition), box-shadow var(--transition);
     &:hover { transform: none; }
   }
+
+  .hero .profile__avatar-wrap,
+  .hero .profile__name,
+  .hero .profile__subtitle,
+  .hero .profile__motto,
+  .hero .profile__bio,
+  .hero .profile__btn { animation: none; opacity: 1; transform: none; }
+  .hero__scroll-hint { animation: none; opacity: 1; }
+  .hero__scroll-arrow { animation: none; opacity: 0.6; }
 }
 
 /* ---- Scroll Progress Bar ---- */

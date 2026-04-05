@@ -49,6 +49,14 @@ Detailed specs in `docs/` — Claude reads these on-demand when relevant:
  ④ 판정: 합격 → 완료 / 불합격 → ②로 (최대 3회)
 ```
 
+### 단계 0: 이전 산출물 초기화 (필수)
+
+Planner 호출 **전에** 반드시 이전 파이프라인 산출물을 삭제한다.
+```bash
+rm -f SPEC.md SELF_CHECK.md QA_REPORT.md
+```
+이전 SPEC.md가 남아 있으면 Generator가 새 SPEC이 아닌 이전 SPEC을 읽고 엉뚱한 변경을 적용하는 사고가 발생한다.
+
 ### 단계 1: Planner 호출
 
 subagent_type: `planner`
@@ -127,6 +135,8 @@ QA_REPORT.md를 읽고:
 
 ### 주의사항
 
+- **단계 0 필수**: Planner 호출 전 `rm -f SPEC.md SELF_CHECK.md QA_REPORT.md` 실행. 생략 시 이전 SPEC으로 인한 오염 사고 발생
+- **Planner 완료 후 SPEC.md 검증**: Generator 호출 전에 SPEC.md 첫 5줄을 읽어서 이번 요청과 일치하는지 확인. 불일치 시 직접 SPEC.md를 작성하고 재진행
 - Generator와 Evaluator는 반드시 **다른 서브에이전트**로 호출 (분리가 핵심)
 - 각 단계 완료 후, 생성된 파일 존재 확인
 - 에이전트들은 `docs/` 규칙 파일을 자체적으로 읽으므로 프롬프트에 규칙을 복사하지 않음

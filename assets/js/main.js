@@ -177,6 +177,7 @@ document.addEventListener('DOMContentLoaded', () => {
   safeInit(initScrollReveal, 'initScrollReveal');
   safeInit(initScrollProgress, 'initScrollProgress');
   safeInit(initMouseParallax, 'initMouseParallax');
+  safeInit(initHeroParallax, 'initHeroParallax');
 });
 
 // -------------------------------------------------------
@@ -480,5 +481,34 @@ function initMouseParallax() {
     heroBg.style.transform = `scale(1.08) translate(${currentX}px, ${currentY}px)`;
     requestAnimationFrame(tick);
   })();
+}
+
+// -------------------------------------------------------
+// 히어로 스크롤 패럴랙스 페이드아웃
+// -------------------------------------------------------
+
+/**
+ * 스크롤 시 히어로 프로필을 페이드아웃하며 위로 밀어내는 패럴랙스 효과
+ */
+function initHeroParallax() {
+  const hero = document.getElementById('hero');
+  if (!hero) return;
+  const profile = hero.querySelector('.profile');
+  const scrollHint = hero.querySelector('.hero__scroll-hint');
+  if (!profile) return;
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+  window.addEventListener('scroll', () => {
+    const scrollY = window.scrollY;
+    const heroH = hero.offsetHeight;
+    const ratio = Math.min(scrollY / heroH, 1);
+
+    profile.style.opacity = 1 - ratio * 1.5;
+    profile.style.transform = `translateY(${-scrollY * 0.3}px)`;
+
+    if (scrollHint) {
+      scrollHint.style.opacity = Math.max(0, 1 - ratio * 3);
+    }
+  }, { passive: true });
 }
 
