@@ -33,6 +33,9 @@
   --glow-github: rgba(236, 236, 236, 0.18);
   --glow-melon: rgba(0, 205, 60, 0.18);
   --glow-soundcloud: rgba(255, 85, 0, 0.18);
+  --glow-instagram: rgba(131, 58, 180, 0.18);
+  --orbit-card-bg: rgba(23, 21, 30, 0.72);
+  --orbit-card-border: rgba(255,255,255,0.08);
   --font-serif: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
   --hero-name-size: 80px;
   --hero-name-size-mobile: 52px;
@@ -71,6 +74,9 @@ html.light {
   --glow-github: rgba(10, 10, 10, 0.12);
   --glow-melon: rgba(0, 205, 60, 0.15);
   --glow-soundcloud: rgba(255, 85, 0, 0.15);
+  --glow-instagram: rgba(131, 58, 180, 0.15);
+  --orbit-card-bg: rgba(255, 255, 255, 0.72);
+  --orbit-card-border: rgba(0,0,0,0.08);
 }
 
 body {
@@ -253,10 +259,11 @@ html.light .social-card:hover {
 
 .page-wrapper {
   position: relative;
-  z-index: 1;
+  z-index: 2;
   max-width: 680px;
   margin: 0 auto;
   padding: 48px 24px 80px;
+  background: var(--bg);
 }
 
 /* ---- Profile Section ---- */
@@ -264,6 +271,20 @@ html.light .social-card:hover {
   text-align: center;
   margin-bottom: 0;
   padding-top: 0;
+
+  & .profile__halo {
+    position: absolute;
+    width: 340px;
+    height: 340px;
+    top: 0;
+    left: 50%;
+    transform: translate(-50%, -60%);
+    background: radial-gradient(circle, var(--brand-12) 0%, transparent 70%);
+    border-radius: 50%;
+    pointer-events: none;
+    animation: halo-pulse 4s ease-in-out infinite;
+    z-index: -1;
+  }
 
   & .profile__avatar-wrap {
     position: relative;
@@ -286,6 +307,7 @@ html.light .social-card:hover {
       );
       opacity: 0.35;
       transition: opacity var(--transition);
+      animation: avatar-ring-rotate 12s linear infinite, avatar-ring-breathe 3s ease-in-out infinite;
     }
 
     &:hover::before {
@@ -316,10 +338,15 @@ html.light .social-card:hover {
     letter-spacing: -1.5px;
     line-height: 1;
     margin-bottom: 10px;
-    background: linear-gradient(135deg, #fff 50%, var(--brand-light) 100%);
+    background:
+      linear-gradient(120deg, transparent 30%, rgba(255,255,255,0.25) 50%, transparent 70%),
+      linear-gradient(135deg, #fff 50%, var(--brand-light) 100%);
+    background-size: 200% 100%, 100% 100%;
+    background-position: 100% 0, 0 0;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
+    transition: background-position 0.4s ease;
   }
 
   & .profile__subtitle {
@@ -340,23 +367,67 @@ html.light .social-card:hover {
   }
 
   & .profile__motto-item {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4px;
+    position: relative;
     padding: 12px 8px 10px;
     background: var(--bg-card);
     backdrop-filter: blur(14px) saturate(1.1);
     -webkit-backdrop-filter: blur(14px) saturate(1.1);
     border: 1px solid var(--border);
     border-radius: var(--radius-sm);
-    transition: transform var(--transition), border-color var(--transition), box-shadow var(--transition);
+    perspective: 600px;
+    opacity: 0;
+    transform: translateY(12px);
+    transition: opacity 0.4s ease-out, transform 0.4s ease-out, border-color var(--transition), box-shadow var(--transition);
+
+    &.is-visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
 
     &:hover {
-      transform: translateY(-2px);
       border-color: var(--brand-25);
       box-shadow: 0 0 14px var(--brand-12);
+
+      & .profile__motto-front {
+        transform: rotateY(180deg);
+      }
+
+      & .profile__motto-back {
+        transform: rotateY(0deg);
+      }
     }
+  }
+
+  & .profile__motto-front {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    backface-visibility: hidden;
+    transition: transform 0.5s ease;
+  }
+
+  & .profile__motto-back {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backface-visibility: hidden;
+    transform: rotateY(-180deg);
+    transition: transform 0.5s ease;
+    background: var(--bg-card);
+    border-radius: var(--radius-sm);
+  }
+
+  & .profile__motto-back-text {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--brand-light);
+    letter-spacing: 0.3px;
+    text-align: center;
+    padding: 8px;
+    line-height: 1.4;
   }
 
   & .profile__motto-letter {
@@ -485,12 +556,13 @@ html.light .social-card:hover {
   position: relative;
   z-index: 1;
   width: 100%;
-  min-height: 100vh;
+  height: 100vh;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 80px 24px 48px;
+  padding: 40px 24px 24px;
+  overflow: hidden;
 }
 
 @keyframes heroEntrance {
@@ -529,32 +601,170 @@ html.light .social-card:hover {
 }
 
 /* ---- Scroll Hint ---- */
-.hero__scroll-hint {
+.scroll-hint {
   position: absolute;
-  bottom: 32px;
+  bottom: 24px;
   left: 50%;
   transform: translateX(-50%);
+  color: var(--brand-light);
+  font-size: 16px;
+  opacity: 0.5;
+  animation: scroll-bounce 2s ease-in-out infinite;
   z-index: 2;
-  opacity: 0;
-  animation: heroEntrance 0.7s var(--ease-out-expo) 1s forwards;
 }
 
-.hero__scroll-arrow {
+@keyframes avatar-ring-rotate {
+  0%   { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes avatar-ring-breathe {
+  0%, 100% { opacity: 0.35; }
+  50%      { opacity: 0.7; }
+}
+
+@keyframes dot-pulse {
+  0%, 100% { opacity: 0.4; transform: scale(1); }
+  50%      { opacity: 1; transform: scale(1.3); }
+}
+
+@keyframes halo-pulse {
+  0%, 100% { transform: translate(-50%, -60%) scale(1); opacity: 1; }
+  50%      { transform: translate(-50%, -60%) scale(1.08); opacity: 0.7; }
+}
+
+@keyframes scroll-bounce {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  50%      { transform: translateX(-50%) translateY(8px); }
+}
+
+/* ---- Orbit Stage ---- */
+.orbit-stage {
+  position: relative;
+  width: 100%;
+  max-width: 900px;
+  height: min(650px, calc(100vh - 80px));
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  border: 1px solid var(--brand-25);
-  color: var(--brand-light);
-  font-size: 14px;
-  animation: heroBounce 2s ease-in-out infinite;
+
+  & .orbit-stage__track {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    color: var(--brand-20);
+    pointer-events: none;
+  }
+
+  & .profile {
+    position: relative;
+    z-index: 5;
+
+    & .profile__avatar-wrap { margin-bottom: 12px; }
+    & .profile__name { margin-bottom: 6px; }
+    & .profile__subtitle { margin-bottom: 10px; }
+    & .profile__motto { gap: 6px; margin: 0 auto 14px; }
+    & .profile__motto-item { padding: 10px 8px 8px; }
+    & .profile__bio { padding: 20px 28px 20px 36px; }
+    & .profile__bio-quote { line-height: 1.65; margin-bottom: 8px; }
+    & .profile__bio-divider { margin: 0 auto 8px; }
+    & .profile__bio-kr { line-height: 1.65; margin-bottom: 10px; }
+    & .profile__btn { margin-top: 16px; }
+  }
+
+  & .orbit-stage__cards {
+    display: contents;
+  }
 }
 
-@keyframes heroBounce {
-  0%, 100% { transform: translateY(0); opacity: 0.6; }
-  50%      { transform: translateY(8px); opacity: 1; }
+.orbit-card {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 14px 18px 12px;
+  background: var(--orbit-card-bg);
+  backdrop-filter: blur(14px) saturate(1.1);
+  -webkit-backdrop-filter: blur(14px) saturate(1.1);
+  border: 1px solid var(--orbit-card-border);
+  border-radius: var(--radius);
+  text-decoration: none;
+  color: var(--text);
+  cursor: pointer;
+  will-change: transform, opacity;
+  transition: border-color 0.25s, box-shadow 0.25s, background 0.25s;
+
+  &:hover {
+    border-color: var(--brand-25);
+    box-shadow: 0 4px 24px var(--brand-12);
+    background: var(--bg-card-hover);
+  }
+}
+
+.orbit-card__icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 17px;
+}
+
+.orbit-card__label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  color: var(--text);
+}
+
+.orbit-card__desc {
+  font-size: 9px;
+  color: var(--text-dim);
+  letter-spacing: 0.2px;
+}
+
+/* ---- Orbit: Light Theme ---- */
+html.light .orbit-card {
+  &:hover {
+    background: rgba(255,255,255,0.9);
+    box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+  }
+}
+
+html.light .orbit-stage__track {
+  color: var(--brand-25);
+}
+
+/* ---- Orbit: Mobile (600px) ---- */
+@media (max-width: 600px) {
+  .orbit-stage {
+    height: auto;
+    flex-direction: column;
+    gap: 24px;
+    padding: 0 16px;
+  }
+
+  .orbit-stage__track { display: none; }
+
+  .orbit-stage__cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    width: 100%;
+    max-width: 340px;
+  }
+
+  .orbit-card {
+    position: static;
+    padding: 10px 8px;
+
+    & .orbit-card__desc { display: none; }
+  }
 }
 
 /* ---- Category Tabs ---- */

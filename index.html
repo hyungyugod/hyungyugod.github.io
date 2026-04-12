@@ -44,55 +44,118 @@
       <i class="fa-solid fa-moon theme-toggle__icon theme-toggle__icon--dark"></i>
     </button>
 
-    <!-- Profile -->
-    <section class="profile">
-      <div class="profile__avatar-wrap">
-        <img class="profile__avatar js-open-profile" id="profileAvatar" src="/assets/img/15.jpg" alt="HG" tabindex="0">
-      </div>
-      <h1 class="profile__name">HG</h1>
-      <p class="profile__subtitle">Developer · Producer · Writer</p>
-      <div class="profile__motto" aria-label="개인 모토">
-        <div class="profile__motto-item">
-          <span class="profile__motto-letter" aria-hidden="true">C</span>
-          <span class="profile__motto-word">Consistency</span>
-          <span class="profile__motto-kr">흘러가지 않게 함</span>
-        </div>
-        <div class="profile__motto-item">
-          <span class="profile__motto-letter" aria-hidden="true">C</span>
-          <span class="profile__motto-word">Curiosity</span>
-          <span class="profile__motto-kr">어디서든 의미를 찾음</span>
-        </div>
-        <div class="profile__motto-item">
-          <span class="profile__motto-letter" aria-hidden="true">C</span>
-          <span class="profile__motto-word">Confrontation</span>
-          <span class="profile__motto-kr">자신을 잃지 않음</span>
-        </div>
-      </div>
-      <div class="profile__bio">
-        <p class="profile__bio-quote">
-          <strong>Once. Everything.</strong><br>
-          In this one life, I want to keep being moved.<br>
-          To experience widely, to learn steadily,<br>
-          and to ride the waves as they come.
-        </p>
-        <div class="profile__bio-divider"></div>
-        <p class="profile__bio-kr">
-          한번 뿐인 삶에서 저는 꾸준히 흔들리고 싶습니다.<br>
-          하여 다양하게 경험하고, 꾸준히 배우며,<br>
-          인생의 파도를 한번 타보려합니다.
-        </p>
-        <p class="profile__bio-attr"><span class="typing" id="typingText"></span><span class="typing-cursor">|</span></p>
-      </div>
-      <button class="profile__btn js-open-profile" type="button">
-        <i class="fa-regular fa-id-card"></i> 프로필 보기
-      </button>
-    </section>
+    <!-- Profile + Orbit Stage -->
+    <div class="orbit-stage" id="orbitStage">
+      <!-- 궤도 트랙 (장식용 SVG 점선 타원) -->
+      <svg class="orbit-stage__track" aria-hidden="true"
+           viewBox="0 0 1000 700" preserveAspectRatio="xMidYMid meet">
+        <ellipse cx="500" cy="350" rx="480" ry="320"
+                 fill="none" stroke="currentColor"
+                 stroke-dasharray="4 8" stroke-width="0.8" opacity="0.25"/>
+      </svg>
 
-    <div class="hero__scroll-hint" aria-hidden="true">
-      <span class="hero__scroll-arrow">
-        <i class="fa-solid fa-chevron-down"></i>
-      </span>
+      <!-- 기존 프로필 — 변경 없음 -->
+      <section class="profile">
+        <div class="profile__halo" aria-hidden="true"></div>
+        <div class="profile__avatar-wrap">
+          <img class="profile__avatar js-open-profile" id="profileAvatar" src="/assets/img/15.jpg" alt="HG" tabindex="0">
+        </div>
+        <h1 class="profile__name">HG</h1>
+        <p class="profile__subtitle">Developer <span class="profile__dot">·</span> Producer <span class="profile__dot">·</span> Writer</p>
+        <div class="profile__motto" aria-label="개인 모토">
+          <div class="profile__motto-item">
+            <div class="profile__motto-front">
+              <span class="profile__motto-letter" aria-hidden="true">C</span>
+              <span class="profile__motto-word">Consistency</span>
+              <span class="profile__motto-kr">흘러가지 않게 함</span>
+            </div>
+            <div class="profile__motto-back">
+              <span class="profile__motto-back-text">매일, 어제보다 한 줄 더</span>
+            </div>
+          </div>
+          <div class="profile__motto-item">
+            <div class="profile__motto-front">
+              <span class="profile__motto-letter" aria-hidden="true">C</span>
+              <span class="profile__motto-word">Curiosity</span>
+              <span class="profile__motto-kr">어디서든 의미를 찾음</span>
+            </div>
+            <div class="profile__motto-back">
+              <span class="profile__motto-back-text">왜?라는 질문이 시작점</span>
+            </div>
+          </div>
+          <div class="profile__motto-item">
+            <div class="profile__motto-front">
+              <span class="profile__motto-letter" aria-hidden="true">C</span>
+              <span class="profile__motto-word">Confrontation</span>
+              <span class="profile__motto-kr">자신을 잃지 않음</span>
+            </div>
+            <div class="profile__motto-back">
+              <span class="profile__motto-back-text">도망치지 않는 용기</span>
+            </div>
+          </div>
+        </div>
+        <div class="profile__bio">
+          <p class="profile__bio-quote">
+            <strong>Once. Everything.</strong><br>
+            In this one life, I want to keep being moved.<br>
+            To experience widely, to learn steadily,<br>
+            and to ride the waves as they come.
+          </p>
+          <div class="profile__bio-divider"></div>
+          <p class="profile__bio-kr">
+            한번 뿐인 삶에서 저는 꾸준히 흔들리고 싶습니다.<br>
+            하여 다양하게 경험하고, 꾸준히 배우며,<br>
+            인생의 파도를 한번 타보려합니다.
+          </p>
+          <p class="profile__bio-attr"><span class="typing" id="typingText"></span><span class="typing-cursor">|</span></p>
+        </div>
+        <button class="profile__btn js-open-profile" type="button">
+          <i class="fa-regular fa-id-card"></i> 프로필 보기
+        </button>
+      </section>
+
+      <!-- 궤도 카드 래퍼 -->
+      <div class="orbit-stage__cards">
+        <a class="orbit-card" href="https://velog.io/@hyungyugod/posts"
+           target="_blank" rel="noopener" aria-label="Velog - 개발 공부 기록" data-platform="velog">
+          <span class="orbit-card__icon icon--velog"><i class="fa-solid fa-code"></i></span>
+          <span class="orbit-card__label">Velog</span>
+          <span class="orbit-card__desc">개발 &middot; 공부 기록</span>
+        </a>
+        <a class="orbit-card" href="https://brunch.co.kr/@hyungyugood"
+           target="_blank" rel="noopener" aria-label="Brunch - 철학 에세이" data-platform="brunch">
+          <span class="orbit-card__icon icon--brunch"><i class="fa-solid fa-pen-nib"></i></span>
+          <span class="orbit-card__label">Brunch</span>
+          <span class="orbit-card__desc">철학 &middot; 에세이</span>
+        </a>
+        <a class="orbit-card" href="https://github.com/hyungyugod"
+           target="_blank" rel="noopener" aria-label="GitHub - Projects and open source" data-platform="github">
+          <span class="orbit-card__icon icon--github"><i class="fa-brands fa-github"></i></span>
+          <span class="orbit-card__label">GitHub</span>
+          <span class="orbit-card__desc">Projects &amp; open source</span>
+        </a>
+        <a class="orbit-card" href="https://www.melon.com/artist/timeline.htm?artistId=4347369"
+           target="_blank" rel="noopener" aria-label="Melon - 음악 앨범" data-platform="melon">
+          <span class="orbit-card__icon icon--melon"><i class="fa-solid fa-music"></i></span>
+          <span class="orbit-card__label">Melon</span>
+          <span class="orbit-card__desc">음악 &middot; 앨범</span>
+        </a>
+        <a class="orbit-card" href="https://soundcloud.com/user-928451677"
+           target="_blank" rel="noopener" aria-label="SoundCloud - 음악 앨범" data-platform="soundcloud">
+          <span class="orbit-card__icon icon--soundcloud"><i class="fa-brands fa-soundcloud"></i></span>
+          <span class="orbit-card__label">SoundCloud</span>
+          <span class="orbit-card__desc">음악 &middot; 앨범</span>
+        </a>
+        <a class="orbit-card" href="https://www.instagram.com/hy_nxx9/"
+           target="_blank" rel="noopener" aria-label="Instagram" data-platform="instagram">
+          <span class="orbit-card__icon icon--instagram"><i class="fa-brands fa-instagram"></i></span>
+          <span class="orbit-card__label">Instagram</span>
+          <span class="orbit-card__desc">@hy_nxx9</span>
+        </a>
+      </div>
     </div>
+
+    <div class="scroll-hint" aria-hidden="true"><i class="fa-solid fa-chevron-down"></i></div>
   </section>
 
   <div class="page-wrapper">

@@ -56,6 +56,11 @@ tools: Read, Glob, Grep, Bash
    - `SERVER_UNAVAILABLE` 출력 시: "UI 검증 불가 — 서버 미실행"으로 기록하고 정적 분석만 진행, 반응형&UI 품질과 기능완성도(또는 D4·D5) 항목에서 각 -1점 패널티 적용
    - stdout 전체를 QA_REPORT.md의 **UI 동작 검증** 섹션에 기록
 
+   **⚠️ Playwright 테스트 환경 한계 구분**: Playwright의 `scrollIntoViewIfNeeded()`는 `position: fixed` 요소 내부의 버튼에서 의도치 않은 페이지 스크롤을 발생시킬 수 있다. 이로 인해 다른 요소(예: page-wrapper)가 fixed 요소를 가려 클릭 타임아웃이 발생할 수 있다. 이런 경우:
+   - `scrollY=0` 상태에서 해당 버튼이 뷰포트 내에 있고 다른 요소에 가려지지 않는다면, **테스트 환경 한계로 분류**하고 P1이 아닌 P2로 기록하라.
+   - 실제로 어떤 스크롤 상태에서도 버튼에 접근 불가능한 경우에만 P1으로 분류하라.
+   - 동일 이슈를 반복 지적하여 Generator 라운드를 낭비하지 마라.
+
    **Playwright 결과 → 채점 반영**
 
    디자인 변경 기준 적용 시:
@@ -298,5 +303,7 @@ git diff HEAD~1 -- assets/css/style.css assets/js/main.js index.html
 1. [어디를 어떻게 고칠 것]
 2. [어디를 어떻게 고칠 것]
 ```
+
+**⚠️ 반드시 Write 도구로 QA_REPORT.md 파일을 저장하라. 내용을 생성만 하고 파일로 저장하지 않으면 후속 단계에서 읽을 수 없다.**
 
 결과를 QA_REPORT.md로 저장합니다.

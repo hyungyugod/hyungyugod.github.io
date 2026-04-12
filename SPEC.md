@@ -1,222 +1,337 @@
-# SPEC.md — 히어로/프로필 섹션 100vh 풀스크린 리모델링
+# 히어로 섹션 스플릿 레이아웃 리디자인
 
 ## 개요
-현재 `.page-wrapper` 내부에 `max-width: 680px`로 제한된 정적 프로필 카드를 100vh 풀스크린 히어로 섹션으로 분리·확장한다. 화면 가득 채운 첫 인상을 만들되, 스크롤 아래에는 기존 링크트리 구조를 그대로 유지한다. 프로필 콘텐츠의 타이포를 스케일업하고, 스태거 입장 애니메이션 + 스크롤 패럴랙스 페이드아웃 + 스크롤 힌트 화살표를 추가하여 다이나믹한 랜딩 경험을 제공한다.
+히어로 섹션의 궤도 회전 카드(orbit-stage) 구조를 완전히 제거하고, 좌측 글래스모피즘 프로필 카드 + 우측 바이오/모토/타이핑 콘텐츠로 구성된 스플릿 레이아웃으로 교체한다. 배경에는 플로팅 키워드가 느리게 부유하며, 프로필 카드에는 마우스 트래킹 3D tilt 효과를 적용한다.
 
 ## 변경 유형
 디자인
 
 ## 디자인 언어 & 의도
-사이트 첫 방문 시 화면 전체를 지배하는 히어로가 "이 사람은 뭔가 다르다"는 인상을 순간적으로 각인시킨다. glassmorphism 카드들이 어둑한 그라디언트 배경 위로 하나씩 부드럽게 등장하며, 스크롤하면 히어로가 자연스럽게 사라지고 콘텐츠 세계로 넘어가는 전환이 "탐색하고 싶다"는 욕구를 유발한다. 기존 코럴핑크 팔레트와 글래스모피즘 언어를 유지하면서 스케일만 극적으로 확장하는 것이 핵심이다.
+기존 궤도 카드의 기계적 회전 대신, 정적이면서도 깊이감 있는 스플릿 레이아웃으로 전환하여 방문자가 프로필을 직관적으로 읽을 수 있게 한다. 배경의 플로팅 키워드는 사이트 주인의 다면적 정체성(Code, Music, Essay, Philosophy)을 은은하게 암시하며, 3D tilt 카드는 마우스 인터랙션으로 "살아있는" 느낌을 준다. 전체적으로 glassmorphism + 코럴핑크 팔레트의 정체성을 유지하면서, 더 세련되고 읽기 쉬운 첫인상을 만드는 것이 목표다.
 
 ## Sprint 범위 계약
-- **허용**: SPEC 기능의 정상 동작에 필수적인 최소 연동 변경 (예: `.profile`이 `.page-wrapper` 밖으로 나가면서 필요한 기존 스타일 조정)
-- **금지**: SPEC에 없는 독립적인 새 기능/효과 추가 (예: 링크 카드 영역 리디자인, 새 섹션 추가, 소셜 카드 효과 변경, 색상 팔레트 변경, 폰트 변경)
-- **판단 기준**: "이 변경이 없으면 SPEC 기능이 제대로 동작하지 않는가?" → YES면 허용, NO면 금지
-- **:root CSS 변수**: 기존 변수의 값 변경/삭제 금지. 새 변수 추가만 허용.
-
----
+- **허용**: 히어로 섹션 내부 구조 변경에 필수적인 CSS/JS 수정, orbit 관련 코드 제거, hero-split 관련 신규 코드 추가
+- **금지**: 히어로 섹션 외부(카테고리 탭, 링크 카드, 소셜 그리드, 모달, 푸터)의 디자인/기능 변경
+- **판단 기준**: "이 변경이 없으면 히어로 스플릿 레이아웃이 제대로 동작하지 않는가?" → YES면 허용, NO면 금지
 
 ## 변경 범위
 
 ### index.html 변경사항
 
-1. **`.profile` 섹션을 `.page-wrapper` 밖으로 이동하고 `<section class="hero" id="hero">`로 감싸기**
-   - 현재 구조 (line 40~73):
-     ```
-     .page-wrapper > .theme-toggle + .profile + .category-nav + ...
-     ```
-   - 변경 구조:
-     ```
-     body
-       > .scroll-progress
-       > .hero-bg
-       > section.hero#hero
-       >   button.theme-toggle.js-theme-toggle  (여기로 이동)
-       >   .profile  (기존 내부 구조 100% 보존)
-       >   .hero__scroll-hint  (새 요소)
-       > .page-wrapper
-       >   nav.category-nav  (page-wrapper 첫 자식)
-       >   ...나머지 그대로
-     ```
+**제거할 요소:**
+- `.orbit-stage` 전체 래퍼: SVG 트랙, `.orbit-stage__cards`, 6개 `.orbit-card` 링크
+- `.orbit-stage` 내부의 `.profile` 섹션은 내용을 새 구조로 이전
 
-2. **`.theme-toggle` 버튼**: `.page-wrapper` 안에서 `.hero` 안으로 이동 (CSS에서 `position: fixed`로 변경)
+**추가할 구조 (`.hero` 내부, theme-toggle 아래):**
 
-3. **스크롤 힌트 요소 추가** (`.hero` 마지막 자식):
-   ```html
-   <div class="hero__scroll-hint" aria-hidden="true">
-     <span class="hero__scroll-arrow">
-       <i class="fa-solid fa-chevron-down"></i>
-     </span>
-   </div>
-   ```
+```html
+<!-- 플로팅 키워드 배경 -->
+<div class="hero-keywords" aria-hidden="true">
+  <span class="hero-keywords__item" style="--kw-x: 8%; --kw-y: 15%; --kw-duration: 22s; --kw-delay: 0s; --kw-size: 1.1;">Code</span>
+  <span class="hero-keywords__item" style="--kw-x: 75%; --kw-y: 10%; --kw-duration: 28s; --kw-delay: -4s; --kw-size: 0.8;">Music</span>
+  <span class="hero-keywords__item" style="--kw-x: 20%; --kw-y: 70%; --kw-duration: 25s; --kw-delay: -8s; --kw-size: 0.9;">Essay</span>
+  <span class="hero-keywords__item" style="--kw-x: 85%; --kw-y: 65%; --kw-duration: 30s; --kw-delay: -2s; --kw-size: 1.0;">Philosophy</span>
+  <span class="hero-keywords__item" style="--kw-x: 50%; --kw-y: 85%; --kw-duration: 26s; --kw-delay: -12s; --kw-size: 0.7;">Create</span>
+  <span class="hero-keywords__item" style="--kw-x: 35%; --kw-y: 25%; --kw-duration: 24s; --kw-delay: -6s; --kw-size: 0.85;">Think</span>
+  <span class="hero-keywords__item" style="--kw-x: 65%; --kw-y: 45%; --kw-duration: 27s; --kw-delay: -10s; --kw-size: 0.75;">Produce</span>
+  <span class="hero-keywords__item" style="--kw-x: 12%; --kw-y: 50%; --kw-duration: 23s; --kw-delay: -14s; --kw-size: 0.95;">Dev</span>
+  <span class="hero-keywords__item" style="--kw-x: 90%; --kw-y: 35%; --kw-duration: 29s; --kw-delay: -7s; --kw-size: 0.65;">Write</span>
+  <span class="hero-keywords__item" style="--kw-x: 45%; --kw-y: 5%; --kw-duration: 31s; --kw-delay: -3s; --kw-size: 0.7;">Learn</span>
+</div>
 
-4. **기존 `.profile` 내부 HTML 구조는 절대 변경하지 않음** — 모든 클래스명, ID, data 속성, JS 후크 100% 보존. `.profile__motto`, `.profile__bio`, `.profile__btn` 등 모든 자식 요소 유지.
+<!-- 스플릿 레이아웃 -->
+<div class="hero-split" id="heroSplit">
+  <!-- 좌: 프로필 카드 -->
+  <div class="hero-split__card" id="heroCard">
+    <div class="hero-split__card-inner">
+      <div class="profile__halo" aria-hidden="true"></div>
+      <div class="profile__avatar-wrap">
+        <img class="profile__avatar js-open-profile" id="profileAvatar" src="/assets/img/15.jpg" alt="HG" tabindex="0">
+      </div>
+      <h1 class="profile__name">HG</h1>
+      <p class="profile__subtitle">Developer · Producer · Writer</p>
+      <div class="hero-social">
+        <a class="hero-social__link" href="https://velog.io/@hyungyugod/posts" target="_blank" rel="noopener" aria-label="Velog">
+          <span class="hero-social__icon icon--velog"><i class="fa-solid fa-code"></i></span>
+        </a>
+        <a class="hero-social__link" href="https://brunch.co.kr/@hyungyugood" target="_blank" rel="noopener" aria-label="Brunch">
+          <span class="hero-social__icon icon--brunch"><i class="fa-solid fa-pen-nib"></i></span>
+        </a>
+        <a class="hero-social__link" href="https://github.com/hyungyugod" target="_blank" rel="noopener" aria-label="GitHub">
+          <span class="hero-social__icon icon--github"><i class="fa-brands fa-github"></i></span>
+        </a>
+        <a class="hero-social__link" href="https://www.melon.com/artist/timeline.htm?artistId=4347369" target="_blank" rel="noopener" aria-label="Melon">
+          <span class="hero-social__icon icon--melon"><i class="fa-solid fa-music"></i></span>
+        </a>
+        <a class="hero-social__link" href="https://soundcloud.com/user-928451677" target="_blank" rel="noopener" aria-label="SoundCloud">
+          <span class="hero-social__icon icon--soundcloud"><i class="fa-brands fa-soundcloud"></i></span>
+        </a>
+        <a class="hero-social__link" href="https://www.instagram.com/hy_nxx9/" target="_blank" rel="noopener" aria-label="Instagram">
+          <span class="hero-social__icon icon--instagram"><i class="fa-brands fa-instagram"></i></span>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- 우: 콘텐츠 -->
+  <div class="hero-split__content">
+    <div class="profile__motto" aria-label="개인 모토">
+      <div class="profile__motto-item">
+        <div class="profile__motto-front">
+          <span class="profile__motto-letter" aria-hidden="true">C</span>
+          <span class="profile__motto-word">Consistency</span>
+          <span class="profile__motto-kr">흘러가지 않게 함</span>
+        </div>
+        <div class="profile__motto-back">
+          <span class="profile__motto-back-text">매일, 어제보다 한 줄 더</span>
+        </div>
+      </div>
+      <div class="profile__motto-item">
+        <div class="profile__motto-front">
+          <span class="profile__motto-letter" aria-hidden="true">C</span>
+          <span class="profile__motto-word">Curiosity</span>
+          <span class="profile__motto-kr">어디서든 의미를 찾음</span>
+        </div>
+        <div class="profile__motto-back">
+          <span class="profile__motto-back-text">왜?라는 질문이 시작점</span>
+        </div>
+      </div>
+      <div class="profile__motto-item">
+        <div class="profile__motto-front">
+          <span class="profile__motto-letter" aria-hidden="true">C</span>
+          <span class="profile__motto-word">Confrontation</span>
+          <span class="profile__motto-kr">자신을 잃지 않음</span>
+        </div>
+        <div class="profile__motto-back">
+          <span class="profile__motto-back-text">도망치지 않는 용기</span>
+        </div>
+      </div>
+    </div>
+    <div class="profile__bio">
+      <p class="profile__bio-quote">
+        <strong>Once. Everything.</strong><br>
+        In this one life, I want to keep being moved.<br>
+        To experience widely, to learn steadily,<br>
+        and to ride the waves as they come.
+      </p>
+      <div class="profile__bio-divider"></div>
+      <p class="profile__bio-kr">
+        한번 뿐인 삶에서 저는 꾸준히 흔들리고 싶습니다.<br>
+        하여 다양하게 경험하고, 꾸준히 배우며,<br>
+        인생의 파도를 한번 타보려합니다.
+      </p>
+      <p class="profile__bio-attr"><span class="typing" id="typingText"></span><span class="typing-cursor">|</span></p>
+    </div>
+    <button class="profile__btn js-open-profile" type="button">
+      <i class="fa-regular fa-id-card"></i> 프로필 보기
+    </button>
+  </div>
+</div>
+```
+
+**주의**: `.scroll-hint`는 기존 위치 유지 (`.hero` 직속 자식).
 
 ### assets/css/style.css 변경사항
 
-1. **새 CSS 변수 추가** (`:root` 블록에 추가, 기존 변수 수정 없음):
-   ```css
-   --hero-name-size: 80px;
-   --hero-name-size-mobile: 52px;
-   --hero-entrance-offset: 28px;
-   --hero-entrance-duration: 0.7s;
-   --hero-stagger: 0.12s;
-   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
-   ```
+**제거할 CSS:**
+- `.orbit-stage` 블록 전체 (line 652~689)
+- `.orbit-card` 관련 전체 (line 691~739)
+- `html.light .orbit-card` (line 742~747)
+- `html.light .orbit-stage__track` (line 749~751)
+- `@media (max-width: 600px)` 내 orbit 관련 룰 (line 754~778)
+- `@media (prefers-reduced-motion)` 내 `.orbit-card` 룰
+- `:root`에서 `--orbit-card-bg`, `--orbit-card-border` 변수는 **유지** (삭제 금지 원칙)
 
-2. **`.hero` 블록 (신규)**:
-   ```css
-   .hero {
-     position: relative;
-     z-index: 1;
-     width: 100%;
-     min-height: 100vh;
-     display: flex;
-     flex-direction: column;
-     align-items: center;
-     justify-content: center;
-     padding: 80px 24px 48px;
-   }
-   ```
+**추가할 CSS 변수 (`:root` 블록에 추가):**
+```css
+--hero-split-gap: 60px;
+--card-tilt-perspective: 800px;
+```
 
-3. **`.hero-bg` 높이 변경**: `height: 45vh` → `height: 100vh`
+**추가할 CSS 블록:**
 
-4. **`.theme-toggle` position 변경**: `position: absolute` → `position: fixed`, `z-index: 50`
+1. **플로팅 키워드 배경**:
+```css
+.hero-keywords {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
 
-5. **`.profile` 스타일 수정**:
-   - `animation: fadeInUp 0.55s ease-out` → 제거 (heroEntrance 스태거로 대체)
-   - `margin-bottom: 100px` → `margin-bottom: 0`
-   - `padding-top: 16px` → `padding-top: 0`
+  & .hero-keywords__item {
+    position: absolute;
+    left: var(--kw-x);
+    top: var(--kw-y);
+    font-family: var(--font-serif);
+    font-size: calc(var(--kw-size, 1) * 18px);
+    font-weight: 600;
+    color: var(--brand);
+    opacity: 0.06;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    animation: kw-float var(--kw-duration, 25s) ease-in-out var(--kw-delay, 0s) infinite;
+    will-change: transform;
+  }
+}
 
-6. **타이포 스케일업**:
-   - `.profile__name` `font-size`: 42px → `var(--hero-name-size)` (80px)
-   - `.profile__subtitle` `font-size`: 11px → 14px, `letter-spacing`: 2.5px → 3px
-   - `.profile__motto` `max-width`: 440px → 540px
-   - `.profile__bio` `max-width`: 440px → 540px
+@keyframes kw-float {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  25%      { transform: translate(15px, -20px) rotate(2deg); }
+  50%      { transform: translate(-10px, 15px) rotate(-1deg); }
+  75%      { transform: translate(20px, 10px) rotate(1.5deg); }
+}
 
-7. **`@keyframes heroEntrance` (신규)**:
-   ```css
-   @keyframes heroEntrance {
-     from { opacity: 0; transform: translateY(var(--hero-entrance-offset)); }
-     to   { opacity: 1; transform: translateY(0); }
-   }
-   ```
+html.light .hero-keywords__item { opacity: 0.05; }
+```
 
-8. **스태거 입장 애니메이션** — `.hero` 내부 각 `.profile` 자식에 적용:
-   - `.hero .profile__avatar-wrap`: delay 0s, duration 0.7s
-   - `.hero .profile__name`: delay 0.12s
-   - `.hero .profile__subtitle`: delay 0.24s
-   - `.hero .profile__motto`: delay 0.36s
-   - `.hero .profile__bio`: delay 0.48s
-   - `.hero .profile__btn`: delay 0.60s
-   - 모두 `animation-fill-mode: both`, `animation-timing-function: var(--ease-out-expo)`
+2. **스플릿 레이아웃**:
+```css
+.hero-split {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: var(--hero-split-gap);
+  width: 100%;
+  max-width: 900px;
+  padding: 0 24px;
+}
 
-9. **스크롤 힌트 스타일 (신규)**:
-   ```css
-   .hero__scroll-hint {
-     position: absolute;
-     bottom: 32px;
-     left: 50%;
-     transform: translateX(-50%);
-     z-index: 2;
-     opacity: 0;
-     animation: heroEntrance 0.7s var(--ease-out-expo) 1s forwards;
-   }
+.hero-split__card {
+  flex: 0 0 340px;
+  perspective: var(--card-tilt-perspective);
 
-   .hero__scroll-arrow {
-     display: flex;
-     align-items: center;
-     justify-content: center;
-     width: 36px;
-     height: 36px;
-     border-radius: 50%;
-     border: 1px solid var(--brand-25);
-     color: var(--brand-light);
-     font-size: 14px;
-     animation: heroBounce 2s ease-in-out infinite;
-   }
+  & .hero-split__card-inner {
+    background: var(--bg-card);
+    backdrop-filter: blur(20px) saturate(1.2);
+    -webkit-backdrop-filter: blur(20px) saturate(1.2);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 40px 32px 32px;
+    text-align: center;
+    position: relative;
+    transition: transform 0.15s ease-out, box-shadow 0.3s ease;
+    transform-style: preserve-3d;
+    will-change: transform;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+  }
 
-   @keyframes heroBounce {
-     0%, 100% { transform: translateY(0); opacity: 0.6; }
-     50%      { transform: translateY(8px); opacity: 1; }
-   }
-   ```
+  & .profile__avatar-wrap { margin-bottom: 16px; }
+  & .profile__avatar { width: 140px; height: 140px; }
+  & .profile__name { margin-bottom: 6px; }
+  & .profile__subtitle { margin-bottom: 20px; }
+  & .profile__halo { width: 320px; height: 320px; transform: translate(-50%, -50%); top: 35%; left: 50%; }
+}
 
-10. **`.page-wrapper` 패딩 조정**: `padding: 80px 24px 80px` → `padding: 48px 24px 80px`
+html.light .hero-split__card-inner {
+  background: rgba(255, 255, 255, 0.75);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.08);
+}
+```
 
-11. **반응형 `@media (max-width: 520px)` 추가**:
-    ```css
-    .hero { padding: 56px 16px 40px; }
-    .hero .profile__name { font-size: var(--hero-name-size-mobile); }
-    .hero .profile__subtitle { font-size: 12px; }
-    .hero .profile__motto { max-width: 100%; }
-    .hero .profile__bio { max-width: 100%; }
-    .hero__scroll-hint { bottom: 24px; }
-    .hero__scroll-arrow { width: 32px; height: 32px; font-size: 12px; }
-    ```
+3. **히어로 소셜 아이콘**:
+```css
+.hero-social {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 4px;
+}
 
-12. **`@media (prefers-reduced-motion: reduce)` 추가**:
-    ```css
-    .hero .profile__avatar-wrap,
-    .hero .profile__name,
-    .hero .profile__subtitle,
-    .hero .profile__motto,
-    .hero .profile__bio,
-    .hero .profile__btn { animation: none; opacity: 1; transform: none; }
-    .hero__scroll-hint { animation: none; opacity: 1; }
-    .hero__scroll-arrow { animation: none; opacity: 0.6; }
-    ```
+.hero-social__link {
+  text-decoration: none;
+  transition: transform 0.25s var(--spring-bounce);
+  &:hover { transform: translateY(-3px) scale(1.1); }
+}
+
+.hero-social__icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  transition: box-shadow 0.25s ease;
+  &:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.3); }
+}
+```
+
+4. **우측 콘텐츠 영역**:
+```css
+.hero-split__content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  & .profile__motto { max-width: 100%; margin: 0 0 8px; }
+  & .profile__bio { max-width: 100%; margin: 0; }
+  & .profile__btn { align-self: flex-start; }
+}
+```
+
+5. **반응형 (520px 이하)** 기존 블록에 추가:
+```css
+.hero-split { flex-direction: column; gap: 24px; padding: 0 16px; }
+.hero-split__card { flex: none; width: 100%; max-width: 320px; }
+.hero-split__card .hero-split__card-inner { padding: 32px 24px 24px; }
+.hero-split__card .profile__avatar { width: 110px; height: 110px; }
+.hero-split__content { text-align: center; }
+.hero-split__content .profile__btn { align-self: center; }
+.hero-keywords__item { font-size: calc(var(--kw-size, 1) * 14px); }
+```
+
+6. **prefers-reduced-motion** 기존 블록에 추가:
+```css
+.hero-keywords__item { animation: none; }
+.hero-split__card-inner { transition: none; }
+```
 
 ### assets/js/main.js 변경사항
 
-1. **`initHeroParallax()` 함수 (신규)** — 스크롤 시 히어로 콘텐츠 페이드아웃 + 위로 밀림:
-   ```javascript
-   function initHeroParallax() {
-     const hero = document.getElementById('hero');
-     if (!hero) return;
-     const profile = hero.querySelector('.profile');
-     const scrollHint = hero.querySelector('.hero__scroll-hint');
-     if (!profile) return;
-     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+**제거:**
+- `initOrbit()` 함수 전체
+- `safeInit(initOrbit, 'initOrbit');` 호출
 
-     window.addEventListener('scroll', () => {
-       const scrollY = window.scrollY;
-       const heroH = hero.offsetHeight;
-       const ratio = Math.min(scrollY / heroH, 1);
+**수정:**
+- `initHeroParallax()` 내 셀렉터: `.orbit-stage` → `.hero-split`
 
-       profile.style.opacity = 1 - ratio * 1.5;
-       profile.style.transform = `translateY(${-scrollY * 0.3}px)`;
+**추가 — `initCardTilt()` 함수:**
+```javascript
+function initCardTilt() {
+  const card = document.getElementById('heroCard');
+  if (!card) return;
+  const inner = card.querySelector('.hero-split__card-inner');
+  if (!inner) return;
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  if (window.matchMedia('(hover: none)').matches) return;
 
-       if (scrollHint) {
-         scrollHint.style.opacity = Math.max(0, 1 - ratio * 3);
-       }
-     }, { passive: true });
-   }
-   ```
+  const MAX_TILT = 8;
 
-2. **DOMContentLoaded에 등록**:
-   ```javascript
-   safeInit(initHeroParallax, 'initHeroParallax');
-   ```
+  card.addEventListener('mousemove', (e) => {
+    const rect = card.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / rect.width;
+    const y = (e.clientY - rect.top) / rect.height;
+    const rotateY = (x - 0.5) * MAX_TILT * 2;
+    const rotateX = (0.5 - y) * MAX_TILT * 2;
+    inner.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+  }, { passive: true });
 
----
+  card.addEventListener('mouseleave', () => {
+    inner.style.transform = '';
+  });
+}
+```
 
-## 기존 기능 영향 없음 확인
-
-| 기능 | 영향 | 이유 |
-|------|------|------|
-| 타이핑 애니메이션 | 없음 | `#typingText` ID 유지 |
-| 마우스 패럴랙스 | 없음 | `.hero-bg` 셀렉터 유지, window 기준 계산 |
-| 프로필 모달 | 없음 | `.js-open-profile` 클래스 유지 |
-| 스크롤 리빌 | 없음 | `.link-card` 등은 page-wrapper 내 유지 |
-| 테마 토글 | 미미 | CSS position만 fixed로 변경, JS 로직 동일 |
-| 카테고리 필터 | 없음 | `#categoryNav` page-wrapper 내 유지 |
-| GitHub/Velog fetch | 없음 | `#github-items`, `#velog-items` 위치 무변경 |
+**DOMContentLoaded:** `safeInit(initOrbit, ...)` → `safeInit(initCardTilt, 'initCardTilt');`
 
 ## 주의사항
-1. **`.profile` 내부 HTML은 절대 변경하지 말 것** — motto, bio, btn 등 모든 자식 요소 유지
-2. **기존 `@keyframes fadeInUp`은 삭제하지 말 것** — 다른 곳에서 사용 가능
-3. **:root 기존 변수 값 변경 금지** — 새 변수 추가만 허용
-4. **색상 팔레트, 폰트, 브랜드 컬러 변경 금지** — 기존 디자인 언어 유지
-5. **라이트 테마**: 새 요소들이 모두 CSS 변수 기반이므로 별도 오버라이드 불필요
+- `initNameShine()`은 변경 불필요 (`.profile__name`은 여전히 `.hero` 내부)
+- `initMottoReveal()`은 변경 불필요 (전역 셀렉터 사용)
+- `#profileAvatar` ID 유지 필수 (모달 포커스 복귀)
+- `.js-open-profile` 클래스 아바타+버튼 모두 유지
+- `--orbit-card-bg`, `--orbit-card-border` 변수 삭제 금지
+- 소셜 링크 `rel="noopener"` 필수
+- `.hero-keywords`에 `aria-hidden="true"` 필수

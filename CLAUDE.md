@@ -136,7 +136,8 @@ QA_REPORT.md를 읽고:
 ### 주의사항
 
 - **단계 0 필수**: Planner 호출 전 `rm -f SPEC.md SELF_CHECK.md QA_REPORT.md` 실행. 생략 시 이전 SPEC으로 인한 오염 사고 발생
-- **Planner 완료 후 SPEC.md 검증**: Generator 호출 전에 SPEC.md 첫 5줄을 읽어서 이번 요청과 일치하는지 확인. 불일치 시 직접 SPEC.md를 작성하고 재진행
+- **Planner 완료 후 SPEC.md 검증**: Generator 호출 전에 SPEC.md가 존재하는지 확인하고, 첫 5줄을 읽어서 이번 요청과 일치하는지 확인. **파일이 존재하지 않으면 Planner가 저장에 실패한 것이므로 직접 SPEC.md를 작성**하고 재진행
+- **Evaluator 완료 후 QA_REPORT.md 검증**: QA_REPORT.md가 존재하는지 확인. 파일이 없으면 Evaluator 결과를 기반으로 직접 작성하거나, Generator에 피드백을 프롬프트로 직접 전달
 - Generator와 Evaluator는 반드시 **다른 서브에이전트**로 호출 (분리가 핵심)
 - 각 단계 완료 후, 생성된 파일 존재 확인
 - 에이전트들은 `docs/` 규칙 파일을 자체적으로 읽으므로 프롬프트에 규칙을 복사하지 않음

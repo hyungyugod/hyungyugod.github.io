@@ -178,6 +178,9 @@ document.addEventListener('DOMContentLoaded', () => {
   safeInit(initScrollProgress, 'initScrollProgress');
   safeInit(initMouseParallax, 'initMouseParallax');
   safeInit(initHeroParallax, 'initHeroParallax');
+  safeInit(initOrbit, 'initOrbit');
+  safeInit(initNameShine, 'initNameShine');
+  safeInit(initMottoReveal, 'initMottoReveal');
 });
 
 // -------------------------------------------------------
@@ -493,22 +496,169 @@ function initMouseParallax() {
 function initHeroParallax() {
   const hero = document.getElementById('hero');
   if (!hero) return;
-  const profile = hero.querySelector('.profile');
-  const scrollHint = hero.querySelector('.hero__scroll-hint');
+  const profile = hero.querySelector('.orbit-stage') || hero.querySelector('.profile');
   if (!profile) return;
+  const scrollHint = hero.querySelector('.scroll-hint');
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
   window.addEventListener('scroll', () => {
     const scrollY = window.scrollY;
-    const heroH = hero.offsetHeight;
+    const heroH = window.innerHeight;
     const ratio = Math.min(scrollY / heroH, 1);
 
     profile.style.opacity = 1 - ratio * 1.5;
     profile.style.transform = `translateY(${-scrollY * 0.3}px)`;
 
+    // 스크롤 힌트: 100px 이상 스크롤 시 페이드아웃
     if (scrollHint) {
-      scrollHint.style.opacity = Math.max(0, 1 - ratio * 3);
+      scrollHint.style.opacity = scrollY > 100 ? '0' : '0.5';
     }
+
+    hero.style.pointerEvents = ratio >= 1 ? 'none' : '';
   }, { passive: true });
+}
+
+// -------------------------------------------------------
+// 궤도 회전 카드 (Orbit Cards)
+// -------------------------------------------------------
+
+/**
+ * 프로필 주위를 타원 궤도로 회전하는 외부 링크 카드 초기화
+ * sin 기반 원근감 (앞 크게/뒤 작게), 호버 시 정지
+ */
+function initOrbit() {
+  const stage = document.getElementById('orbitStage');
+  if (!stage) return;
+
+  const cards = stage.querySelectorAll('.orbit-card');
+  if (!cards.length) return;
+
+  const mobileQuery = window.matchMedia('(max-width: 600px)');
+  if (mobileQuery.matches) return;
+
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+  const COUNT = cards.length;
+  const SPEED = 0.0003; // rad/ms
+  let angle = 0;
+  let paused = false;
+  let lastTime = 0;
+
+  const positionCards = () => {
+    const w = stage.offsetWidth;
+    const h = stage.offsetHeight;
+    const cx = w / 2;
+    const cy = h / 2;
+    const rx = w * 0.45;
+    const ry = h * 0.38;
+
+    cards.forEach((card, i) => {
+      const a = angle + (i * 2 * Math.PI / COUNT);
+      const x = cx + rx * Math.cos(a);
+      const y = cy + ry * Math.sin(a);
+      const sinA = Math.sin(a);
+      const scale = 0.7 + (sinA + 1) / 2 * 0.3;
+      const opacity = 0.4 + (sinA + 1) / 2 * 0.6;
+      const zIndex = Math.round((sinA + 1) * 5);
+
+      card.style.transform = 'translate(-50%,-50%) translate(' + x + 'px,' + y + 'px) scale(' + scale + ')';
+      card.style.opacity = opacity;
+      card.style.zIndex = zIndex;
+
+      // 플랫폼별 glow: 앞쪽 카드(sinA > 0)에만 적용
+      const platform = card.dataset.platform;
+      if (platform && sinA > 0) {
+        const glowVar = 'var(--glow-' + platform + ')';
+        card.style.boxShadow = '0 4px ' + Math.round(20 * sinA) + 'px ' + glowVar;
+      } else {
+        card.style.boxShadow = '';
+      }
+    });
+  };
+
+  // reduced-motion: 정적 배치만 수행
+  if (reducedMotion.matches) {
+    positionCards();
+    return;
+  }
+
+  const tick = (time) => {
+    if (lastTime && !paused) {
+      angle += SPEED * (time - lastTime);
+    }
+    lastTime = time;
+    positionCards();
+    requestAnimationFrame(tick);
+  };
+
+  requestAnimationFrame(tick);
+
+  // 호버 시 회전 정지
+  cards.forEach(card => {
+    card.addEventListener('mouseenter', () => { paused = true; });
+    card.addEventListener('mouseleave', () => { paused = false; lastTime = 0; });
+  });
+
+  // 모바일 전환 시 인라인 스타일 완전 제거
+  mobileQuery.addEventListener('change', (e) => {
+    if (e.matches) {
+      cards.forEach(card => { card.removeAttribute('style'); });
+      paused = true;
+    } else {
+      paused = false;
+      lastTime = 0;
+    }
+  });
+}
+
+// -------------------------------------------------------
+// HG 타이틀 마우스 반응 광택
+// -------------------------------------------------------
+
+/**
+ * 히어로 영역 마우스 움직임에 따라 HG 타이틀에 광택 효과 적용
+ */
+function initNameShine() {
+  const hero = document.getElementById('hero');
+  if (!hero) return;
+  const name = hero.querySelector('.profile__name');
+  if (!name) return;
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  if (window.matchMedia('(hover: none)').matches) return;
+
+  hero.addEventListener('mousemove', (e) => {
+    const rect = hero.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / rect.width;
+    // 0~200% 범위로 매핑 (shine 레이어만 이동)
+    const pos = Math.round(x * 200);
+    name.style.backgroundPosition = pos + '% 0, 0 0';
+  }, { passive: true });
+
+  hero.addEventListener('mouseleave', () => {
+    name.style.backgroundPosition = '100% 0, 0 0';
+  });
+}
+
+// -------------------------------------------------------
+// 3C 모토 카드 순차 등장
+// -------------------------------------------------------
+
+/**
+ * 모토 카드를 시차를 두고 순차적으로 등장시킴
+ */
+function initMottoReveal() {
+  const items = document.querySelectorAll('.profile__motto-item');
+  if (!items.length) return;
+
+  // prefers-reduced-motion 시 즉시 표시
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    items.forEach(item => item.classList.add('is-visible'));
+    return;
+  }
+
+  items.forEach((item, i) => {
+    setTimeout(() => {
+      item.classList.add('is-visible');
+    }, i * 150);
+  });
 }
 

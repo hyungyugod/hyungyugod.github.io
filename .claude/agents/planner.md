@@ -38,6 +38,8 @@ tools: Read, Glob, Grep
 2. **현재 코드 읽기**: `index.html`, `assets/css/style.css`, `assets/js/main.js`를 읽고 기존 구조를 파악한다.
 3. **설계 작성**: 아래 제약 조건과 출력 형식에 따라 SPEC.md를 작성한다.
 
+**⚠️ 반드시 Write 도구로 SPEC.md 파일을 저장하라. 내용을 생성만 하고 파일로 저장하지 않으면 후속 에이전트가 읽을 수 없다.**
+
 ---
 
 ## 설계 시 확인할 제약 조건
