@@ -1,42 +1,28 @@
 # 자체 점검
 
-전략: Case A — 가중 점수 7.2, P0 없음. 같은 방향 유지, Sprint 범위 위반 코드만 정확히 제거.
-
-## QA 피드백 반영 확인
-
-- [x] 지시 1: index.html에서 `<nav class="desktop-nav">` 블록 전체 제거
-- [x] 지시 2: index.html에서 `<div class="music-showcase">` 블록 전체 제거
-- [x] 지시 3: main.js에서 `initDesktopNav()` 함수와 `initMusicShowcase()` 함수 제거
-- [x] 지시 4: main.js DOMContentLoaded에서 해당 safeInit 호출 제거
-- [x] 지시 5: main.js initThemeToggle()에서 `.js-theme-toggle-desktop` 셀렉터 제거, 단일 querySelector로 복원
-- [x] 지시 6: style.css 900px+ 미디어쿼리에서 SPEC 명시 변경만 남기고 나머지 제거 (category-section min-height/padding, writing grid 1fr, platform-showcase thumb/label만 유지)
-- [x] 지시 7: style.css에서 `.desktop-nav { display: none; }`, `.music-showcase { display: none; }` 제거
-- [x] 지시 8: style.css 하드코딩 rgba를 CSS 변수(`--platform-velog-30`, `--platform-brunch-30`, `--platform-github-30`)로 교체
-
 ## SPEC 기능 체크
-- [x] 섹션 간격 축소 (모바일): margin-bottom 24px, section-label 0/6px 유지
-- [x] 섹션 간격 축소 (데스크탑 900px+): category-section min-height: auto, padding 48px
-- [x] Writing 섹션 platform-showcase 카드 3개: Velog, Brunch, GitHub 유지
-- [x] 플랫폼별 좌측 보더 + 호버 glow 유지
-- [x] `#velog-items`, `#github-items` ID 유지
-- [x] JS initScrollReveal 셀렉터에 `.platform-showcase` 유지
-- [x] JS applyFilter 셀렉터에 `.platform-showcase` 유지
-- [x] 데스크탑 Writing 섹션 grid-template-columns: 1fr
-- [x] 데스크탑 platform-showcase .featured-item__thumb aspect-ratio: 16/10
-- [x] 데스크탑 platform-showcase .featured-item__label font-size: 13px
+- [x] 기능 1 (오빗 컴포넌트 제거): orbit-stage 래퍼, SVG 트랙, 6개 orbit-card, orbit-stage__cards를 HTML에서 완전 제거. CSS에서 .orbit-stage, .orbit-card, .orbit-card__icon/label/desc, light theme orbit 오버라이드, 600px 미디어쿼리 내 orbit 규칙 전체 삭제. JS에서 initOrbit 함수 전체 삭제 및 DOMContentLoaded 호출 제거.
+- [x] 기능 2 (프로필 전폭 재배치): profile을 hero 직접 자식으로 이동. .profile에 max-width: 720px, width: 100% 추가. .profile__motto max-width 540px->640px, .profile__bio max-width 540px->640px. 데스크톱(900px+)에서 .profile max-width: 800px 추가.
+- [x] 기능 3 (섹션 간격 축소): .category-nav margin-bottom 64->32px, .links--section margin-bottom 24->12px, .category-section padding 48->24px(데스크톱), .page-wrapper padding-top 48->24px(기본)/60->32px(데스크톱), .footer margin-top 56->28px, .social-grid margin-bottom 24->12px, .music-showcase margin-bottom 24->12px(데스크톱).
+
+## 반응형 대응
+- [x] 모바일 520px: .page-wrapper padding-top 40->24px, .profile margin-bottom 72->36px
+- [x] 모바일에서는 orbit이 이미 display:none이었으므로 레이아웃 영향 없음
+
+## 필수 연동 변경
+- initHeroParallax에서 .orbit-stage 참조를 제거하고 .profile만 직접 선택하도록 수정 (패럴랙스 기능 유지를 위해 필수)
+
+## :root CSS 변수
+- [x] --orbit-card-bg, --orbit-card-border 및 html.light 내 orbit 관련 변수 오버라이드 유지 (삭제 금지 원칙 준수)
 
 ## 패턴 준수 확인
-- BEM 네이밍: 준수
-- CSS 변수 사용: 준수 (하드코딩 rgba 제거, 변수로 교체)
-- CSS 네이티브 중첩: 준수
-- 반응형 520px: 대응 (기존 유지)
-- reduced-motion: 대응 (기존 유지)
-- esc()/safeUrl(): 적용 (fetchGitHub/fetchVelog 유지)
-- 가드 클래스: 적용
-- DOMContentLoaded 등록: 등록 완료
-- -webkit-backdrop-filter: 함께 작성 (platform-showcase 유지)
-- 파일 간 정합성: 클래스명/ID 일치 확인. desktop-nav, music-showcase 관련 HTML/CSS/JS 모두 일괄 제거되어 불일치 없음
-- 기존 :root 변수 삭제/변경 금지: 준수 (추가만 수행)
-
-## 범위 외 미구현 사항
-- 없음. QA 피드백의 범위 위반 코드만 제거하고 SPEC 내 기능은 그대로 유지.
+- BEM 네이밍: 준수 (기존 클래스명 유지, 새 클래스 추가 없음)
+- CSS 변수 사용: 준수 (하드코딩 색상 추가 없음)
+- CSS 네이티브 중첩: 준수 (& 문법 유지)
+- 반응형 520px: 대응 완료 (page-wrapper, profile margin-bottom 조정)
+- reduced-motion: 기존 대응 유지 (변경 없음)
+- esc()/safeUrl(): 해당 없음 (외부 데이터 처리 변경 없음)
+- 가드 클래스: 적용 (initHeroParallax에서 profile 가드 유지)
+- DOMContentLoaded 등록: initOrbit 호출만 제거, 기존 등록 패턴 유지
+- -webkit-backdrop-filter: 해당 없음 (새 backdrop-filter 추가 없음)
+- 파일 간 정합성: orbit-stage/orbit-card가 HTML, CSS, JS 모두에서 일관되게 제거됨
