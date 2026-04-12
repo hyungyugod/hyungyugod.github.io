@@ -1,38 +1,42 @@
 # 자체 점검
 
+전략: Case A — 가중 점수 7.2, P0 없음. 같은 방향 유지, Sprint 범위 위반 코드만 정확히 제거.
+
+## QA 피드백 반영 확인
+
+- [x] 지시 1: index.html에서 `<nav class="desktop-nav">` 블록 전체 제거
+- [x] 지시 2: index.html에서 `<div class="music-showcase">` 블록 전체 제거
+- [x] 지시 3: main.js에서 `initDesktopNav()` 함수와 `initMusicShowcase()` 함수 제거
+- [x] 지시 4: main.js DOMContentLoaded에서 해당 safeInit 호출 제거
+- [x] 지시 5: main.js initThemeToggle()에서 `.js-theme-toggle-desktop` 셀렉터 제거, 단일 querySelector로 복원
+- [x] 지시 6: style.css 900px+ 미디어쿼리에서 SPEC 명시 변경만 남기고 나머지 제거 (category-section min-height/padding, writing grid 1fr, platform-showcase thumb/label만 유지)
+- [x] 지시 7: style.css에서 `.desktop-nav { display: none; }`, `.music-showcase { display: none; }` 제거
+- [x] 지시 8: style.css 하드코딩 rgba를 CSS 변수(`--platform-velog-30`, `--platform-brunch-30`, `--platform-github-30`)로 교체
+
 ## SPEC 기능 체크
-- [x] orbit-stage 전체 래퍼 제거 (HTML): SVG 트랙, orbit-stage__cards, 6개 orbit-card 링크 모두 제거 완료
-- [x] hero-keywords 플로팅 배경 추가 (HTML): 10개 키워드 span, aria-hidden="true", CSS 커스텀 프로퍼티 스타일 적용
-- [x] hero-split 스플릿 레이아웃 추가 (HTML): 좌측 프로필 카드 + 우측 콘텐츠 구조, id="heroSplit", id="heroCard" 포함
-- [x] hero-social 소셜 아이콘 추가 (HTML): 6개 소셜 링크, 모두 rel="noopener" + aria-label 포함
-- [x] profileAvatar ID 유지: 모달 포커스 복귀용 ID 유지 완료
-- [x] js-open-profile 클래스 유지: 아바타 + 버튼 모두 유지
-- [x] scroll-hint 기존 위치 유지: .hero 직속 자식으로 변경 없음
-- [x] CSS 변수 추가: --hero-split-gap, --card-tilt-perspective 추가 완료
-- [x] orbit 관련 CSS 제거: .orbit-stage, .orbit-card, light 테마, 600px 미디어쿼리 모두 제거
-- [x] --orbit-card-bg, --orbit-card-border 변수 유지: :root에서 삭제하지 않음
-- [x] hero-keywords CSS 추가: kw-float 키프레임, light 테마 대응
-- [x] hero-split CSS 추가: 카드 레이아웃, glassmorphism, -webkit-backdrop-filter 포함
-- [x] hero-social CSS 추가: flex 레이아웃, hover 효과, spring-bounce 트랜지션
-- [x] hero-split__content CSS 추가: flex column 레이아웃, 모토/바이오/버튼 배치
-- [x] light 테마 hero-split__card-inner 추가
-- [x] 반응형 520px 추가: hero-split column 전환, 카드 최대너비, 아바타 크기 축소
-- [x] prefers-reduced-motion 추가: hero-keywords__item animation:none, hero-split__card-inner transition:none
-- [x] initOrbit() 제거 + initCardTilt() 추가 (JS)
-- [x] initHeroParallax() 셀렉터 변경: .orbit-stage -> .hero-split
-- [x] DOMContentLoaded에서 initOrbit -> initCardTilt 교체
+- [x] 섹션 간격 축소 (모바일): margin-bottom 24px, section-label 0/6px 유지
+- [x] 섹션 간격 축소 (데스크탑 900px+): category-section min-height: auto, padding 48px
+- [x] Writing 섹션 platform-showcase 카드 3개: Velog, Brunch, GitHub 유지
+- [x] 플랫폼별 좌측 보더 + 호버 glow 유지
+- [x] `#velog-items`, `#github-items` ID 유지
+- [x] JS initScrollReveal 셀렉터에 `.platform-showcase` 유지
+- [x] JS applyFilter 셀렉터에 `.platform-showcase` 유지
+- [x] 데스크탑 Writing 섹션 grid-template-columns: 1fr
+- [x] 데스크탑 platform-showcase .featured-item__thumb aspect-ratio: 16/10
+- [x] 데스크탑 platform-showcase .featured-item__label font-size: 13px
 
 ## 패턴 준수 확인
-- BEM 네이밍: 준수 - hero-keywords__item, hero-split__card, hero-split__card-inner, hero-split__content, hero-social__link, hero-social__icon
-- CSS 변수 사용: 준수 - 모든 색상은 var() 사용, 하드코딩 없음 (box-shadow rgba는 기존 패턴과 동일)
-- CSS 네이티브 중첩: 준수 - & 문법 사용 (.hero-keywords 내부, .hero-split__card 내부, .hero-social__link 내부 등)
-- 반응형 520px: 대응 완료 - hero-split column 전환, 카드 크기 축소, 키워드 폰트 축소
-- reduced-motion: 대응 완료 - CSS에서 animation:none/transition:none, JS에서 matchMedia 가드
-- esc()/safeUrl(): 해당 없음 - 외부 데이터 삽입 없음 (정적 HTML)
-- 가드 클래스: 적용 - initCardTilt에서 card/inner null 체크, reduced-motion/hover:none 체크
-- DOMContentLoaded 등록: 등록 완료 - safeInit(initCardTilt, 'initCardTilt')
-- -webkit-backdrop-filter: 함께 작성 완료 - hero-split__card-inner에 포함
-- 파일 간 정합성: 일치 - heroCard/heroSplit ID, hero-split__card-inner 클래스명 모두 HTML/CSS/JS 일치
+- BEM 네이밍: 준수
+- CSS 변수 사용: 준수 (하드코딩 rgba 제거, 변수로 교체)
+- CSS 네이티브 중첩: 준수
+- 반응형 520px: 대응 (기존 유지)
+- reduced-motion: 대응 (기존 유지)
+- esc()/safeUrl(): 적용 (fetchGitHub/fetchVelog 유지)
+- 가드 클래스: 적용
+- DOMContentLoaded 등록: 등록 완료
+- -webkit-backdrop-filter: 함께 작성 (platform-showcase 유지)
+- 파일 간 정합성: 클래스명/ID 일치 확인. desktop-nav, music-showcase 관련 HTML/CSS/JS 모두 일괄 제거되어 불일치 없음
+- 기존 :root 변수 삭제/변경 금지: 준수 (추가만 수행)
 
-## 범위 외 미구현
-- 없음. 모든 변경이 SPEC 범위 내에서 수행됨.
+## 범위 외 미구현 사항
+- 없음. QA 피드백의 범위 위반 코드만 제거하고 SPEC 내 기능은 그대로 유지.

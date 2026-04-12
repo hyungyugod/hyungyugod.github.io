@@ -74,10 +74,15 @@ async function saveScreenshot(page, name) {
 // 체크 함수들
 // ---------------------------------------------------------------------------
 
-/** 테마 토글: 다크 → 라이트 → 다크 */
+/** 테마 토글: 다크 → 라이트 → 다크 (데스크탑에서는 네비바 버튼 사용) */
 async function checkThemeToggle(page) {
   try {
-    const btn = page.locator('.js-theme-toggle').first();
+    // 데스크탑(1280px)에서는 네비바 테마 버튼, 모바일에서는 기존 버튼
+    let btn = page.locator('.js-theme-toggle-desktop').first();
+    const desktopVisible = await btn.isVisible().catch(() => false);
+    if (!desktopVisible) {
+      btn = page.locator('.js-theme-toggle').first();
+    }
     await btn.waitFor({ timeout: 3000 });
 
     await btn.click();
@@ -104,6 +109,32 @@ async function checkThemeToggle(page) {
 async function checkCategoryFilter(page) {
   const filters = ['writing', 'music', 'social'];
   const results = [];
+
+  // 데스크탑(900px+)에서는 카테고리 탭이 숨겨지고 모든 섹션이 표시됨
+  const catNavVisible = await page.locator('#categoryNav').isVisible().catch(() => false);
+  if (!catNavVisible) {
+    // 데스크탑 모드: 네비바 링크로 대체. 모든 섹션이 표시되는지 확인
+    const allVisible = await page.evaluate(() => {
+      const sections = document.querySelectorAll('[data-category]');
+      return Array.from(sections).every(s => !s.classList.contains('is-hidden'));
+    });
+    results.push({
+      name: '데스크탑 네비바 — 모든 섹션 표시',
+      passed: allVisible,
+      detail: allVisible ? '3개 섹션 모두 표시 확인' : '일부 섹션 숨겨짐',
+    });
+
+    // 네비바 링크 존재 확인
+    const navLinks = await page.locator('.desktop-nav__link').count();
+    results.push({
+      name: '데스크탑 네비바 — 링크 수',
+      passed: navLinks === 3,
+      detail: `${navLinks}개 링크 확인`,
+    });
+
+    await saveScreenshot(page, 'filter-writing');
+    return results;
+  }
 
   try {
     for (const cat of filters) {

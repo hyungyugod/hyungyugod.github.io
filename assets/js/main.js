@@ -181,6 +181,7 @@ document.addEventListener('DOMContentLoaded', () => {
   safeInit(initOrbit, 'initOrbit');
   safeInit(initNameShine, 'initNameShine');
   safeInit(initMottoReveal, 'initMottoReveal');
+  safeInit(initMusicShowcase, 'initMusicShowcase');
 });
 
 // -------------------------------------------------------
@@ -237,7 +238,7 @@ function initTyping() {
 // -------------------------------------------------------
 
 function initScrollReveal() {
-  const targets = document.querySelectorAll('.link-card, .social-card, .section-label');
+  const targets = document.querySelectorAll('.link-card, .social-card, .section-label, .platform-showcase');
 
   // prefers-reduced-motion 시 즉시 표시
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
@@ -270,7 +271,7 @@ function applyFilter(sections, filter) {
   sections.forEach(sec => {
     if (filter === 'all' || sec.dataset.category === filter) {
       sec.classList.remove('is-hidden');
-      sec.querySelectorAll('.link-card, .social-card, .section-label')
+      sec.querySelectorAll('.link-card, .social-card, .section-label, .platform-showcase')
          .forEach(el => el.classList.add('is-visible'));
     } else {
       sec.classList.add('is-hidden');
@@ -645,6 +646,40 @@ function initNameShine() {
 /**
  * 모토 카드를 시차를 두고 순차적으로 등장시킴
  */
+// -------------------------------------------------------
+// 뮤직 쇼케이스 (데스크탑): 트랙 호버 시 커버 전환
+// -------------------------------------------------------
+
+function initMusicShowcase() {
+  const cover = document.getElementById('musicCover');
+  if (!cover) return;
+
+  const tracks = document.querySelectorAll('.music-showcase__track');
+  if (!tracks.length) return;
+
+  tracks.forEach(track => {
+    track.addEventListener('mouseenter', () => {
+      const src = track.dataset.cover;
+      if (src && cover.src !== src) {
+        cover.style.opacity = '0.6';
+        cover.style.transform = 'scale(1.05)';
+        setTimeout(() => {
+          cover.src = src;
+          cover.style.opacity = '1';
+          cover.style.transform = 'scale(1)';
+        }, 200);
+      }
+
+      tracks.forEach(t => t.classList.remove('is-active'));
+      track.classList.add('is-active');
+    });
+  });
+}
+
+// -------------------------------------------------------
+// 3C 모토 카드 순차 등장
+// -------------------------------------------------------
+
 function initMottoReveal() {
   const items = document.querySelectorAll('.profile__motto-item');
   if (!items.length) return;
@@ -661,4 +696,5 @@ function initMottoReveal() {
     }, i * 150);
   });
 }
+
 
