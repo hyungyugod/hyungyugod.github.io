@@ -750,21 +750,8 @@ html.light .orbit-stage__track {
   }
 
   .orbit-stage__track { display: none; }
-
-  .orbit-stage__cards {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 8px;
-    width: 100%;
-    max-width: 340px;
-  }
-
-  .orbit-card {
-    position: static;
-    padding: 10px 8px;
-
-    & .orbit-card__desc { display: none; }
-  }
+  .orbit-stage__cards { display: none; }
+  .orbit-card { display: none; }
 }
 
 /* ---- Category Tabs ---- */
@@ -1311,7 +1298,7 @@ html.light .orbit-stage__track {
 @media (max-width: 520px) {
   .page-wrapper { padding: 40px 16px 56px; }
 
-  .hero { padding: 56px 16px 40px; }
+  .hero { padding: 56px 16px 40px; height: auto; min-height: 100vh; overflow: visible; }
   .hero .profile__name { font-size: var(--hero-name-size-mobile); }
   .hero .profile__subtitle { font-size: 12px; }
   .hero .profile__motto { max-width: 100%; }
