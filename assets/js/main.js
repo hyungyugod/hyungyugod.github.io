@@ -155,6 +155,95 @@ async function fetchVelog() {
 }
 
 // -------------------------------------------------------
+// Auto-fetch: 루틴 연속일수 streak 위젯
+// Source: /data/streaks.json — 수동으로 days/updatedAt 수정 후 push
+// -------------------------------------------------------
+
+/**
+ * /data/streaks.json을 읽어 3개 streak 카드를 렌더링
+ * @returns {Promise<void>}
+ */
+async function fetchStreaks() {
+  const grid = document.getElementById('streaksGrid');
+  if (!grid) return;
+  const updatedEl = document.getElementById('streaksUpdated');
+
+  const TONE_WHITELIST = ['diary', 'workout', 'threec'];
+  const ICON_RE = /^fa-[a-z0-9-]+$/;
+  const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+  try {
+    const res = await fetchWithTimeout('/data/streaks.json');
+    if (!res.ok) throw new Error('Streaks ' + res.status);
+    const data = await res.json();
+    const items = Array.isArray(data?.streaks) ? data.streaks : [];
+    if (!items.length) throw new Error('No streaks');
+
+    grid.innerHTML = items.map(s => {
+      const tone = TONE_WHITELIST.includes(s?.tone) ? s.tone : '';
+      const toneClass = tone ? `streak-card--${tone}` : '';
+
+      const label = esc(s?.label ?? '');
+      const days = Math.max(0, Number(s?.days) || 0);
+
+      const iconRaw = typeof s?.icon === 'string' ? s.icon : '';
+      const iconClass = ICON_RE.test(iconRaw) ? iconRaw : 'fa-check';
+
+      // startDate 검증: 화이트리스트 통과 시에만 캡슐 렌더
+      const startRaw = typeof s?.startDate === 'string' ? s.startDate : '';
+      const startDate = DATE_RE.test(startRaw) ? startRaw : '';
+
+      // 단위 표기: workout만 누적 일수("일"), 그 외는 "일 연속"
+      const unit = tone === 'workout' ? '일' : '일 연속';
+
+      const ariaLabel = esc(startDate
+        ? `${s?.label ?? ''} ${days}일, ${startDate}부터`
+        : `${s?.label ?? ''} ${days}일`);
+
+      return `<div class="streak-card ${toneClass}" aria-label="${ariaLabel}">
+        <div class="streak-card__top">
+          <span class="streak-card__icon"><i class="fa-solid ${esc(iconClass)}"></i></span>
+          <span class="streak-card__label">${label}</span>
+        </div>
+        <div class="streak-card__value">
+          <span class="streak-card__days">${days}</span>
+          <span class="streak-card__unit">${unit}</span>
+        </div>
+        ${startDate
+          ? `<span class="streak-card__since">
+               <i class="fa-regular fa-calendar streak-card__since-icon" aria-hidden="true"></i>
+               Since ${esc(startDate)}
+             </span>`
+          : ''}
+      </div>`;
+    }).join('');
+
+    // updatedAt 표시 (헤더 + 안내문 날짜 태그)
+    const u = typeof data?.updatedAt === 'string' && DATE_RE.test(data.updatedAt)
+      ? data.updatedAt : '';
+    if (updatedEl) {
+      updatedEl.textContent = u ? `업데이트 ${u}` : '';
+    }
+    const noticeDateEl = document.getElementById('streaksNoticeDate');
+    if (noticeDateEl) {
+      noticeDateEl.textContent = '';
+      if (u) {
+        const tag = document.createElement('span');
+        tag.className = 'streaks__notice-tag';
+        tag.textContent = u;
+        noticeDateEl.appendChild(tag);
+        noticeDateEl.appendChild(document.createTextNode('까지의 데이터입니다.'));
+      }
+    }
+  } catch (e) {
+    console.warn('Streaks fetch failed:', e);
+    const msg = e.name === 'AbortError' ? '응답 시간 초과' : '루틴 데이터를 불러오지 못했어요';
+    showFetchError(grid, msg);
+    if (updatedEl) updatedEl.textContent = '';
+  }
+}
+
+// -------------------------------------------------------
 // 초기화
 // -------------------------------------------------------
 
@@ -170,6 +259,7 @@ const safeInit = (fn, name) => {
 document.addEventListener('DOMContentLoaded', () => {
   safeInit(fetchGitHub, 'fetchGitHub');
   safeInit(fetchVelog, 'fetchVelog');
+  safeInit(fetchStreaks, 'fetchStreaks');
   safeInit(initModal, 'initModal');
   safeInit(initCategoryFilter, 'initCategoryFilter');
   safeInit(initThemeToggle, 'initThemeToggle');
@@ -503,7 +593,7 @@ function initHeroParallax() {
 
   window.addEventListener('scroll', () => {
     const scrollY = window.scrollY;
-    const heroH = window.innerHeight;
+    const heroH = hero.getBoundingClientRect().height || window.innerHeight;
     const ratio = Math.min(scrollY / heroH, 1);
 
     profile.style.opacity = 1 - ratio * 1.5;

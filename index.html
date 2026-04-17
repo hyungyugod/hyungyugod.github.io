@@ -110,6 +110,22 @@
 
   <div class="page-wrapper">
 
+    <!-- Routine Streaks -->
+    <section class="streaks" aria-label="현재 루틴 상태">
+      <div class="streaks__header">
+        <p class="section-label">Routine</p>
+        <span class="streaks__updated" id="streaksUpdated" aria-live="polite"></span>
+      </div>
+      <div class="streaks__grid" id="streaksGrid">
+        <div class="streak-card streak-card--loading" aria-hidden="true"><div class="streak-card__skeleton"></div></div>
+        <div class="streak-card streak-card--loading" aria-hidden="true"><div class="streak-card__skeleton"></div></div>
+        <div class="streak-card streak-card--loading" aria-hidden="true"><div class="streak-card__skeleton"></div></div>
+      </div>
+      <p class="streaks__notice" role="note">
+        이 수치는 매월 17일에 업데이트됩니다. <span id="streaksNoticeDate"></span>
+      </p>
+    </section>
+
     <!-- Category Tabs -->
     <nav class="category-nav" id="categoryNav">
       <button class="category-nav__btn is-active" data-filter="all" type="button">All</button>

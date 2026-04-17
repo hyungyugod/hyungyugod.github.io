@@ -1,0 +1,29 @@
+{
+  "updatedAt": "2026-04-17",
+  "streaks": [
+    {
+      "key": "diary",
+      "label": "일기 작성",
+      "days": 74,
+      "startDate": "2026-02-12",
+      "icon": "fa-book",
+      "tone": "diary"
+    },
+    {
+      "key": "workout",
+      "label": "총 운동일수",
+      "days": 500,
+      "startDate": "2024-02-27",
+      "icon": "fa-dumbbell",
+      "tone": "workout"
+    },
+    {
+      "key": "threec",
+      "label": "3C 실천",
+      "days": 42,
+      "startDate": "2026-04-04",
+      "icon": "fa-infinity",
+      "tone": "threec"
+    }
+  ]
+}
