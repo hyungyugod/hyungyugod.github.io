@@ -33,10 +33,10 @@ function safeUrl(url) {
  * @param {number} [ms=5000] - 타임아웃 밀리초
  * @returns {Promise<Response>} fetch 응답
  */
-function fetchWithTimeout(url, ms = 5000) {
+function fetchWithTimeout(url, ms = 5000, opts = {}) {
   const ctrl = new AbortController();
   const tid = setTimeout(() => ctrl.abort(), ms);
-  return fetch(url, { signal: ctrl.signal }).finally(() => clearTimeout(tid));
+  return fetch(url, { ...opts, signal: ctrl.signal }).finally(() => clearTimeout(tid));
 }
 
 /**
@@ -173,7 +173,7 @@ async function fetchStreaks() {
   const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
   try {
-    const res = await fetchWithTimeout('/data/streaks.json');
+    const res = await fetchWithTimeout('/data/streaks.json', 5000, { cache: 'no-cache' });
     if (!res.ok) throw new Error('Streaks ' + res.status);
     const data = await res.json();
     const items = Array.isArray(data?.streaks) ? data.streaks : [];
@@ -200,23 +200,61 @@ async function fetchStreaks() {
         ? `${s?.label ?? ''} ${days}일, ${startDate}부터`
         : `${s?.label ?? ''} ${days}일`);
 
-      return `<div class="streak-card ${toneClass}" aria-label="${ariaLabel}">
-        <div class="streak-card__top">
-          <span class="streak-card__icon"><i class="fa-solid ${esc(iconClass)}"></i></span>
-          <span class="streak-card__label">${label}</span>
+      const history = Array.isArray(s?.history)
+        ? s.history.map(n => Math.max(0, Number(n) || 0)).slice(0, 6)
+        : [];
+      const historyMonths = Array.isArray(s?.historyMonths)
+        ? s.historyMonths.slice(0, 6)
+        : [];
+      const chartMax = history.length ? Math.max(...history, 1) : 1;
+      const barsHtml = history.map((v, i) => {
+        const pct = Math.max(4, Math.round((v / chartMax) * 100));
+        const m = esc(String(historyMonths[i] ?? (i + 1)));
+        return `<div class="streak-chart__bar">
+          <span class="streak-chart__bar-value">${esc(v)}</span>
+          <div class="streak-chart__bar-fill" style="height:${pct}%"></div>
+          <span class="streak-chart__bar-month">${m}</span>
+        </div>`;
+      }).join('');
+      const hasHistory = history.length > 0;
+
+      return `<div class="streak-card ${toneClass} streak-card--flippable" aria-label="${ariaLabel}" role="button" tabindex="0" aria-expanded="false">
+        <button class="streak-card__flip-btn" type="button" aria-label="${label} 그래프 보기" tabindex="-1">
+          <i class="fa-solid fa-chart-column" aria-hidden="true"></i>
+        </button>
+        <div class="streak-card__flipper">
+          <div class="streak-card__face streak-card__face--front">
+            <div class="streak-card__top">
+              <span class="streak-card__icon"><i class="fa-solid ${esc(iconClass)}"></i></span>
+              <span class="streak-card__label">${label}</span>
+            </div>
+            <div class="streak-card__value">
+              <span class="streak-card__days">${days}</span>
+              <span class="streak-card__unit">${unit}</span>
+            </div>
+            ${startDate
+              ? `<span class="streak-card__since">
+                   <i class="fa-regular fa-calendar streak-card__since-icon" aria-hidden="true"></i>
+                   Since ${esc(startDate)}
+                 </span>`
+              : ''}
+          </div>
+          <div class="streak-card__face streak-card__face--back" aria-hidden="true">
+            ${hasHistory
+              ? `<div class="streak-chart">
+                   <div class="streak-chart__header">
+                     <span class="streak-chart__title">${label}</span>
+                     <span class="streak-chart__sub">최근 6개월</span>
+                   </div>
+                   <div class="streak-chart__bars">${barsHtml}</div>
+                 </div>`
+              : `<div class="streak-chart streak-chart--empty">데이터 준비 중</div>`}
+          </div>
         </div>
-        <div class="streak-card__value">
-          <span class="streak-card__days">${days}</span>
-          <span class="streak-card__unit">${unit}</span>
-        </div>
-        ${startDate
-          ? `<span class="streak-card__since">
-               <i class="fa-regular fa-calendar streak-card__since-icon" aria-hidden="true"></i>
-               Since ${esc(startDate)}
-             </span>`
-          : ''}
       </div>`;
     }).join('');
+
+    bindStreakFlip(grid);
 
     // updatedAt 표시 (헤더 + 안내문 날짜 태그)
     const u = typeof data?.updatedAt === 'string' && DATE_RE.test(data.updatedAt)
@@ -241,6 +279,34 @@ async function fetchStreaks() {
     showFetchError(grid, msg);
     if (updatedEl) updatedEl.textContent = '';
   }
+}
+
+/**
+ * streak 카드 클릭/키보드 입력 시 앞뒤 플립 토글
+ * @param {HTMLElement} grid
+ */
+function bindStreakFlip(grid) {
+  const cards = grid.querySelectorAll('.streak-card--flippable');
+  cards.forEach(card => {
+    const front = card.querySelector('.streak-card__face--front');
+    const back  = card.querySelector('.streak-card__face--back');
+    if (!front || !back) return;
+
+    const toggle = () => {
+      const isFlipped = card.classList.toggle('is-flipped');
+      card.setAttribute('aria-expanded', String(isFlipped));
+      front.setAttribute('aria-hidden', String(isFlipped));
+      back.setAttribute('aria-hidden', String(!isFlipped));
+    };
+
+    card.addEventListener('click', toggle);
+    card.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        toggle();
+      }
+    });
+  });
 }
 
 // -------------------------------------------------------

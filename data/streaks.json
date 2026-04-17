@@ -7,7 +7,9 @@
       "days": 74,
       "startDate": "2026-02-12",
       "icon": "fa-book",
-      "tone": "diary"
+      "tone": "diary",
+      "history": [12, 18, 22, 28, 30, 31],
+      "historyMonths": ["11", "12", "01", "02", "03", "04"]
     },
     {
       "key": "workout",
@@ -15,7 +17,9 @@
       "days": 500,
       "startDate": "2024-02-27",
       "icon": "fa-dumbbell",
-      "tone": "workout"
+      "tone": "workout",
+      "history": [12, 14, 18, 22, 20, 24],
+      "historyMonths": ["11", "12", "01", "02", "03", "04"]
     },
     {
       "key": "threec",
@@ -23,7 +27,9 @@
       "days": 42,
       "startDate": "2026-04-04",
       "icon": "fa-infinity",
-      "tone": "threec"
+      "tone": "threec",
+      "history": [0, 0, 0, 0, 10, 30],
+      "historyMonths": ["11", "12", "01", "02", "03", "04"]
     }
   ]
 }
