@@ -2266,222 +2266,212 @@ html.light .music-showcase__link-btn {
     font-size: 10.5px;
     font-weight: 500;
     letter-spacing: 0.3px;
-    font-variant-numeric: tabular-nums;
 
     & .streak-card__since-icon {
-      font-size: 9px;
-      opacity: 0.8;
+      font-size: 9.5px;
+      opacity: 0.85;
     }
   }
 
+  /* --- Loading skeleton --- */
   &.streak-card--loading {
-    pointer-events: none;
+    min-height: 128px;
+
+    & .streak-card__skeleton {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        90deg,
+        transparent 0%,
+        color-mix(in srgb, var(--text) 6%, transparent) 50%,
+        transparent 100%
+      );
+      background-size: 200% 100%;
+      animation: streak-shimmer 1.4s ease-in-out infinite;
+    }
   }
 
-  & .streak-card__skeleton {
-    height: 76px;
-    border-radius: var(--radius-sm);
-    background: linear-gradient(
-      90deg,
-      var(--streak-track) 0%,
-      var(--border-hover) 50%,
-      var(--streak-track) 100%
-    );
-    background-size: 200% 100%;
-    animation: streak-shimmer 1.4s ease-in-out infinite;
-  }
-}
-
-@keyframes streak-shimmer {
-  0%   { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
-}
-
-/* ---- Streak Card Flip + Chart ---- */
-.streak-card--flippable {
-  cursor: pointer;
-  perspective: 1200px;
-  overflow: visible;
-
-  &:focus-visible {
-    outline: 2px solid var(--streak-tone, var(--brand));
-    outline-offset: 2px;
-  }
-
-  & .streak-card__flipper {
-    position: relative;
-    width: 100%;
-    min-height: 96px;
-    transform-style: preserve-3d;
-    transition: transform 0.65s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-
-  &.is-flipped .streak-card__flipper {
-    transform: rotateY(180deg);
-  }
-
-  & .streak-card__face {
-    backface-visibility: hidden;
-    -webkit-backface-visibility: hidden;
-  }
-
-  & .streak-card__face--front {
-    position: relative;
-  }
-
-  & .streak-card__face--back {
-    position: absolute;
-    inset: 0;
-    transform: rotateY(180deg);
-    display: flex;
-    align-items: stretch;
-  }
-
-  & .streak-card__flip-btn {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    z-index: 3;
-    width: 26px;
-    height: 26px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    border: 1px solid var(--border);
-    border-radius: 999px;
-    background: color-mix(in srgb, var(--streak-tone, var(--brand)) 8%, transparent);
-    color: var(--streak-tone, var(--brand));
-    font-size: 10px;
+  /* --- Flippable card --- */
+  &.streak-card--flippable {
+    perspective: 900px;
     cursor: pointer;
-    pointer-events: none;
-    opacity: 0.75;
-    transition: opacity var(--transition), transform var(--transition);
+    padding: 0;
+
+    &:focus-visible {
+      outline: 2px solid var(--brand);
+      outline-offset: 2px;
+    }
+
+    & .streak-card__flip-btn {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      z-index: 2;
+      width: 26px;
+      height: 26px;
+      border: none;
+      border-radius: 50%;
+      background: color-mix(in srgb, var(--streak-tone, var(--brand)) 12%, transparent);
+      color: var(--streak-tone, var(--brand));
+      font-size: 11px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: background-color var(--transition), transform var(--transition);
+      pointer-events: none;
+    }
+
+    &:hover .streak-card__flip-btn {
+      background: color-mix(in srgb, var(--streak-tone, var(--brand)) 22%, transparent);
+    }
+
+    & .streak-card__flipper {
+      position: relative;
+      width: 100%;
+      min-height: 128px;
+      transform-style: preserve-3d;
+      transition: transform 0.55s cubic-bezier(0.4, 0.1, 0.2, 1);
+    }
+
+    &.is-flipped .streak-card__flipper {
+      transform: rotateY(180deg);
+    }
+
+    &.is-flipped .streak-card__flip-btn {
+      transform: rotateY(180deg);
+    }
+
+    & .streak-card__face {
+      position: absolute;
+      inset: 0;
+      padding: 16px 16px 14px;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    & .streak-card__face--back {
+      transform: rotateY(180deg);
+    }
   }
 
-  &:hover .streak-card__flip-btn {
-    opacity: 1;
-    transform: scale(1.08);
-  }
-
-  &.is-flipped .streak-card__flip-btn {
-    transform: scaleX(-1);
-    opacity: 1;
-  }
-}
-
-.streak-chart {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  width: 100%;
-
-  &.streak-chart--empty {
-    align-items: center;
-    justify-content: center;
-    font-size: 12px;
-    color: var(--text-muted);
-    padding: 24px 0;
-  }
-
-  & .streak-chart__header {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: 8px;
-    padding-right: 32px;
-  }
-
-  & .streak-chart__title {
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--text);
-    letter-spacing: 0.2px;
-  }
-
-  & .streak-chart__sub {
-    font-size: 10px;
-    color: var(--text-dim);
-    letter-spacing: 0.3px;
-  }
-
-  & .streak-chart__bars {
-    display: grid;
-    grid-template-columns: repeat(6, 1fr);
-    gap: 6px;
-    align-items: end;
-    min-height: 68px;
-  }
-
-  & .streak-chart__bar {
+  /* --- Chart on back face --- */
+  & .streak-chart {
     display: flex;
     flex-direction: column;
-    align-items: center;
-    gap: 3px;
-    height: 100%;
-    justify-content: flex-end;
-  }
-
-  & .streak-chart__bar-value {
-    font-family: var(--font);
-    font-size: 9.5px;
-    font-weight: 700;
-    color: var(--text);
-    font-variant-numeric: tabular-nums;
-    line-height: 1;
-  }
-
-  & .streak-chart__bar-fill {
+    gap: 10px;
     width: 100%;
-    min-height: 4px;
-    border-radius: 3px 3px 2px 2px;
-    background: linear-gradient(
-      to top,
-      var(--streak-tone, var(--brand)),
-      color-mix(in srgb, var(--streak-tone, var(--brand)) 40%, transparent)
-    );
-  }
+    height: 100%;
 
-  & .streak-chart__bar-month {
-    font-size: 9px;
-    color: var(--text-dim);
-    letter-spacing: 0.3px;
-    font-variant-numeric: tabular-nums;
+    & .streak-chart__header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    & .streak-chart__title {
+      font-size: 11.5px;
+      font-weight: 600;
+      color: var(--text);
+      letter-spacing: 0.2px;
+    }
+
+    & .streak-chart__sub {
+      font-size: 10px;
+      color: var(--text-dim);
+      letter-spacing: 0.3px;
+    }
+
+    & .streak-chart__bars {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 6px;
+      align-items: end;
+      flex: 1;
+      min-height: 60px;
+    }
+
+    & .streak-chart__bar {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 3px;
+      height: 100%;
+      min-height: 48px;
+    }
+
+    & .streak-chart__bar-fill {
+      width: 100%;
+      min-height: 3px;
+      border-radius: 3px 3px 2px 2px;
+      background: linear-gradient(
+        180deg,
+        var(--streak-tone, var(--brand)) 0%,
+        color-mix(in srgb, var(--streak-tone, var(--brand)) 55%, transparent) 100%
+      );
+      transition: height 0.5s cubic-bezier(0.4, 0.1, 0.2, 1);
+    }
+
+    & .streak-chart__bar-value {
+      font-family: var(--font);
+      font-size: 9.5px;
+      font-weight: 600;
+      color: var(--text);
+      font-variant-numeric: tabular-nums;
+      line-height: 1;
+    }
+
+    & .streak-chart__bar-month {
+      font-family: var(--font);
+      font-size: 9px;
+      color: var(--text-dim);
+      letter-spacing: 0.2px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    &.streak-chart--empty {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-dim);
+      font-size: 11.5px;
+      letter-spacing: 0.2px;
+    }
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .streak-card--flippable .streak-card__flipper {
-    transition: none;
-  }
-}
-
+/* 반응형 : 모바일 */
 @media (max-width: 520px) {
   .streaks {
-    margin-bottom: 28px;
-
     & .streaks__grid {
       grid-template-columns: 1fr;
       gap: 10px;
     }
-
-    & .streaks__notice {
-      margin-top: 12px;
-      padding: 9px 12px;
-      font-size: 11px;
-    }
   }
 
-  .streak-card {
-    padding: 14px 14px 12px;
-
-    & .streak-card__days {
-      font-size: 28px;
-    }
+  .streak-card .streak-card__days {
+    font-size: 30px;
   }
 }
 
+/* 접근성 : 모션 선호 */
 @media (prefers-reduced-motion: reduce) {
-  .streak-card .streak-card__skeleton {
-    animation: none;
+  .streak-card .streak-card__skeleton { animation: none !important; }
+  .streak-card.streak-card--flippable .streak-card__flipper {
+    transition: none !important;
   }
+  .streak-card .streak-chart__bar-fill {
+    transition: none !important;
+  }
+}
+
+@keyframes streak-shimmer {
+  0%   { background-position: -150% 0; }
+  100% { background-position:  150% 0; }
 }
