@@ -1,6 +1,9 @@
 (function () {
   'use strict';
 
+  // 수간호사 색상 팔레트 캐시 — 테마 전환 시 무효화 (아래 drawNurseChief에서 사용)
+  let chiefPaletteCache = null;
+
   // =====================================================
   // 테마 토글 (main.js initThemeToggle과 동일 로직 재현)
   // =====================================================
@@ -11,6 +14,8 @@
       try {
         localStorage.setItem('theme', isLight ? 'light' : 'dark');
       } catch (e) { /* 저장 실패 무시 */ }
+      // 수간호사 팔레트 캐시 무효화 — 테마 전환 시 CSS 변수 재해석 필요
+      chiefPaletteCache = null;
     });
   }
 
@@ -29,15 +34,16 @@
   const GAME_DURATION = 45; // 초 (30→45로 연장)
   const STORAGE_KEY = 'pixelNurseBest';
 
-  // 성공 판정 목표 점수 (절대값) — 콤보 보너스로 점수 인플레 보정
-  const TARGET_SCORE = { easy: 22, normal: 16, hard: 12 };
+  // 성공 판정 목표 점수 (절대값) — F 즉사 룰 하에서 반복 플레이로 점진적 달성
+  const TARGET_SCORE = { easy: 80, normal: 60, hard: 60 };
 
   // 난이도별 기초/최대 속도 + 추가 스폰 주기 + F 상한
   // baseSpeed → maxSpeed: 시간 경과에 따라 선형 보간
+  // throwBurst: 수간호사가 한 번 투척 시 동시에 던지는 F 개수
   const DIFFICULTY = {
-    easy:   { baseSpeed: 140, maxSpeed: 210, notes: 5, noteTtl: Infinity, obstacles: 1, obsBaseSpeed: 60,  obsMaxSpeed: 110, stun: 400, map: 'easy',   spawnInterval: [3.5, 2.0], maxObstacles: 2 },
-    normal: { baseSpeed: 150, maxSpeed: 230, notes: 4, noteTtl: 6000,     obstacles: 2, obsBaseSpeed: 90,  obsMaxSpeed: 160, stun: 500, map: 'normal', spawnInterval: [2.8, 1.2], maxObstacles: 4 },
-    hard:   { baseSpeed: 160, maxSpeed: 250, notes: 3, noteTtl: 4000,     obstacles: 3, obsBaseSpeed: 120, obsMaxSpeed: 210, stun: 700, map: 'hard',   spawnInterval: [2.0, 0.7], maxObstacles: 6 }
+    easy:   { baseSpeed: 140, maxSpeed: 210, notes: 5, noteTtl: Infinity, obstacles: 1, obsBaseSpeed: 60,  obsMaxSpeed: 110, stun: 400, map: 'easy',   spawnInterval: [3.5, 2.0], maxObstacles: 2,  throwBurst: 1 },
+    normal: { baseSpeed: 150, maxSpeed: 230, notes: 5, noteTtl: 5500,     obstacles: 3, obsBaseSpeed: 120, obsMaxSpeed: 210, stun: 500, map: 'normal', spawnInterval: [1.6, 0.6], maxObstacles: 6,  throwBurst: 2 },
+    hard:   { baseSpeed: 160, maxSpeed: 250, notes: 4, noteTtl: 3500,     obstacles: 5, obsBaseSpeed: 170, obsMaxSpeed: 290, stun: 700, map: 'hard',   spawnInterval: [1.0, 0.35], maxObstacles: 10, throwBurst: 3 }
   };
 
   // 콤보 단계별 수집 사운드 — C장조 스케일 (C4→D4→E4→G4→A4→C5→D5→E5→G5→A5)
@@ -411,6 +417,139 @@
     ctx.fillRect(ox + 2, oy + 5, 6, 2); // 중단 가로
   }
 
+  // 픽셀 수간호사 (16x20) — 백발 + 안경 + 베이지 상의, 김간호와 구분
+  // '.'=투명, 'S'=피부, 'H'=백발, 'G'=안경테/렌즈, 'U'=베이지 상의,
+  // 'V'=상의 음영, 'C'=브랜드 악센트(코럴), 'P'=진한 하의, 'B'=검정 구두, 'M'=입
+  function nurseChiefSprite(dir, frame, throwArm) {
+    const base = [
+      '................', // 0
+      '....HHHHHHHH....', // 1 백발 상단
+      '...HHHHHHHHHH...', // 2
+      '..HHHHHHHHHHHH..', // 3
+      '..HSSSSSSSSSSH..', // 4 이마
+      '..HSGGSSSSGGSH..', // 5 안경테
+      '..HSGGSSSSGGSH..', // 6 안경 렌즈
+      '..HSSSSSSSSSSH..', // 7
+      '..HSSSSMMSSSSH..', // 8 입
+      '..HHSSSSSSSSHH..', // 9 귀 옆 머리
+      '...HHHHHHHHHH...', // 10 턱선
+      '....UUUUUUUU....', // 11 상의 어깨
+      '...UUVVCCVVUU...', // 12 옷깃 + 코럴 악센트
+      '...UUVVVVVVUU...', // 13
+      '....UUUUUUUU....', // 14 상의 밑단
+      '....PPPPPPPP....', // 15 하의
+      '....PPP..PPP....', // 16
+      '....PPP..PPP....', // 17
+      '....BB....BB....', // 18 구두
+      '....BB....BB....'  // 19
+    ];
+
+    // 방향별 얼굴
+    if (dir === 'up') {
+      base[4] = '..HHHHHHHHHHHH..';
+      base[5] = '..HHHHHHHHHHHH..';
+      base[6] = '..HHHHHHHHHHHH..';
+      base[7] = '..HHHHHHHHHHHH..';
+      base[8] = '..HHHHHHHHHHHH..';
+      base[9] = '..HHHHHHHHHHHH..';
+    } else if (dir === 'left') {
+      base[5] = '..HSSSSSSSGGSH..';
+      base[6] = '..HSSSSSSSGGSH..';
+      base[8] = '..HSSSSMMSSSSH..';
+    } else if (dir === 'right') {
+      base[5] = '..HSGGSSSSSSSH..';
+      base[6] = '..HSGGSSSSSSSH..';
+      base[8] = '..HSSSSMMSSSSH..';
+    }
+
+    // 걷기 프레임 — 발만 교차
+    if (frame === 1) {
+      base[18] = '....BB...BBB....';
+      base[19] = '....BBB...BB....';
+    } else if (frame === 2) {
+      base[18] = '....BBB...BB....';
+      base[19] = '....BB...BBB....';
+    }
+
+    // 투척 팔 올림 — 상의 측면에 팔(베이지) 한 줄 올림
+    if (throwArm) {
+      // 상반신 어깨 위로 팔을 들어올린 실루엣
+      if (dir === 'left') {
+        base[10] = '..UUHHHHHHHHHH..';
+        base[11] = '..UUUUUUUUUU....';
+      } else if (dir === 'right') {
+        base[10] = '...HHHHHHHHHHUU.';
+        base[11] = '....UUUUUUUUUU..';
+      } else {
+        base[10] = '..UUHHHHHHHHUU..';
+        base[11] = '..UUUUUUUUUUUU..';
+      }
+    }
+
+    return base;
+  }
+
+  // CSS 변수로 정의된 수간호사 색상 캐시 — 매 프레임 getComputedStyle 호출 방지
+  // 테마 전환 시 재계산 필요 (테마 토글 핸들러에서 invalidate)
+  function getChiefPalette() {
+    if (chiefPaletteCache) return chiefPaletteCache;
+    const rootStyle = getComputedStyle(document.documentElement);
+    const readVar = (name, fallback) => {
+      const v = rootStyle.getPropertyValue(name).trim();
+      return v || fallback;
+    };
+    chiefPaletteCache = {
+      'S': '#f5d5c0',                                              // 피부
+      'H': readVar('--nurse-chief-hair', '#8a7a8a'),               // 백발
+      'G': readVar('--nurse-chief-glass', '#2a1f25'),              // 안경
+      'U': readVar('--nurse-chief-uniform', '#d4b8a0'),            // 베이지 상의
+      'V': readVar('--nurse-chief-uniform-shadow', '#b89884'),     // 상의 음영
+      'C': readVar('--nurse-chief-accent', '#ff7b7b'),             // 코럴 악센트
+      'P': '#3b2d35',                                              // 하의
+      'B': '#1a1214',                                              // 구두
+      'M': '#6b3a3a'                                               // 입술
+    };
+    return chiefPaletteCache;
+  }
+
+  function drawNurseChief(x, y, dir, frame, throwArm) {
+    const sprite = nurseChiefSprite(dir, frame, throwArm);
+    const palette = getChiefPalette();
+    const SCALE = 2;
+    const ox = Math.round(x) - 8;
+    let oy = Math.round(y) - 24;
+    if (frame !== 0 && !reducedMotion) oy -= 1;
+    for (let r = 0; r < 20; r++) {
+      const row = sprite[r];
+      for (let c = 0; c < 16; c++) {
+        const ch = row[c];
+        if (ch === '.' || !palette[ch]) continue;
+        ctx.fillStyle = palette[ch];
+        ctx.fillRect(ox + c * SCALE, oy + r * SCALE, SCALE, SCALE);
+      }
+    }
+  }
+
+  /**
+   * 투척 텔레그래프(!)를 수간호사 머리 위에 0.4s 그린다
+   * reduced-motion이면 깜빡임 대신 정적 표시 (호출 자체는 update에서 가드)
+   */
+  function drawTelegraph(x, y, now) {
+    const ox = Math.round(x);
+    const oy = Math.round(y) - 42;
+    const red = isLightTheme() ? '#e8283a' : '#ff3b4e';
+    // reduced-motion 환경에선 깜빡이지 않고 계속 표시
+    if (!reducedMotion && Math.floor(now / 120) % 2 === 0) return;
+    // 외곽 하이라이트
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(ox - 2, oy, 6, 8);
+    ctx.fillRect(ox - 1, oy + 9, 4, 3);
+    // 느낌표 본체
+    ctx.fillStyle = red;
+    ctx.fillRect(ox - 1, oy + 1, 4, 6);
+    ctx.fillRect(ox, oy + 10, 2, 2);
+  }
+
   // =====================================================
   // 게임 상태
   // =====================================================
@@ -433,7 +572,21 @@
     rafId: null,
     nextSpawnAt: 0,           // 다음 수간호사 F 스폰 예정 시각(ms)
     cutscenesShown: null,     // Set — 이미 본 컷씬 id 기록
-    best: { easy: 0, normal: 0, hard: 0 }
+    best: { easy: 0, normal: 0, hard: 0 },
+    gameoverReason: null,     // 'time' | 'hit' — endGame 분기용
+    // 수간호사 NPC — 맵 가장자리를 순찰하며 플레이어 방향으로 F 투척
+    nurseChief: {
+      x: 0, y: 0,
+      dir: 'down',
+      frameAcc: 0,
+      frame: 0,
+      patrolPath: [],      // [{x,y}, ...] 순환 경로 (픽셀)
+      patrolIdx: 0,        // 현재 목표 포인트 인덱스
+      throwTimer: 0,       // 다음 투척까지 남은 초
+      telegraphUntil: 0,   // 느낌표(!) 텔레그래프 종료 시각(ms)
+      throwArmUntil: 0,    // 팔 올림 프레임 종료 시각(ms)
+      active: false
+    }
   };
 
   function loadBest() {
@@ -468,6 +621,7 @@
   const endRecord = document.getElementById('endRecord');
   const btnStart = document.getElementById('btnStart');
   const btnReplay = document.getElementById('btnReplay');
+  const btnBackToDifficulty = document.getElementById('btnBackToDifficulty');
   const diffBtns = document.querySelectorAll('.game-difficulty__btn');
   const canvasWrap = document.querySelector('.game-canvas-wrap');
   const startGoalEl = document.getElementById('startGoal');
@@ -524,6 +678,10 @@
       state.difficulty = b.dataset.diff;
       updateBestHud();
       updateStartGoal();
+      // 시작 오버레이 뒤 프리뷰를 새 난이도 맵으로 갱신
+      if (overlayStart && !overlayStart.classList.contains('is-hidden')) {
+        renderPreview();
+      }
     });
   });
 
@@ -537,6 +695,53 @@
     overlayEnd.classList.add('is-hidden');
     startGame();
   });
+
+  // 난이도 다시 선택 — 종료 오버레이 닫고 시작 오버레이 재노출, 캔버스 프리뷰 재그리기
+  if (btnBackToDifficulty) {
+    btnBackToDifficulty.addEventListener('click', () => {
+      // 진행 중인 루프 정리
+      state.running = false;
+      if (state.rafId) {
+        cancelAnimationFrame(state.rafId);
+        state.rafId = null;
+      }
+      // 비네트/셰이크 잔존 클래스 정리
+      if (canvasWrap) {
+        canvasWrap.classList.remove('is-shake', 'is-gameover');
+      }
+      // 상태 초기화 (best와 현재 난이도는 유지)
+      state.score = 0;
+      state.combo = 0;
+      state.maxCombo = 0;
+      state.hits = 0;
+      state.collected = 0;
+      state.timeLeft = GAME_DURATION;
+      state.notes = [];
+      state.obstacles = [];
+      state.particles = [];
+      state.keys = Object.create(null);
+      state.gameoverReason = null;
+      state.nurseChief.active = false;
+      // HUD 리셋
+      hudTime.textContent = String(GAME_DURATION);
+      hudTime.classList.remove('is-warning');
+      hudScore.textContent = '0';
+      if (hudCombo) {
+        hudCombo.textContent = '0';
+        hudCombo.classList.remove('is-combo-hot', 'is-combo-bump');
+      }
+      // 오버레이 전환
+      overlayEnd.classList.add('is-hidden');
+      const cutOverlay = document.getElementById('overlayCutscene');
+      if (cutOverlay) cutOverlay.classList.add('is-hidden');
+      overlayStart.classList.remove('is-hidden');
+      // 프리뷰 재그리기
+      renderPreview();
+      // 난이도 버튼에 포커스 복귀 (접근성)
+      const activeDiff = document.querySelector('.game-difficulty__btn[aria-checked="true"]');
+      if (activeDiff) activeDiff.focus({ preventScroll: true });
+    });
+  }
 
   // 키보드 입력
   const KEY_MAP = {
@@ -592,6 +797,7 @@
     state.obstacles = [];
     state.particles = [];
     state.keys = Object.create(null);
+    state.gameoverReason = null;
     state.player.x = TILE * 2 + 3;
     state.player.y = TILE * 2 + 3;
     state.player.dir = 'down';
@@ -602,9 +808,17 @@
     // 컷씬 추적 Set 초기화
     state.cutscenesShown = new Set();
 
+    // 수간호사 NPC 초기화 — 난이도별 패트롤 경로
+    initNurseChief();
+
+    // 비네트/셰이크 잔존 클래스 정리
+    if (canvasWrap) {
+      canvasWrap.classList.remove('is-shake', 'is-gameover');
+    }
+
     // 초기 음표 스폰 (플레이어 주변 회피)
     for (let i = 0; i < diff.notes; i++) spawnNote();
-    // 장애물(F) 초기 스폰 (플레이어 주변 4타일 내 금지)
+    // 장애물(F) 초기 스폰 — 수간호사가 이미 던져놓은 것으로 해석, 플레이어 주변 금지
     for (let i = 0; i < diff.obstacles; i++) spawnObstacle();
 
     // 다음 추가 스폰 예정 시각 — 첫 주기는 baseInterval(spawnInterval[0])
@@ -664,7 +878,15 @@
       endStory.classList.remove('game-overlay__ending--fail');
       endStory.classList.add('game-overlay__ending');
 
-      if (success) {
+      const hitEnd = state.gameoverReason === 'hit';
+
+      if (hitEnd && !success) {
+        // F 즉사 종료 (목표 미달) — 수간호사에게 걸린 서사
+        endTitle.textContent = '수간호사에게 걸렸어요!';
+        endStory.textContent = 'F 한 장에 노래가 멈췄다. 김간호는 오늘만큼은 작곡을 포기하고 차트를 정리한다.';
+        endStory.classList.add('game-overlay__ending--fail');
+        playTone(165, 0.3);
+      } else if (success) {
         endTitle.textContent = '노래를 무사히 만들었어요!';
         if (newRecord) {
           endStory.textContent = `음표 ${score}개로 신곡 완성. 수간호사도 모르는 김간호의 첫 트랙이 태어났다.`;
@@ -673,12 +895,12 @@
         }
         playTone(988, 0.22);
       } else {
+        // 시간 초과 + 미달
         endTitle.textContent = '수간호사에게 붙잡혔어요…';
-        // 목표 -2점 이상이면 아쉬움 문구
         if (score >= target - 2) {
           endStory.textContent = `${score}점. 한 음만 더 있었으면… 다음 교대 시간엔 반드시.`;
         } else {
-          endStory.textContent = `수간호사의 F를 다 피하지 못했다. 김간호는 오늘 F학점을 맞아버렸다. (목표 ${target}점 / 획득 ${score}점)`;
+          endStory.textContent = `수간호사의 눈을 피해가며 모은 ${score}점. 오늘의 후렴은 여기까지. (목표 ${target}점 / 획득 ${score}점)`;
         }
         endStory.classList.add('game-overlay__ending--fail');
         playTone(165, 0.3);
@@ -790,6 +1012,174 @@
     });
   }
 
+  // =====================================================
+  // 수간호사 NPC — 패트롤 & F 투척
+  // =====================================================
+  /**
+   * 난이도별 패트롤 경로 & 초기 상태 설정 (기능 3)
+   * - easy: 상단 좌우 왕복
+   * - normal: 대각선 이동 (Z 패턴)
+   * - hard: 4모서리 순환
+   */
+  function initNurseChief() {
+    const chief = state.nurseChief;
+    const diff = state.difficulty;
+    // 기본 위치 — 맵 중앙 상단 (맵 가장자리 순찰)
+    const leftX = TILE * 3;
+    const rightX = TILE * (COLS - 4);
+    const topY = TILE * 3;
+    const bottomY = TILE * (ROWS - 4);
+
+    if (diff === 'easy') {
+      chief.patrolPath = [
+        { x: leftX, y: topY },
+        { x: rightX, y: topY }
+      ];
+      chief.speed = 40;
+    } else if (diff === 'normal') {
+      chief.patrolPath = [
+        { x: leftX, y: topY },
+        { x: rightX, y: bottomY },
+        { x: rightX, y: topY },
+        { x: leftX, y: bottomY }
+      ];
+      chief.speed = 60;
+    } else {
+      chief.patrolPath = [
+        { x: leftX, y: topY },
+        { x: rightX, y: topY },
+        { x: rightX, y: bottomY },
+        { x: leftX, y: bottomY }
+      ];
+      chief.speed = 80;
+    }
+
+    chief.patrolIdx = 0;
+    chief.x = chief.patrolPath[0].x;
+    chief.y = chief.patrolPath[0].y;
+    chief.dir = 'down';
+    chief.frame = 0;
+    chief.frameAcc = 0;
+    chief.telegraphUntil = 0;
+    chief.throwArmUntil = 0;
+    chief.active = true;
+    // 첫 투척까지 base 주기 (spawnInterval[0]) 대기
+    chief.throwTimer = DIFFICULTY[diff].spawnInterval[0];
+  }
+
+  /**
+   * 수간호사 업데이트 — 패트롤 & 투척 타이머
+   * @param {number} dt - 델타타임(s)
+   * @param {number} now - 현재 시각(ms, performance.now)
+   */
+  function updateNurseChief(dt, now) {
+    const chief = state.nurseChief;
+    if (!chief.active || !chief.patrolPath.length) return;
+
+    // --- 패트롤 이동: 현재 목표점까지 선형 이동, 도달하면 다음 포인트 ---
+    const target = chief.patrolPath[chief.patrolIdx];
+    const dx = target.x - chief.x;
+    const dy = target.y - chief.y;
+    const dist = Math.hypot(dx, dy);
+    const step = chief.speed * dt;
+
+    if (dist <= step || dist < 0.5) {
+      chief.x = target.x;
+      chief.y = target.y;
+      chief.patrolIdx = (chief.patrolIdx + 1) % chief.patrolPath.length;
+    } else {
+      chief.x += (dx / dist) * step;
+      chief.y += (dy / dist) * step;
+      // 방향 갱신 (주이동축 기준)
+      if (Math.abs(dx) > Math.abs(dy)) {
+        chief.dir = dx > 0 ? 'right' : 'left';
+      } else {
+        chief.dir = dy > 0 ? 'down' : 'up';
+      }
+    }
+
+    // --- 걷기 프레임 ---
+    if (!reducedMotion) {
+      chief.frameAcc += dt;
+      if (chief.frameAcc > 0.18) {
+        chief.frameAcc = 0;
+        chief.frame = chief.frame === 1 ? 2 : 1;
+      }
+    } else {
+      chief.frame = 0;
+    }
+
+    // --- 투척 타이머 ---
+    const diff = DIFFICULTY[state.difficulty];
+
+    // 텔레그래프 만료 시점에 실제 투척
+    if (chief.telegraphUntil > 0 && now >= chief.telegraphUntil) {
+      chief.telegraphUntil = 0;
+      // F 상한 체크
+      if (state.obstacles.length < diff.maxObstacles) {
+        spawnObstacleFromChief();
+      }
+      // 팔 올림은 짧게 유지 후 내림
+      chief.throwArmUntil = now + 180;
+      // 다음 투척까지 대기 시간 — 난이도 곡선 보간
+      const intervalSec = lerp(diff.spawnInterval[0], diff.spawnInterval[1], curveT());
+      chief.throwTimer = intervalSec;
+    } else if (chief.telegraphUntil === 0) {
+      chief.throwTimer -= dt;
+      if (chief.throwTimer <= 0) {
+        // 텔레그래프 시작 — 0.4s 후 실제 투척
+        chief.telegraphUntil = now + 400;
+      }
+    }
+  }
+
+  /**
+   * 수간호사가 플레이어 방향으로 F 투척 (기능 3)
+   * - chief.x/y 기준 플레이어 방향 벡터 생성
+   * - throwBurst만큼 동시 투척, ±15° 스프레드
+   */
+  function spawnObstacleFromChief() {
+    const chief = state.nurseChief;
+    const diff = DIFFICULTY[state.difficulty];
+    const p = state.player;
+    // 플레이어 중심 기준 방향
+    const px = p.x + p.w / 2;
+    const py = p.y + p.h / 2;
+    const baseDx = px - chief.x;
+    const baseDy = py - chief.y;
+    const baseLen = Math.hypot(baseDx, baseDy) || 1;
+    const baseAngle = Math.atan2(baseDy, baseDx);
+
+    const burst = Math.max(1, diff.throwBurst | 0);
+    const spread = 15 * Math.PI / 180; // ±15°
+
+    for (let i = 0; i < burst; i++) {
+      // 상한 체크 — 이번 burst 중에도 상한 도달 시 중단
+      if (state.obstacles.length >= diff.maxObstacles) break;
+      // 스프레드: burst=1이면 0, burst>1이면 균등 분포 + 작은 랜덤
+      const t = burst === 1 ? 0 : (i / (burst - 1)) * 2 - 1; // -1..1
+      const angle = baseAngle + t * spread + (Math.random() - 0.5) * 0.05;
+      const dx = Math.cos(angle);
+      const dy = Math.sin(angle);
+      // F 시작 위치 — 수간호사 바로 앞(플레이어 방향 12px 오프셋)
+      let sx = chief.x + dx * 12;
+      let sy = chief.y + dy * 12;
+      // 맵 경계 안쪽 클램프
+      sx = Math.max(TILE, Math.min(CANVAS_W - TILE - 12, sx));
+      sy = Math.max(TILE, Math.min(CANVAS_H - TILE - 12, sy));
+      // 벽 위면 findEmptyTile 폴백
+      if (state.map && isWallAt(state.map, sx, sy, 12, 12)) {
+        const tile = findEmptyTile(state.map, Math.random, [playerTile()]);
+        sx = tile.c * TILE + (TILE - 12) / 2;
+        sy = tile.r * TILE + (TILE - 12) / 2;
+      }
+      state.obstacles.push({ x: sx, y: sy, dx: dx, dy: dy });
+    }
+    // 투척 순간 팔 올림 플래그 (이미 updateNurseChief에서도 처리되나 즉시 반영)
+    // 효과음 — 공기 가르는 얕은 톤
+    playTone(220, 0.06);
+  }
+
   /**
    * 파티클 스폰 — 수집 쾌감 시각화 (C8)
    * reduced-motion에선 호출 측에서 생략
@@ -896,15 +1286,8 @@
       }
     }
 
-    // 수간호사 추가 스폰 — 난이도 곡선에 따라 주기 보간, 상한까지만
-    if (now >= state.nextSpawnAt) {
-      if (state.obstacles.length < diff.maxObstacles) {
-        spawnObstacle();
-      }
-      // 상한 초과 시에도 주기 재설정(다음 기회에 다시 시도)
-      const intervalSec = lerp(diff.spawnInterval[0], diff.spawnInterval[1], curveT());
-      state.nextSpawnAt = now + intervalSec * 1000;
-    }
+    // 수간호사 NPC 업데이트 — 패트롤 이동 + 투척 타이머 처리
+    updateNurseChief(dt, now);
 
     // 음표 만료 & 보충
     if (diff.noteTtl !== Infinity) {
@@ -950,37 +1333,29 @@
       }
     }
 
-    // 장애물(F) 충돌 — 스턴 + 점수 -1 + 콤보 리셋 + 저음 2연타 + 셰이크 (C7)
-    if (!stunned) {
-      for (const o of state.obstacles) {
-        if (p.x < o.x + 12 && p.x + p.w > o.x &&
-            p.y < o.y + 12 && p.y + p.h > o.y) {
-          p.stunUntil = now + diff.stun;
-          state.score = Math.max(0, state.score - 1);
-          state.hits += 1;
-          state.combo = 0;
-          hudScore.textContent = String(state.score);
-          updateComboHud(false);
+    // 장애물(F) 충돌 — 즉사 처리 (SPEC 기능 6)
+    // 한 번이라도 F에 닿으면 즉시 endGame
+    for (const o of state.obstacles) {
+      if (p.x < o.x + 12 && p.x + p.w > o.x &&
+          p.y < o.y + 12 && p.y + p.h > o.y) {
+        state.hits += 1;
+        state.combo = 0;
+        updateComboHud(false);
 
-          // 저음 2연타 — 스케일 무너짐
-          playTone(196, 0.12);
-          setTimeout(() => playTone(147, 0.18), 90);
+        // 저음 2연타 — 스케일 무너짐
+        playTone(110, 0.25);
+        setTimeout(() => playTone(82, 0.35), 100);
 
-          // 캔버스 셰이크 — reduced-motion 비활성
-          if (canvasWrap && !reducedMotion) {
-            canvasWrap.classList.remove('is-shake');
-            void canvasWrap.offsetWidth; // 재생 재시작용 reflow
-            canvasWrap.classList.add('is-shake');
-            canvasWrap.addEventListener('animationend', () => {
-              canvasWrap.classList.remove('is-shake');
-            }, { once: true });
-          }
-
-          // 살짝 밀어내기
-          p.x = Math.max(TILE, Math.min(CANVAS_W - TILE - p.w, p.x - (o.dx * 6)));
-          p.y = Math.max(TILE, Math.min(CANVAS_H - TILE - p.h, p.y - (o.dy * 6)));
-          break;
+        // 캔버스 셰이크 + 즉사 비네트 — reduced-motion 비활성
+        if (canvasWrap && !reducedMotion) {
+          canvasWrap.classList.remove('is-shake');
+          void canvasWrap.offsetWidth; // 재생 재시작용 reflow
+          canvasWrap.classList.add('is-shake', 'is-gameover');
         }
+
+        state.gameoverReason = 'hit';
+        endGame();
+        return;
       }
     }
 
@@ -991,6 +1366,7 @@
     state.timeLeft -= dt;
     if (state.timeLeft <= 0) {
       hudTime.textContent = '0';
+      state.gameoverReason = 'time';
       endGame();
       return;
     }
@@ -1032,6 +1408,17 @@
 
     // 장애물
     for (const o of state.obstacles) drawObstacle(o.x, o.y);
+
+    // 수간호사 NPC (플레이어보다 먼저 — 층 순서 유지)
+    const chief = state.nurseChief;
+    if (chief.active) {
+      const throwArm = now < chief.throwArmUntil || chief.telegraphUntil > 0;
+      drawNurseChief(chief.x, chief.y, chief.dir, chief.frame, throwArm);
+      // 텔레그래프(!) — 투척 전 0.4s 머리 위에 표시
+      if (chief.telegraphUntil > 0 && now < chief.telegraphUntil) {
+        drawTelegraph(chief.x, chief.y, now);
+      }
+    }
 
     // 플레이어
     const p = state.player;
@@ -1113,15 +1500,22 @@
   updateStartGoal();
   if (isTouchDevice()) initTouchControls();
 
-  // 기본 난이도 easy 활성 표시는 이미 HTML에서 aria-checked="true"
-  // 초기에는 캔버스에 easy 맵을 스냅샷으로 그려 놓는다 (미리보기)
-  (function initPreview() {
-    const previewMap = buildMap('easy');
+  /**
+   * 시작 오버레이 뒤 캔버스 프리뷰 — 김간호 + 수간호사 + F 한 장
+   * 초기 로드 시 / "난이도 다시 선택" 복귀 시 호출
+   */
+  function renderPreview() {
+    const previewMap = buildMap(state.difficulty || 'easy');
     ctx.fillStyle = isLightTheme() ? '#e8e7ec' : '#09080f';
     ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
     drawMap(previewMap);
-    // 중앙에 간호사 한 명 그려두기 + 옆에 빨간 F 한 개(신규 컨셉 힌트)
-    drawNurse(TILE * 15 + 2, TILE * 9 + 2, 'down', 0);
-    drawObstacle(TILE * 19 + 4, TILE * 9 + 4);
-  })();
+    // 김간호 (우측 중앙)
+    drawNurse(TILE * 20 + 2, TILE * 9 + 2, 'left', 0);
+    // 수간호사 (좌측 중앙) + F 한 장 — 던지기 직전 구도
+    drawNurseChief(TILE * 11 + 2, TILE * 9 + 2, 'right', 0, true);
+    drawObstacle(TILE * 15 + 4, TILE * 9 + 4);
+  }
+
+  // 기본 난이도 easy 활성 표시는 이미 HTML에서 aria-checked="true"
+  renderPreview();
 })();

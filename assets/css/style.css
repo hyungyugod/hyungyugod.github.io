@@ -184,10 +184,15 @@ html.light .hero-bg {
 }
 
 html.light .profile__name {
+  color: var(--text);
   background: linear-gradient(135deg, #1a1a2e 50%, var(--brand) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+
+  @supports not (-webkit-background-clip: text) {
+    -webkit-text-fill-color: currentColor;
+  }
 }
 
 html.light .profile__bio-quote strong {
@@ -406,6 +411,7 @@ html.light .social-card:hover {
     letter-spacing: -1.5px;
     line-height: 1;
     margin-bottom: 10px;
+    color: var(--brand-light);
     background:
       linear-gradient(120deg, transparent 30%, rgba(255,255,255,0.25) 50%, transparent 70%),
       linear-gradient(135deg, #fff 50%, var(--brand-light) 100%);
@@ -415,6 +421,10 @@ html.light .social-card:hover {
     -webkit-text-fill-color: transparent;
     background-clip: text;
     transition: background-position 0.4s ease;
+
+    @supports not (-webkit-background-clip: text) {
+      -webkit-text-fill-color: currentColor;
+    }
   }
 
   & .profile__subtitle {
