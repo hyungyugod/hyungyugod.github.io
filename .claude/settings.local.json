@@ -20,7 +20,16 @@
       "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:8000/pages/game.html)",
       "Read(//c/c/Users/user/Desktop/hyungyugod.github.io/**)",
       "Bash(python3 *)",
-      "Bash(// 초기화 한두 프레임 안정화 대기 후 intro 노출)"
+      "Bash(// 초기화 한두 프레임 안정화 대기 후 intro 노출)",
+      "Bash(cp /tmp/game-check.js \"C:/Users/user/Desktop/hyungyugod.github.io/.claude/worktrees/keen-pike-c7df20/tests/game-check.js\")",
+      "Bash(node tests/game-check.js)",
+      "Bash(pkill -f \"http.server 8000\")",
+      "Bash(curl -sI http://localhost:3000/pages/game.html)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000/pages/game.html)",
+      "Bash(node tests/game-preview.js)",
+      "Bash(node tests/game-sprite-zoom.js)",
+      "Bash(node tests/game-sprite-light.js)",
+      "Bash(node tests/sprint3-check.js)"
     ]
   }
 }

@@ -3,6 +3,8 @@
 
   // 수간호사 색상 팔레트 캐시 — 테마 전환 시 무효화 (아래 drawNurseChief에서 사용)
   let chiefPaletteCache = null;
+  // 김간호(플레이어) 번(Bun) 머리 팔레트 캐시 — 테마 전환 시 무효화 (drawNurse에서 사용)
+  let nursePaletteCache = null;
 
   // =====================================================
   // 테마 토글 (main.js initThemeToggle과 동일 로직 재현)
@@ -16,6 +18,8 @@
       } catch (e) { /* 저장 실패 무시 */ }
       // 수간호사 팔레트 캐시 무효화 — 테마 전환 시 CSS 변수 재해석 필요
       chiefPaletteCache = null;
+      // 김간호 번 팔레트 캐시 무효화 — 동일 이유
+      nursePaletteCache = null;
     });
   }
 
@@ -281,20 +285,21 @@
   }
 
   // 픽셀 간호사 (16x20) — 치비/SD 비율 (2.2등신)
-  // '.'=투명, 'S'=피부, 'H'=머리카락, 'W'=흰옷, 'D'=모자 음영, 'C'=코럴십자
+  // '.'=투명, 'S'=피부, 'H'=머리카락/번, 'b'=번 내부 음영, 'W'=흰옷, 'C'=코럴십자
   // 'E'=눈 동공, 'L'=눈 하이라이트(흰자), 'R'=볼터치, 'M'=입, 'P'=하의, 'B'=신발
+  // (캡→번 변경으로 'D' 키 제거됨)
   // 방향(dir): 'down','up','left','right', 프레임(frame): 0 idle, 1/2 step
   const NURSE_W = 16;
   const NURSE_H = 20;
   function nurseSprite(dir, frame) {
-    // 16x20 — 머리(행 1-10, 50%) + 몸통/다리(행 11-19)
+    // 16x20 — 번(행 1-3) + 헤어라인/이마(행 4-5) + 얼굴(행 6-10) + 몸통/다리(행 11-19)
     const base = [
       '................', // 0
-      '....WWWWWWWW....', // 1 모자 상단
-      '...WWWWCCWWWW...', // 2 모자 중단 + 코럴 십자
-      '..WDDDDDDDDDDW..', // 3 모자 그림자 라인
-      '..HHSSSSSSSSHH..', // 4 앞머리 + 이마
-      '..HSSSSSSSSSSH..', // 5
+      '......HHHH......', // 1 번 꼭대기 (4픽셀 둥근 윗면)
+      '.....HbbbbH.....', // 2 번 본체 + 음영
+      '....HHbbbbHH....', // 3 번 밑단 + 베이스
+      '..HHHHHHHHHHHH..', // 4 두상 윗라인 (헤어라인)
+      '..HHSSSSSSSSHH..', // 5 잔머리 옆 + 이마
       '..SSEESSSSEESS..', // 6 눈 동공
       '..SSELSSSSELSS..', // 7 눈 하이라이트
       '..RSSSSMMSSSSR..', // 8 볼터치 + 작은 입
@@ -313,7 +318,10 @@
 
     // 방향별 얼굴 처리
     if (dir === 'up') {
-      // 뒷모습 — 얼굴 자리 전체를 머리카락으로
+      // 뒷모습 — 번 실루엣(행 1-3) 유지 + 얼굴 자리 전체를 머리카락으로
+      base[1] = '......HHHH......'; // 번 꼭대기 (정면과 동일)
+      base[2] = '.....HbbbbH.....'; // 번 본체 + 음영
+      base[3] = '....HHbbbbHH....'; // 번 밑단
       base[4] = '..HHHHHHHHHHHH..';
       base[5] = '..HHHHHHHHHHHH..';
       base[6] = '..HHHHHHHHHHHH..';
@@ -345,21 +353,34 @@
     return base;
   }
 
+  // 김간호 팔레트 빌더 — H/b만 CSS 변수에서 읽어 테마 반응형.
+  // 나머지 키(S/W/C/P/B/E/L/R/M)는 하드코딩 유지 (테마와 무관한 고유 피부/옷/눈 색).
+  function getNursePalette() {
+    if (nursePaletteCache) return nursePaletteCache;
+    const rootStyle = getComputedStyle(document.documentElement);
+    const readVar = (name, fallback) => {
+      const v = rootStyle.getPropertyValue(name).trim();
+      return v || fallback;
+    };
+    nursePaletteCache = {
+      'S': '#fbe0d0',                                 // 피부
+      'H': readVar('--nurse-bun', '#3a2a20'),         // 머리카락/번 본체 (흑갈)
+      'b': readVar('--nurse-bun-shadow', '#5a4230'),  // 번 내부 음영
+      'W': '#ffffff',                                 // 흰옷
+      'C': '#c4847a',                                 // 코럴 십자
+      'P': readVar('--nurse-pants', '#9ec9e8'),       // 하의
+      'B': '#a85f56',                                 // 신발
+      'E': '#2a1f25',                                 // 눈 동공
+      'L': '#ffffff',                                 // 흰자 하이라이트
+      'R': '#f5a8a0',                                 // 볼터치
+      'M': '#c4847a'                                  // 입
+    };
+    return nursePaletteCache;
+  }
+
   function drawNurse(x, y, dir, frame) {
     const sprite = nurseSprite(dir, frame);
-    const palette = {
-      'S': '#fbe0d0', // 피부
-      'H': '#2e2020', // 머리카락
-      'W': '#ffffff', // 흰옷/모자
-      'D': '#e6dde6', // 모자 음영
-      'C': '#c4847a', // 코럴 십자
-      'P': '#e8bcb4', // 하의
-      'B': '#a85f56', // 신발
-      'E': '#2a1f25', // 눈 동공
-      'L': '#ffffff', // 흰자 하이라이트
-      'R': '#f5a8a0', // 볼터치
-      'M': '#c4847a'  // 입
-    };
+    const palette = getNursePalette();
     const SCALE = 2;
     // 히트박스(14x14) 기준 중앙 정렬. 머리가 커졌으므로 oy를 -24로 내림.
     const ox = Math.round(x) - 8;
@@ -417,49 +438,57 @@
     ctx.fillRect(ox + 2, oy + 5, 6, 2); // 중단 가로
   }
 
-  // 픽셀 수간호사 (16x20) — 백발 + 안경 + 베이지 상의, 김간호와 구분
-  // '.'=투명, 'S'=피부, 'H'=백발, 'G'=안경테/렌즈, 'U'=베이지 상의,
-  // 'V'=상의 음영, 'C'=브랜드 악센트(코럴), 'P'=진한 하의, 'B'=검정 구두, 'M'=입
+  // 픽셀 수간호사 (16x20) — 백발 + 안경 + 간호사 캡 + 흰 간호사복 + 얼굴 주름 — 나이 든 수간호사
+  // '.'=투명, 'S'=피부, 'N'=주름/피부 음영, 'H'=백발, 'h'=백발 음영,
+  // 'K'=간호사 캡, 'k'=캡 음영, 'X'=캡 코럴 십자,
+  // 'G'=안경테, 'g'=안경 렌즈 내부(피부 변형), 'U'=흰 간호사복, 'V'=흰옷 음영,
+  // 'C'=코럴 악센트(옷깃 중앙), 'P'=하의(간호사복과 동일색), 'B'=검정 구두, 'M'=입
   function nurseChiefSprite(dir, frame, throwArm) {
     const base = [
       '................', // 0
-      '....HHHHHHHH....', // 1 백발 상단
-      '...HHHHHHHHHH...', // 2
-      '..HHHHHHHHHHHH..', // 3
-      '..HSSSSSSSSSSH..', // 4 이마
-      '..HSGGSSSSGGSH..', // 5 안경테
-      '..HSGGSSSSGGSH..', // 6 안경 렌즈
-      '..HSSSSSSSSSSH..', // 7
-      '..HSSSSMMSSSSH..', // 8 입
-      '..HHSSSSSSSSHH..', // 9 귀 옆 머리
-      '...HHHHHHHHHH...', // 10 턱선
-      '....UUUUUUUU....', // 11 상의 어깨
-      '...UUVVCCVVUU...', // 12 옷깃 + 코럴 악센트
-      '...UUVVVVVVUU...', // 13
-      '....UUUUUUUU....', // 14 상의 밑단
-      '....PPPPPPPP....', // 15 하의
-      '....PPP..PPP....', // 16
-      '....PPP..PPP....', // 17
+      '....KKKKKKKK....', // 1 간호사 캡 상단
+      '...KKKKXXKKKK...', // 2 캡 + 코럴 십자
+      '..KkkkkkkkkkkK..', // 3 캡 밑단(음영)
+      '..HHSSSSSSSSHH..', // 4 이마 + 백발 옆선
+      '..HhSSSSSSSShH..', // 5 백발 음영
+      '..hSGGSSSSGGSh..', // 6 안경테
+      '..hSGgSSSSgGSh..', // 7 안경 렌즈(눈)
+      '..hSSNSSSSNSSh..', // 8 눈 밑 주름
+      '..hSSSSMMSSSSh..', // 9 입
+      '..hhSSNNNNSSHh..', // 10 팔자 주름 + 턱선
+      '...UUUUUUUUUU...', // 11 흰 간호사복 어깨
+      '..UUUUVCCVUUUU..', // 12 옷깃 + 코럴 십자
+      '..UUVVVVVVVVUU..', // 13 상의 음영
+      '...UUUUUUUUUU...', // 14 상의 밑단
+      '....UUUUUUUU....', // 15 하의(흰 간호사복)
+      '....UUU..UUU....', // 16
+      '....UUU..UUU....', // 17
       '....BB....BB....', // 18 구두
       '....BB....BB....'  // 19
     ];
 
-    // 방향별 얼굴
+    // 방향별 얼굴 — 뒷통수(up)는 캡·백발로 덮고, 좌우는 안경·주름을 편향
     if (dir === 'up') {
+      // 캡 행 1–3 유지, 얼굴 영역(4–10)만 백발로 덮음
       base[4] = '..HHHHHHHHHHHH..';
-      base[5] = '..HHHHHHHHHHHH..';
-      base[6] = '..HHHHHHHHHHHH..';
-      base[7] = '..HHHHHHHHHHHH..';
-      base[8] = '..HHHHHHHHHHHH..';
-      base[9] = '..HHHHHHHHHHHH..';
+      base[5] = '..HhHHHHHHHHhH..';
+      base[6] = '..hHHHHHHHHHHh..';
+      base[7] = '..hHHHHHHHHHHh..';
+      base[8] = '..hHHHHHHHHHHh..';
+      base[9] = '..hHHHHHHHHHHh..';
+      base[10] = '..hhHHHHHHHHHh..';
     } else if (dir === 'left') {
-      base[5] = '..HSSSSSSSGGSH..';
-      base[6] = '..HSSSSSSSGGSH..';
-      base[8] = '..HSSSSMMSSSSH..';
+      base[6] = '..hSSSSSSSGGSh..';
+      base[7] = '..hSSSSSSSgGSh..';
+      base[8] = '..hSSSSSSSNSSh..';
+      base[9] = '..hSSSSMMSSSSh..';
+      base[10] = '..hhSSNNNNSSHh..';
     } else if (dir === 'right') {
-      base[5] = '..HSGGSSSSSSSH..';
-      base[6] = '..HSGGSSSSSSSH..';
-      base[8] = '..HSSSSMMSSSSH..';
+      base[6] = '..hSGGSSSSSSSh..';
+      base[7] = '..hSGgSSSSSSSh..';
+      base[8] = '..hSSNSSSSSSSh..';
+      base[9] = '..hSSSSMMSSSSh..';
+      base[10] = '..hhSSNNNNSSHh..';
     }
 
     // 걷기 프레임 — 발만 교차
@@ -471,17 +500,17 @@
       base[19] = '....BB...BBB....';
     }
 
-    // 투척 팔 올림 — 상의 측면에 팔(베이지) 한 줄 올림
+    // 투척 팔 올림 — 상의 측면에 흰 소매(U) 한 줄 올림
     if (throwArm) {
       // 상반신 어깨 위로 팔을 들어올린 실루엣
       if (dir === 'left') {
-        base[10] = '..UUHHHHHHHHHH..';
+        base[10] = '..UUhhNNNNSSHh..';
         base[11] = '..UUUUUUUUUU....';
       } else if (dir === 'right') {
-        base[10] = '...HHHHHHHHHHUU.';
+        base[10] = '..hhSSNNNNhhUU..';
         base[11] = '....UUUUUUUUUU..';
       } else {
-        base[10] = '..UUHHHHHHHHUU..';
+        base[10] = '..UUhSNNNNShUU..';
         base[11] = '..UUUUUUUUUUUU..';
       }
     }
@@ -491,6 +520,7 @@
 
   // CSS 변수로 정의된 수간호사 색상 캐시 — 매 프레임 getComputedStyle 호출 방지
   // 테마 전환 시 재계산 필요 (테마 토글 핸들러에서 invalidate)
+  // 나이 든 간호사: 캡(K/k/X) + 백발(H/h) + 안경(G/g) + 주름(N) + 흰 간호사복(U/V) + 코럴 악센트(C)
   function getChiefPalette() {
     if (chiefPaletteCache) return chiefPaletteCache;
     const rootStyle = getComputedStyle(document.documentElement);
@@ -499,15 +529,21 @@
       return v || fallback;
     };
     chiefPaletteCache = {
-      'S': '#f5d5c0',                                              // 피부
-      'H': readVar('--nurse-chief-hair', '#8a7a8a'),               // 백발
-      'G': readVar('--nurse-chief-glass', '#2a1f25'),              // 안경
-      'U': readVar('--nurse-chief-uniform', '#d4b8a0'),            // 베이지 상의
-      'V': readVar('--nurse-chief-uniform-shadow', '#b89884'),     // 상의 음영
-      'C': readVar('--nurse-chief-accent', '#ff7b7b'),             // 코럴 악센트
-      'P': '#3b2d35',                                              // 하의
-      'B': '#1a1214',                                              // 구두
-      'M': '#6b3a3a'                                               // 입술
+      'S': '#f5d5c0',                                                  // 피부
+      'N': readVar('--nurse-chief-wrinkle', '#c08878'),                // 주름/피부 음영
+      'H': readVar('--nurse-chief-hair', '#e8e4e8'),                   // 백발
+      'h': readVar('--nurse-chief-hair-shadow', '#c8c4cc'),            // 백발 음영
+      'K': readVar('--nurse-chief-cap', '#ffffff'),                    // 간호사 캡
+      'k': readVar('--nurse-chief-cap-shadow', '#e6dde6'),             // 캡 음영
+      'X': readVar('--nurse-chief-cap-cross', '#ff7b7b'),              // 캡 코럴 십자
+      'G': readVar('--nurse-chief-glass', '#1f1a1f'),                  // 안경테
+      'g': '#e8c8b8',                                                  // 렌즈 안(피부 변형, 눈이 보이는 인상)
+      'U': readVar('--nurse-chief-uniform', '#f4f0ee'),                // 흰 간호사복
+      'V': readVar('--nurse-chief-uniform-shadow', '#d8d2d0'),         // 흰옷 음영
+      'C': readVar('--nurse-chief-accent', '#ff7b7b'),                 // 코럴 악센트
+      'P': readVar('--nurse-chief-uniform', '#f4f0ee'),                // 하의(간호사복 통일)
+      'B': '#1a1214',                                                  // 구두
+      'M': '#6b3a3a'                                                   // 입술
     };
     return chiefPaletteCache;
   }

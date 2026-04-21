@@ -9,21 +9,41 @@
   --game-danger-20: rgba(255, 59, 78, 0.20);
   --game-combo-glow: var(--brand-40);
   --game-particle: var(--brand-light);
-  /* 수간호사 NPC 스프라이트 팔레트 — 백발 + 안경 + 베이지 상의 */
-  --nurse-chief-hair: #8a7a8a;
-  --nurse-chief-glass: #2a1f25;
-  --nurse-chief-uniform: #d4b8a0;
+  /* 수간호사 NPC 스프라이트 팔레트 — 백발 + 안경 + 간호사 캡 + 흰 간호사복 + 얼굴 주름 (나이 든 수간호사) */
+  --nurse-chief-cap: #ffffff;
+  --nurse-chief-cap-shadow: #e6dde6;
+  --nurse-chief-cap-cross: var(--brand);
+  --nurse-chief-hair: #e8e4e8;
+  --nurse-chief-hair-shadow: #c8c4cc;
+  --nurse-chief-glass: #1f1a1f;
+  --nurse-chief-uniform: #f4f0ee;
+  --nurse-chief-uniform-shadow: #d8d2d0;
   --nurse-chief-accent: var(--brand);
-  --nurse-chief-uniform-shadow: #b89884;
+  --nurse-chief-wrinkle: #c08878;
+  /* 김간호(플레이어) 번(Bun) 머리 팔레트 — 흑갈 2단계 (수간호사 캡/백발과 실루엣 대비) */
+  --nurse-bun: #3a2a20;
+  --nurse-bun-shadow: #5a4230;
+  --nurse-pants: #9ec9e8;
 }
 
 html.light {
   --game-danger: #e8283a;
   --game-combo-glow: var(--brand-35);
+  --nurse-chief-cap: #fafafa;
+  --nurse-chief-cap-shadow: #d8d0d0;
+  --nurse-chief-hair: #d8d0d8;
+  --nurse-chief-hair-shadow: #a89ea8;
+  --nurse-chief-uniform: #ffffff;
+  --nurse-chief-uniform-shadow: #c0b8b8;
+  --nurse-chief-wrinkle: #a06860;
+  --nurse-bun: #2e2018;
+  --nurse-bun-shadow: #4a3428;
+  --nurse-pants: #7fb5d8;
 }
 
 body.game-page {
   min-height: 100vh;
+  min-height: 100dvh;
   background: var(--bg);
   color: var(--text);
   font-family: var(--font);
@@ -604,12 +624,16 @@ html.light .game-overlay--cutscene {
 /* 반응형 (520px 이하) */
 @media (max-width: 520px) {
   body.game-page {
-    padding: 12px 10px 24px;
-    gap: 12px;
+    padding: 10px 10px 16px;
+    gap: 8px;
   }
 
   .game-header__title {
-    font-size: 24px;
+    font-size: 20px;
+  }
+
+  .game-header {
+    gap: 2px;
   }
 
   .game-header__subtitle {
@@ -658,6 +682,41 @@ html.light .game-overlay--cutscene {
     gap: 12px;
   }
 
+  /* 시작 오버레이 전용 모바일 컴팩트 룰 — 스크롤 없이 한 화면에 모두 보이도록 */
+  .game-overlay__panel--start {
+    padding: 12px 14px;
+    gap: 8px;
+    max-width: 320px;
+
+    & .game-overlay__title {
+      font-size: 16px;
+      line-height: 1.2;
+    }
+
+    & .game-overlay__desc {
+      font-size: 10.5px;
+      line-height: 1.4;
+    }
+
+    & .game-overlay__hint {
+      font-size: 10px;
+    }
+
+    & .game-overlay__goal {
+      font-size: 10.5px;
+    }
+
+    & .game-difficulty__btn {
+      padding: 6px 5px;
+      font-size: 10.5px;
+    }
+
+    & .game-btn {
+      padding: 8px 18px;
+      font-size: 12px;
+    }
+  }
+
   .game-overlay__title {
     font-size: 18px;
   }
@@ -685,7 +744,25 @@ html.light .game-overlay--cutscene {
   }
 
   .game-overlay {
-    padding: 10px;
+    padding: 8px;
+  }
+
+  /* 시작 오버레이만 뷰포트 전체로 확장 — `.game-canvas-wrap`의 aspect-ratio 16/10 제약에서
+     벗어나 iPhone SE(375×667) 등 작은 기기에서 시작/난이도 버튼이 잘리지 않게 한다.
+     #overlayEnd, #overlayCutscene은 기존 absolute(캔버스 내부) 배치를 유지. */
+  #overlayStart {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;
+    z-index: 50;
+    padding: 16px;
+  }
+
+  #overlayStart .game-overlay__panel--start {
+    max-height: calc(100dvh - 32px);
+    overflow-y: auto;
   }
 
   .game-overlay__desc {
@@ -711,9 +788,13 @@ html.light .game-overlay--cutscene {
     padding: 8px 10px;
   }
 
+  .game-touchpad {
+    padding: 0;
+  }
+
   .game-touchpad__dpad {
-    width: 168px;
-    height: 168px;
+    width: 140px;
+    height: 140px;
   }
 
   .game-controls {
