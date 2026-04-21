@@ -3,6 +3,19 @@
    본체 스타일의 --brand, --bg-card, --radius, --text 등 재사용
    ===================================================== */
 
+:root {
+  --game-danger: #ff3b4e;
+  --game-danger-08: rgba(255, 59, 78, 0.08);
+  --game-danger-20: rgba(255, 59, 78, 0.20);
+  --game-combo-glow: var(--brand-40);
+  --game-particle: var(--brand-light);
+}
+
+html.light {
+  --game-danger: #e8283a;
+  --game-combo-glow: var(--brand-35);
+}
+
 body.game-page {
   min-height: 100vh;
   background: var(--bg);
@@ -161,6 +174,23 @@ body.game-page {
   50% { transform: scale(1.12); }
 }
 
+/* 콤보 바운스 — 매 +1마다 숫자가 튕긴다 (Juice 핵심) */
+.game-hud__value.is-combo-bump {
+  animation: gameComboBump 0.22s ease-out;
+}
+
+@keyframes gameComboBump {
+  0%   { transform: scale(1); }
+  50%  { transform: scale(1.25); }
+  100% { transform: scale(1); }
+}
+
+/* 3콤보 이상 — 콤보 숫자가 코럴톤으로 변하며 글로우 */
+.game-hud__value.is-combo-hot {
+  color: var(--brand-light);
+  text-shadow: 0 0 10px var(--game-combo-glow);
+}
+
 .game-canvas-wrap {
   position: relative;
   width: 100%;
@@ -169,6 +199,20 @@ body.game-page {
   border-radius: var(--radius-sm);
   overflow: hidden;
   border: 1px solid var(--border);
+
+  /* F 피격 셰이크 — 0.25s 미세 진동 */
+  &.is-shake {
+    animation: gameShake 0.25s ease-in-out;
+  }
+}
+
+@keyframes gameShake {
+  0%   { transform: translate(0, 0); }
+  20%  { transform: translate(-4px, 2px); }
+  40%  { transform: translate(3px, -3px); }
+  60%  { transform: translate(-3px, -2px); }
+  80%  { transform: translate(2px, 3px); }
+  100% { transform: translate(0, 0); }
 }
 
 #gameCanvas {
@@ -232,6 +276,113 @@ html.light .game-overlay {
   font-size: 12px;
   color: var(--text-muted);
   line-height: 1.5;
+
+  & strong {
+    color: var(--text);
+    font-weight: 600;
+  }
+}
+
+.game-overlay__hint {
+  font-size: 11px;
+  color: var(--text-dim);
+  line-height: 1.5;
+  letter-spacing: 0.2px;
+}
+
+/* 시작 오버레이 목표 점수 표시 — 난이도 전환 시 JS가 갱신 */
+.game-overlay__goal {
+  font-size: 12px;
+  color: var(--text-muted);
+  letter-spacing: 0.3px;
+
+  & strong {
+    color: var(--brand-light);
+    font-weight: 700;
+  }
+}
+
+/* 종료 오버레이 통계 리스트 — 최대 콤보 / F 피격 / 정확도 */
+.game-overlay__stats {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 4px;
+  padding: 10px 12px;
+  background: var(--brand-06);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--brand-20);
+
+  & li {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+    text-align: center;
+  }
+
+  & li span {
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+  }
+
+  & li b {
+    font-size: 16px;
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
+  }
+}
+
+/* 빨간 F 강조 — 스토리 문단 내 인라인 연출 */
+.game-f-letter {
+  display: inline-block;
+  padding: 0 6px;
+  font-family: var(--font-serif, serif);
+  font-weight: 800;
+  color: var(--game-danger);
+  text-shadow: 0 0 8px rgba(255, 59, 78, 0.45);
+  transform: rotate(-6deg);
+}
+
+/* 컷씬 오버레이 — 종료 오버레이보다 살짝 투명 */
+.game-overlay--cutscene {
+  background: rgba(9, 8, 15, 0.55);
+
+  & .game-overlay__panel--cutscene {
+    max-width: 380px;
+    border-left: 4px solid var(--brand);
+    animation: gameCutsceneIn 0.35s ease-out both;
+  }
+}
+
+html.light .game-overlay--cutscene {
+  background: rgba(245, 244, 248, 0.55);
+}
+
+@keyframes gameCutsceneIn {
+  from { transform: translateY(12px); opacity: 0; }
+  to   { transform: translateY(0); opacity: 1; }
+}
+
+/* 엔딩 스토리 문구 — 성공/실패 색상 분기 */
+.game-overlay__ending {
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--text-muted);
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--brand-08);
+  border: 1px solid var(--brand-20);
+  text-align: left;
+
+  &--fail {
+    background: var(--game-danger-08);
+    border-color: var(--game-danger-20);
+  }
 }
 
 .game-difficulty {
@@ -454,17 +605,35 @@ html.light .game-overlay {
   }
 
   .game-hud {
-    gap: 8px;
+    gap: 4px;
     padding: 6px 2px;
   }
 
   .game-hud__label {
-    font-size: 9px;
+    font-size: 8px;
     letter-spacing: 1px;
   }
 
   .game-hud__value {
-    font-size: 17px;
+    font-size: 15px;
+  }
+
+  .game-overlay__goal {
+    font-size: 11px;
+  }
+
+  .game-overlay__stats {
+    padding: 8px 10px;
+    gap: 4px;
+
+    & li span {
+      font-size: 9px;
+      letter-spacing: 1px;
+    }
+
+    & li b {
+      font-size: 14px;
+    }
   }
 
   .game-overlay__panel {
@@ -507,6 +676,24 @@ html.light .game-overlay {
     line-height: 1.45;
   }
 
+  .game-overlay__hint {
+    font-size: 10px;
+  }
+
+  .game-overlay--cutscene .game-overlay__panel--cutscene {
+    padding: 14px 12px;
+    max-width: 300px;
+  }
+
+  .game-overlay--cutscene .game-overlay__desc {
+    font-size: 12px;
+  }
+
+  .game-overlay__ending {
+    font-size: 12px;
+    padding: 8px 10px;
+  }
+
   .game-touchpad__dpad {
     width: 168px;
     height: 168px;
@@ -547,7 +734,26 @@ html.light .game-overlay {
     animation: none;
   }
 
+  .game-overlay--cutscene .game-overlay__panel--cutscene {
+    animation: none;
+  }
+
+  .game-f-letter {
+    text-shadow: none;
+  }
+
+  .game-canvas-wrap.is-shake {
+    animation: none;
+    transform: none;
+  }
+
+  .game-hud__value.is-combo-bump {
+    animation: none;
+    transform: none;
+  }
+
   * {
+    animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
   }
 }

@@ -17,7 +17,10 @@
       "Bash(cp -f /c/Users/user/hyungyugod.github.io/.claude/worktrees/reverent-torvalds-f369eb/assets/css/style.css /c/Users/user/Desktop/hyungyugod.github.io/assets/css/style.css)",
       "Bash(cp -f /c/Users/user/hyungyugod.github.io/.claude/worktrees/reverent-torvalds-f369eb/assets/js/main.js /c/Users/user/Desktop/hyungyugod.github.io/assets/js/main.js)",
       "Bash(python *)",
-      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:8000/pages/game.html)"
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:8000/pages/game.html)",
+      "Read(//c/c/Users/user/Desktop/hyungyugod.github.io/**)",
+      "Bash(python3 *)",
+      "Bash(// 초기화 한두 프레임 안정화 대기 후 intro 노출)"
     ]
   }
 }

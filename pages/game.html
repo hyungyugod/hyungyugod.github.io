@@ -33,18 +33,22 @@
   <main class="game-shell">
     <header class="game-header">
       <h1 class="game-header__title">김간호는 음악박사</h1>
-      <p class="game-header__subtitle">30초 안에 음표를 최대한 많이 모아보세요.</p>
+      <p class="game-header__subtitle">수간호사의 F를 피해, 45초 안에 김간호의 작곡 노트를 채워주세요.</p>
     </header>
 
     <section class="game-stage" aria-label="게임 화면">
-      <div class="game-hud" aria-live="off">
+      <div class="game-hud">
         <div class="game-hud__slot">
           <span class="game-hud__label">Time</span>
-          <span class="game-hud__value" id="hudTime">30</span>
+          <span class="game-hud__value" id="hudTime">45</span>
         </div>
-        <div class="game-hud__slot">
+        <div class="game-hud__slot" aria-live="polite">
           <span class="game-hud__label">Score</span>
           <span class="game-hud__value" id="hudScore">0</span>
+        </div>
+        <div class="game-hud__slot game-hud__slot--combo">
+          <span class="game-hud__label">Combo</span>
+          <span class="game-hud__value" id="hudCombo">0</span>
         </div>
         <div class="game-hud__slot">
           <span class="game-hud__label">Best</span>
@@ -58,8 +62,16 @@
         <!-- 시작 오버레이 -->
         <div class="game-overlay" id="overlayStart">
           <div class="game-overlay__panel" role="dialog" aria-labelledby="startTitle">
-            <h2 class="game-overlay__title" id="startTitle">난이도 선택</h2>
-            <p class="game-overlay__desc">화살표 또는 <span class="game-controls__key">W</span><span class="game-controls__key">A</span><span class="game-controls__key">S</span><span class="game-controls__key">D</span>로 김간호를 움직여 음표를 수집하세요. 모바일에서는 화면 아래 방향패드를 사용하세요.</p>
+            <h2 class="game-overlay__title" id="startTitle">김간호의 몰래 작곡 프로젝트</h2>
+            <p class="game-overlay__desc">
+              간호 실습생 <strong>김간호</strong>는 오늘도 병동 한구석에서 곡을 쓰고 싶다.
+              하지만 백발 안경의 <strong>수간호사</strong>가 눈을 번뜩이며 빨간 <span class="game-f-letter">F</span>를 던진다.
+              45초 안에 음표를 모아 노래를 완성하자.
+            </p>
+            <p class="game-overlay__hint">
+              이동 화살표 또는 <span class="game-controls__key">W</span><span class="game-controls__key">A</span><span class="game-controls__key">S</span><span class="game-controls__key">D</span> · 모바일 방향패드
+            </p>
+            <p class="game-overlay__goal" id="startGoal">목표 <strong>22</strong>점 · 45초</p>
             <div class="game-difficulty" role="radiogroup" aria-label="난이도">
               <button class="game-difficulty__btn" type="button" role="radio" aria-checked="true" data-diff="easy">하 · Easy</button>
               <button class="game-difficulty__btn" type="button" role="radio" aria-checked="false" data-diff="normal">중 · Normal</button>
@@ -67,6 +79,17 @@
             </div>
             <div class="game-cta">
               <button class="game-btn" type="button" id="btnStart">시작</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 컷씬 오버레이 -->
+        <div class="game-overlay game-overlay--cutscene is-hidden" id="overlayCutscene" aria-live="polite">
+          <div class="game-overlay__panel game-overlay__panel--cutscene" role="dialog" aria-labelledby="cutsceneTitle">
+            <h2 class="game-overlay__title" id="cutsceneTitle">김간호의 속마음</h2>
+            <p class="game-overlay__desc" id="cutsceneText">—</p>
+            <div class="game-cta">
+              <button class="game-btn" type="button" id="btnCutsceneContinue">계속하기</button>
             </div>
           </div>
         </div>
@@ -80,6 +103,12 @@
               <span class="game-overlay__score-num" id="endScore">0</span>
               <span class="game-overlay__record" id="endRecord"></span>
             </div>
+            <ul class="game-overlay__stats" id="endStats">
+              <li><span>최대 콤보</span><b id="statMaxCombo">0</b></li>
+              <li><span>F 피격</span><b id="statHits">0</b></li>
+              <li><span>정확도</span><b id="statAccuracy">100%</b></li>
+            </ul>
+            <p class="game-overlay__ending" id="endStory"></p>
             <div class="game-cta">
               <button class="game-btn" type="button" id="btnReplay">다시 플레이</button>
               <a class="game-btn game-btn--ghost" href="/">홈으로</a>
