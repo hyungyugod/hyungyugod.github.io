@@ -393,7 +393,7 @@ function initTyping() {
 // -------------------------------------------------------
 
 function initScrollReveal() {
-  const targets = document.querySelectorAll('.link-card, .social-card, .section-label, .platform-showcase');
+  const targets = document.querySelectorAll('.link-card, .social-card, .section-label, .platform-showcase, .category-title');
 
   // prefers-reduced-motion 시 즉시 표시
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
@@ -426,7 +426,7 @@ function applyFilter(sections, filter) {
   sections.forEach(sec => {
     if (filter === 'all' || sec.dataset.category === filter) {
       sec.classList.remove('is-hidden');
-      sec.querySelectorAll('.link-card, .social-card, .section-label, .platform-showcase')
+      sec.querySelectorAll('.link-card, .social-card, .section-label, .platform-showcase, .category-title')
          .forEach(el => el.classList.add('is-visible'));
     } else {
       sec.classList.add('is-hidden');
@@ -645,34 +645,24 @@ function initMouseParallax() {
 }
 
 // -------------------------------------------------------
-// 히어로 스크롤 패럴랙스 페이드아웃
+// 히어로 스크롤 힌트 페이드
 // -------------------------------------------------------
 
 /**
- * 스크롤 시 히어로 프로필을 페이드아웃하며 위로 밀어내는 패럴랙스 효과
+ * 스크롤 시 히어로 하단 scroll-hint를 페이드아웃
+ * (프로필 본체는 불투명 상태로 유지되어 섹션과 함께 자연스럽게 밀려남)
  */
 function initHeroParallax() {
   const hero = document.getElementById('hero');
   if (!hero) return;
-  const profile = hero.querySelector('.profile');
-  if (!profile) return;
   const scrollHint = hero.querySelector('.scroll-hint');
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
   window.addEventListener('scroll', () => {
-    const scrollY = window.scrollY;
-    const heroH = hero.getBoundingClientRect().height || window.innerHeight;
-    const ratio = Math.min(scrollY / heroH, 1);
-
-    profile.style.opacity = 1 - ratio * 1.5;
-    profile.style.transform = `translateY(${-scrollY * 0.3}px)`;
-
     // 스크롤 힌트: 100px 이상 스크롤 시 페이드아웃
     if (scrollHint) {
-      scrollHint.style.opacity = scrollY > 100 ? '0' : '0.5';
+      scrollHint.style.opacity = window.scrollY > 100 ? '0' : '0.5';
     }
-
-    hero.style.pointerEvents = ratio >= 1 ? 'none' : '';
   }, { passive: true });
 }
 

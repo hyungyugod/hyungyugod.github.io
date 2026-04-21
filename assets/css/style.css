@@ -306,11 +306,9 @@ html.light .social-card:hover {
 
 .page-wrapper {
   position: relative;
-  z-index: 2;
   max-width: 680px;
   margin: 0 auto;
   padding: 24px 24px 80px;
-  background: var(--bg);
 }
 
 /* ---- Profile Section ---- */
@@ -605,9 +603,6 @@ html.light .social-card:hover {
 
 /* ---- Hero Section ---- */
 .hero {
-  position: sticky;
-  top: 0;
-  z-index: 1;
   width: 100%;
   min-height: 100vh; /* 구형 브라우저 폴백 */
   min-height: min(100svh, 880px);
@@ -751,6 +746,54 @@ html.light .social-card:hover {
 
   &.is-hidden {
     display: none;
+  }
+}
+
+/* ---- Category Header ---- */
+.category-header {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  margin-bottom: 18px;
+  padding-left: 2px;
+
+  & .section-label {
+    margin-top: 0;
+    margin-bottom: 0;
+    padding-left: 0;
+  }
+}
+
+.category-title {
+  font-family: var(--font-serif);
+  font-size: 38px;
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: -0.5px;
+  color: var(--text);
+  margin: 0;
+  position: relative;
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 0.6s var(--ease-out-expo), transform 0.6s var(--ease-out-expo);
+
+  &.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  &::before {
+    content: '';
+    position: absolute;
+    left: -14px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 4px;
+    height: 0.75em;
+    background: var(--brand);
+    border-radius: 2px;
+    opacity: 0.85;
   }
 }
 
@@ -1442,6 +1485,18 @@ html.light .social-card:hover {
 @media (max-width: 520px) {
   .page-wrapper { padding: 24px 16px 56px; }
 
+  .category-title {
+    font-size: 28px;
+    &::before {
+      left: -10px;
+      width: 3px;
+    }
+  }
+  .category-header {
+    gap: 4px;
+    margin-bottom: 14px;
+  }
+
   .hero { padding: 48px 16px 72px; height: auto; min-height: auto; overflow: visible; }
   .hero .profile__name { font-size: var(--hero-name-size-mobile); }
   .hero .profile__subtitle { font-size: 12px; }
@@ -1787,8 +1842,7 @@ html.light .social-card:hover {
     transition-duration: 0.01ms !important;
   }
 
-  .link-card, .social-card, .section-label, .platform-showcase { opacity: 1; transform: none; }
-  .hero { position: static !important; }
+  .link-card, .social-card, .section-label, .platform-showcase, .category-title { opacity: 1; transform: none; }
   .hero-bg { animation: none; }
   .profile__avatar-wrap { animation: none; }
   .link-card:hover::after { animation: none; opacity: 0; }
@@ -1856,8 +1910,6 @@ html.light .social-card:hover {
 
   /* ---- Hero: tighter max height on desktop ---- */
   .hero {
-    position: sticky;
-    top: 0;
     min-height: min(100svh, 820px);
     padding-top: clamp(64px, 10vh, 120px);
     padding-bottom: clamp(88px, 12vh, 140px);

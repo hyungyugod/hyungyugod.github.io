@@ -1,138 +1,146 @@
-# Pixel Nurse — 치비 얼굴 강화 + 모바일 터치 플레이 지원
+# SPEC.md
+
+## 카테고리 섹션 제목 헤더 추가
 
 ## 개요
-게임 페이지(`pages/game.html`)의 픽셀 간호사 캐릭터를 현재의 "일반 두등신"에서 **머리 비중이 큰 치비/SD 스타일**로 재설계하여 귀여움을 극대화한다. 동시에 키보드 전용이던 조작을 **가상 D-Pad 기반 터치 컨트롤**로 확장해 모바일/태블릿에서도 온전히 플레이 가능하게 만든다. 게임 로직(속도/난이도/수집/장애물/점수)은 일절 건드리지 않는다.
+각 카테고리 섹션(Study & Writing & Dev / Music / Social) 위쪽에 해당 카테고리를 명확히 알려주는 **큰 제목 헤더**를 왼쪽 상단 정렬로 추가한다. 현재도 `.section-label`이 각 섹션 위에 존재하지만, 11px serif uppercase의 작은 캡션 스타일이라 "카드 위의 카테고리 제목"으로서의 존재감이 약하다. 이 변경은 방문자가 각 섹션을 한눈에 구분할 수 있도록 **계층성 있는 제목 + 기존 라벨**의 2단 헤더 구조를 도입한다.
 
 ## 변경 유형
-**혼합** (디자인: 스프라이트 리디자인 / 기능: 터치 입력 + 반응형 캔버스 뷰포트)
+**디자인** — HTML 구조에 제목 요소 추가 및 CSS 스타일 작성. 로직 변경 없음.
 
 ## 디자인 언어 & 의도
-간호사는 **얼굴이 전체 신장의 절반에 가까운 2.2등신 치비**로 바뀐다. 커다란 동그란 눈, 얼굴 양쪽의 도톰한 볼터치, 배시시 웃는 작은 입이 한눈에 "귀여움"으로 읽혀야 하며, 몸과 다리는 상대적으로 작고 아담해져 움직일 때 통통 튀는 느낌을 준다. 사이트의 코럴핑크(`--brand`) 팔레트는 얼굴 악센트(볼·입·모자 십자가)에 집중 배치해 픽셀 캔버스 안에서도 브랜드 톤이 그대로 살아나도록 한다.
+코럴핑크(`--brand`) 악센트를 사용한 세리프(`--font-serif`) 대형 제목이 카드 그리드 왼쪽 위에 "앵커"처럼 자리잡아, 각 섹션이 하나의 챕터처럼 읽히도록 만든다. 기존 작은 `.section-label`은 제목 아래 **kicker(카테고리 분류 태그)** 역할로 재배치되어, "카테고리명 → 설명 라벨 → 카드 그리드"의 타이포그래피 리듬을 만든다. 글래스모피즘 톤을 유지하면서도 스크롤할 때 각 섹션의 시작점이 명확하게 느껴지는 것이 목표다.
 
 ## Sprint 범위 계약
-- **허용**: `pages/game.html` 내부의 인라인 `<style>`, 인라인 `<script>`, 그리고 `<body>` 마크업 수정. 새 DOM(가상 D-Pad)과 그에 필요한 이벤트 핸들러/상수 추가. 기존 `nurseSprite`/`drawNurse` 전면 재작성 및 히트박스 상수 변경. `KEY_MAP`에 대응하는 `state.keys` 방향 플래그를 터치 입력에서도 그대로 on/off 하도록 공유.
-- **금지**: `index.html`, `assets/css/style.css`, `assets/js/main.js` 수정. `DIFFICULTY` 표의 speed/notes/noteTtl/obstacles/obsSpeed/stun 값 변경. 맵 구조(`buildMap`) 변경. 수집/스턴 판정식 변경. 음표/장애물 스프라이트 변경. 새 파일 생성. 라이브러리 추가.
-- **판단 기준**: "이 변경이 없으면 치비 얼굴이 제대로 보이지 않는가 / 모바일에서 조작이 불가능한가?" → YES면 허용, NO면 금지. 예: 히트박스(`player.w/h`)를 16→14로 줄이는 것은 큰 머리가 벽에 박혀 보이지 않게 하기 위한 최소 연동 → 허용. "터치할 때 진동 피드백 추가" → SPEC에 없고 필수 아님 → 금지.
-
----
+Generator가 SPEC 외 변경을 하려 할 때의 판단 기준:
+- **허용**: 제목 헤더를 위해 `.category-section` 상단 여백(margin/padding) 미세 조정, 기존 `.section-label`의 margin-top 조정, `initScrollReveal()` 타깃 셀렉터에 새 제목 클래스 추가(등장 애니메이션 일관성 유지용)
+- **금지**: 카드 그리드 레이아웃 변경, 카테고리 탭(`.category-nav`) 디자인 변경, `.section-label` 스타일의 근본적 재설계(색상/폰트패밀리/사이즈 변경), 새로운 인터랙션 효과 추가, Routine/cover-band 섹션 수정
+- **판단 기준**: "이 변경이 없으면 새 제목 헤더가 시각적으로 자연스럽게 자리잡지 못하는가?" → YES면 허용, NO면 금지
 
 ## 변경 범위
 
-### pages/game.html — `<head>` 메타
-- `<meta name="viewport">`에 `viewport-fit=cover, user-scalable=no, maximum-scale=1` 추가 → iOS 더블탭 줌·핀치줌으로 인한 게임 조작 방해 방지.
-- 모바일 터치 제스처가 페이지 스크롤/새로고침을 트리거하지 않도록 `body.game-page`에 `overscroll-behavior: contain; touch-action: manipulation;` 스타일 추가.
+### index.html 변경사항
+각 `.category-section` 내부 `.section-label` 바로 **위**에 `<h2 class="category-title">` 추가. 총 3곳:
 
-### pages/game.html — `<body>` 마크업
-- `.game-canvas-wrap` **바로 아래**(`.game-controls` 위)에 가상 D-Pad 컨테이너 추가:
-  ```
-  <div class="game-touchpad" id="gameTouchpad" aria-hidden="true" hidden>
-    <div class="game-touchpad__dpad">
-      <button class="game-touchpad__btn game-touchpad__btn--up"    type="button" data-dir="up"    aria-label="위로 이동">▲</button>
-      <button class="game-touchpad__btn game-touchpad__btn--left"  type="button" data-dir="left"  aria-label="왼쪽으로 이동">◀</button>
-      <button class="game-touchpad__btn game-touchpad__btn--right" type="button" data-dir="right" aria-label="오른쪽으로 이동">▶</button>
-      <button class="game-touchpad__btn game-touchpad__btn--down"  type="button" data-dir="down"  aria-label="아래로 이동">▼</button>
-    </div>
+1. `#section-writing` (data-category="writing")
+   - `<h2 class="category-title">Study &amp; Writing &amp; Dev</h2>` 추가
+   - 기존 `<p class="section-label">Study & Writing & Dev</p>`는 유지하되 텍스트를 부연 설명으로 변경: `<p class="section-label">개발 · 글쓰기 · 학습 기록</p>`
+
+2. `#section-music` (data-category="music")
+   - `<h2 class="category-title">Music</h2>` 추가
+   - 기존 라벨 텍스트 변경: `<p class="section-label">음악 · 프로듀싱 · 릴리즈</p>`
+
+3. `#section-social` (data-category="social")
+   - `<h2 class="category-title">Social</h2>` 추가
+   - 기존 라벨 텍스트 변경: `<p class="section-label">연결점 · 소셜 링크</p>`
+
+**주의**: `.streaks` 섹션 내부의 `<p class="section-label">Routine</p>`은 건드리지 않는다.
+
+구조 예시:
+```html
+<div class="category-section" data-category="writing" id="section-writing">
+  <div class="category-header">
+    <h2 class="category-title">Study &amp; Writing &amp; Dev</h2>
+    <p class="section-label">개발 · 글쓰기 · 학습 기록</p>
   </div>
-  ```
-- 기존 `.game-controls` 블록(키보드 안내)은 그대로 둔다. 단 JS에서 터치 환경으로 감지되면 `.game-controls`는 `display:none`으로, `#gameTouchpad`는 `hidden` 제거 + `aria-hidden="false"`.
-- 시작 오버레이의 안내 문구 `.game-overlay__desc`에 모바일용 보조 문장 삽입: "모바일에서는 화면 아래 방향패드를 사용하세요."
+  <div class="links links--section">
+    ...
+  </div>
+</div>
+```
 
-### pages/game.html — `<style>` 내부 CSS 추가/수정
-1. **body.game-page** 규칙에 추가: `touch-action: manipulation;`, `overscroll-behavior: contain;`, `-webkit-tap-highlight-color: transparent;`
-2. **`#gameCanvas`**: `touch-action: none;` 추가.
-3. **가상 D-Pad 컴포넌트** (BEM, `var(--bg-card)`/`var(--border)`/`var(--brand-*)` 사용, 네이티브 중첩 `&`):
-   ```
-   .game-touchpad { width:100%; display:flex; justify-content:center; padding:4px 0 0; }
-   .game-touchpad[hidden] { display:none; }
-   .game-touchpad__dpad {
-     position:relative; width:168px; height:168px;
-     display:grid; grid-template-columns:repeat(3,1fr); grid-template-rows:repeat(3,1fr); gap:6px;
-   }
-   .game-touchpad__btn {
-     border:1px solid var(--border); background:var(--bg-card); color:var(--text-muted);
-     border-radius:var(--radius-sm); font-size:18px; font-weight:700;
-     cursor:pointer; user-select:none; -webkit-user-select:none; touch-action:none;
-     backdrop-filter:blur(14px) saturate(1.1); -webkit-backdrop-filter:blur(14px) saturate(1.1);
-     transition:background .15s, border-color .15s, color .15s, transform .15s var(--spring-bounce);
-     &:active, &.is-pressed {
-       background:var(--brand-12); border-color:var(--brand-40); color:var(--brand-light); transform:scale(.94);
-     }
-     &:focus-visible { outline:2px solid var(--brand-40); outline-offset:2px; }
-   }
-   .game-touchpad__btn--up    { grid-column:2; grid-row:1; }
-   .game-touchpad__btn--left  { grid-column:1; grid-row:2; }
-   .game-touchpad__btn--right { grid-column:3; grid-row:2; }
-   .game-touchpad__btn--down  { grid-column:2; grid-row:3; }
-   ```
-4. **`@media (max-width: 520px)`** 블록 내부에 추가:
-   - `.game-touchpad__dpad { width: 192px; height: 192px; }`
-   - `.game-canvas-wrap { aspect-ratio: 4 / 3; }`
-   - `.game-controls { display: none; }`
+### assets/css/style.css 변경사항
 
-### pages/game.html — `<script>` 내부 JS 변경
+**추가**: `/* ---- Category Header ---- */` 섹션 신설 (기존 `/* ---- Section Label ---- */` 블록 바로 앞).
 
-#### A. 스프라이트 재설계 — 치비 비율
-- **신규 상수**: `const NURSE_W = 16; const NURSE_H = 20;` (세로 긴 스프라이트).
-- **`nurseSprite(dir, frame)` 전면 재작성**: 16×20 그리드.
-  - 행 0~1: 투명/모자 윗단
-  - 행 1~3: 간호사 모자(흰 `W`), 중앙 코럴 십자 `C`
-  - 행 3~10: **얼굴 8행(전체 40%)** — 앞머리 `H`, 얼굴 피부 `S`, 큰 눈 `E`(2칸 폭 2행 높이, 흰자 `L` 1칸), 좌우 볼터치 `R`, 중앙 작은 입 `M`
-  - 행 11~14: 몸통(흰 `W`, 가슴 코럴 십자 `C`)
-  - 행 15~17: 하의 `P`
-  - 행 18~19: 발 `B` (걷기 프레임에서 좌우 교차)
-- **방향별 처리**: `down` 정면 두 눈 / `up` 눈 한 행 위 or 뒷모습 / `left` 오른쪽 눈만 + 한쪽 볼 / `right` 좌우 반전.
-- **걷기 프레임**: 15~19행만 교차. 1프레임 바운스(`frame!==0 && !reducedMotion`에서 `oy -= 1`).
-- **팔레트 확장**: 기존 `S,H,W,C,P,B,E,R,M` + `L: '#ffffff'`(흰자 하이라이트), `D: '#e6dde6'`(모자 음영).
-- **`drawNurse(x,y,dir,frame)`**: `SCALE=2`, `ox = Math.round(x)-8`, **`oy = Math.round(y)-24`**(기존 -16에서 변경), 루프 상한 `r<20`.
-- **히트박스 축소**: `state.player.w = 14; state.player.h = 14;` (초기값). `player.x/y` 초기값 `TILE*2+3`으로 3px 안쪽 조정.
+```css
+.category-header {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  margin-bottom: 18px;
+  padding-left: 2px;
 
-#### B. 모바일 터치 컨트롤
-- **감지 함수**:
-  ```
-  function isTouchDevice() {
-    return window.matchMedia('(pointer: coarse)').matches || ('ontouchstart' in window);
+  & .section-label {
+    margin-top: 0;
+    margin-bottom: 0;
+    padding-left: 0;
   }
-  ```
-- **`initTouchControls()`** (초기화 시 호출):
-  ```
-  function initTouchControls() {
-    const pad = document.getElementById('gameTouchpad');
-    if (!pad) return;
-    pad.hidden = false;
-    pad.setAttribute('aria-hidden', 'false');
-    const controlsHint = document.querySelector('.game-controls');
-    if (controlsHint) controlsHint.style.display = 'none';
-    const btns = pad.querySelectorAll('.game-touchpad__btn');
-    btns.forEach(btn => {
-      const dir = btn.dataset.dir;
-      const press = (e) => { e.preventDefault(); state.keys[dir] = true;  btn.classList.add('is-pressed'); };
-      const release=(e) => { e.preventDefault(); state.keys[dir] = false; btn.classList.remove('is-pressed'); };
-      btn.addEventListener('pointerdown',   press,   { passive:false });
-      btn.addEventListener('pointerup',     release, { passive:false });
-      btn.addEventListener('pointercancel', release, { passive:false });
-      btn.addEventListener('pointerleave',  release, { passive:false });
-      btn.addEventListener('contextmenu', e => e.preventDefault());
-    });
-    canvas.addEventListener('touchmove', e => e.preventDefault(), { passive:false });
-  }
-  if (isTouchDevice()) initTouchControls();
-  ```
-- **키보드와 공존**: 기존 `KEY_MAP`/`keydown`/`keyup` 유지. `state.keys` 공유.
-- **iOS 오디오 언락**: `btnStart` 클릭 핸들러 **맨 앞**에 `playTone(0, 0.001)` 1줄 추가(기존 `audioCtx.state==='suspended'` resume 로직 재사용).
+}
 
----
+.category-title {
+  font-family: var(--font-serif);
+  font-size: 38px;
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: -0.5px;
+  color: var(--text);
+  position: relative;
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 0.6s var(--ease-out-expo), transform 0.6s var(--ease-out-expo);
+
+  &.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  &::before {
+    content: '';
+    position: absolute;
+    left: -14px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 4px;
+    height: 0.75em;
+    background: var(--brand);
+    border-radius: 2px;
+    opacity: 0.85;
+  }
+}
+```
+
+**반응형 (`@media (max-width: 520px)` 블록에 추가)**:
+```css
+.category-title {
+  font-size: 28px;
+  &::before {
+    left: -10px;
+    width: 3px;
+  }
+}
+.category-header {
+  gap: 4px;
+  margin-bottom: 14px;
+}
+```
+
+**접근성 (`@media (prefers-reduced-motion: reduce)`)**: 기존 리스트에 `.category-title` 추가.
+
+**하드코딩 금지**: 색상/폰트/트랜지션 이징은 전부 CSS 변수(`--brand`, `--font-serif`, `--text`, `--ease-out-expo`) 사용.
+
+### assets/js/main.js 변경사항
+
+**`initScrollReveal()` 함수**: targets 셀렉터에 `, .category-title` 추가.
+**`applyFilter()` 함수**: 섹션 내부 즉시표시 셀렉터에 `, .category-title` 추가.
+
+추가 함수/이벤트 없음.
 
 ## 기능 상세
-1. **치비 간호사 스프라이트** — 16×16→16×20, 얼굴 40%, 큰 눈/볼터치/작은 입, 방향별 시선, 걷기 바운스.
-2. **가상 D-Pad 터치 컨트롤** — 4버튼(상/하/좌/우), pointer events 통합, `.is-pressed` 피드백, 동시 누름 대각선 이동 지원.
-3. **모바일 뷰포트 & 제스처 방지** — viewport 메타, `touch-action`, `overscroll-behavior`, 520px 이하 `aspect-ratio:4/3`.
-4. **입력 환경 자동 감지** — `pointer:coarse`/`ontouchstart`로 터치 UI 표시+키보드 안내 숨김. 하이브리드 기기 둘 다 동작.
-5. **iOS 오디오 언락** — 첫 시작 탭에서 무음 톤 resume.
+
+### 기능 1: 카테고리 제목 헤더
+- 각 카테고리 섹션 시작부에 세리프 대형 제목 + 기존 라벨을 2단으로 쌓은 왼쪽 정렬 헤더 블록.
+- 순수 시각 요소. 스크롤 시 페이드인 + 살짝 위로 올라오는 등장 애니메이션.
+- `.category-header` — flex column, align-items flex-start
+- `.category-title` — 38px serif, 좌측 `::before` 코럴핑크 악센트 바 (4×0.75em)
+
+### 기능 2: 등장 애니메이션 일관성
+- `initScrollReveal()` 및 `applyFilter()`의 셀렉터 리스트에 `.category-title` 추가.
 
 ## 주의사항
-- **기존 기능 보전**: `update()` 이동·수집·스턴 판정식 동일. 히트박스 14×14로 축소는 큰 머리 시각 보정 의도.
-- **삭제·교체**: `nurseSprite` 본문 전체, `drawNurse` oy(-16→-24)·루프(r<16→r<20), `player.w/h`(16→14).
-- **접근성**: 한국어 `aria-label`, `:focus-visible`, `hidden`/`aria-hidden` 일관. reduced-motion은 글로벌 `*` 룰로 커버.
-- **보안**: 정적 DOM만 추가, 외부 데이터 없음 → `innerHTML` 금지, `textContent`/`setAttribute`만.
-- **테마**: `var(--bg-card)/--border/--brand-*`만 사용 → 다크·라이트 자동 대응.
-- **성능**: 스프라이트 픽셀 25% 증가, 캔버스 캐릭터 1개 → 영향 무시 가능.
+- `.streaks` 섹션 내부 `<p class="section-label">Routine</p>`은 건드리지 않는다.
+- 다크/라이트 테마 자동 대응 (`var(--text)`, `var(--brand)` 사용).
+- `<h2>` 시맨틱 태그 사용으로 접근성 확보.
+- 모바일 520px에서 28px로 축소, 악센트 바 3px.
+- BEM: `.category-header` / `.category-title`.
