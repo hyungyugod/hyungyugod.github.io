@@ -3,7 +3,19 @@
     "allow": [
       "Bash(git add:*)",
       "mcp__plugin_playwright_playwright__browser_snapshot",
-      "Read(//c/Users/user/AppData/Local/Temp/BNZ.69e5d71db06559/**)"
+      "Read(//c/Users/user/AppData/Local/Temp/BNZ.69e5d71db06559/**)",
+      "Bash(npm run *)",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(python -c \"import sys; print\\(sys.version\\)\")",
+      "Bash(cat)",
+      "Read(//tmp/**)",
+      "Bash(cp /tmp/qa_content.md \"C:/Users/user/hyungyugod.github.io/.claude/worktrees/reverent-torvalds-f369eb/QA_REPORT.md\")",
+      "Bash(cp C:/Users/user/hyungyugod.github.io/.claude/worktrees/reverent-torvalds-f369eb/assets/css/style.css C:/Users/user/Desktop/hyungyugod.github.io/assets/css/style.css)",
+      "Bash(cp C:/Users/user/hyungyugod.github.io/.claude/worktrees/reverent-torvalds-f369eb/index.html C:/Users/user/Desktop/hyungyugod.github.io/index.html)",
+      "Bash(cp C:/Users/user/hyungyugod.github.io/.claude/worktrees/reverent-torvalds-f369eb/assets/js/main.js C:/Users/user/Desktop/hyungyugod.github.io/assets/js/main.js)",
+      "Bash(cp -f /c/Users/user/hyungyugod.github.io/.claude/worktrees/reverent-torvalds-f369eb/index.html /c/Users/user/Desktop/hyungyugod.github.io/index.html)",
+      "Bash(cp -f /c/Users/user/hyungyugod.github.io/.claude/worktrees/reverent-torvalds-f369eb/assets/css/style.css /c/Users/user/Desktop/hyungyugod.github.io/assets/css/style.css)",
+      "Bash(cp -f /c/Users/user/hyungyugod.github.io/.claude/worktrees/reverent-torvalds-f369eb/assets/js/main.js /c/Users/user/Desktop/hyungyugod.github.io/assets/js/main.js)"
     ]
   }
 }

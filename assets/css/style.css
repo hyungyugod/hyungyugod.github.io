@@ -310,6 +310,7 @@ html.light .social-card:hover {
   max-width: 680px;
   margin: 0 auto;
   padding: 24px 24px 80px;
+  background: var(--bg);
 }
 
 /* ---- Profile Section ---- */
@@ -379,6 +380,27 @@ html.light .social-card:hover {
     }
   }
 
+  & .profile__hint {
+    display: block;
+    margin: -18px auto 18px;
+    font-family: var(--font);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 2.4px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    opacity: 0.45;
+    transition: opacity var(--transition), letter-spacing var(--transition);
+    pointer-events: none;
+    user-select: none;
+  }
+
+  & .profile__avatar-wrap:hover + .profile__hint,
+  &:has(.profile__avatar:focus-visible) .profile__hint {
+    opacity: 0.75;
+    letter-spacing: 3px;
+  }
+
   & .profile__name {
     font-family: var(--font-serif);
     font-size: var(--hero-name-size);
@@ -416,6 +438,9 @@ html.light .social-card:hover {
 
   & .profile__motto-item {
     position: relative;
+    display: flex;
+    flex-direction: column;
+    min-height: 96px;
     padding: 12px 8px 10px;
     background: var(--bg-card);
     backdrop-filter: blur(14px) saturate(1.1);
@@ -450,6 +475,9 @@ html.light .social-card:hover {
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: center;
+    flex: 1 1 auto;
+    width: 100%;
     gap: 4px;
     backface-visibility: hidden;
     transition: transform 0.5s ease;
@@ -601,7 +629,8 @@ html.light .social-card:hover {
 
 /* ---- Hero Section ---- */
 .hero {
-  position: relative;
+  position: sticky;
+  top: 0;
   z-index: 1;
   width: 100%;
   min-height: 100vh; /* 구형 브라우저 폴백 */
@@ -624,29 +653,34 @@ html.light .social-card:hover {
   animation: heroEntrance var(--hero-entrance-duration) var(--ease-out-expo) 0s both;
 }
 
-.hero .profile__name {
+.hero .profile__hint {
   opacity: 0;
-  animation: heroEntrance var(--hero-entrance-duration) var(--ease-out-expo) 0.12s both;
+  animation: heroEntrance var(--hero-entrance-duration) var(--ease-out-expo) 0.18s both;
 }
 
-.hero .profile__subtitle {
+.hero .profile__name {
   opacity: 0;
   animation: heroEntrance var(--hero-entrance-duration) var(--ease-out-expo) 0.24s both;
 }
 
+.hero .profile__subtitle {
+  opacity: 0;
+  animation: heroEntrance var(--hero-entrance-duration) var(--ease-out-expo) 0.32s both;
+}
+
 .hero .profile__motto {
   opacity: 0;
-  animation: heroEntrance var(--hero-entrance-duration) var(--ease-out-expo) 0.36s both;
+  animation: heroEntrance var(--hero-entrance-duration) var(--ease-out-expo) 0.40s both;
 }
 
 .hero .profile__bio {
   opacity: 0;
-  animation: heroEntrance var(--hero-entrance-duration) var(--ease-out-expo) 0.48s both;
+  animation: heroEntrance var(--hero-entrance-duration) var(--ease-out-expo) 0.52s both;
 }
 
 .hero .profile__btn {
   opacity: 0;
-  animation: heroEntrance var(--hero-entrance-duration) var(--ease-out-expo) 0.60s both;
+  animation: heroEntrance var(--hero-entrance-duration) var(--ease-out-expo) 0.64s both;
 }
 
 /* ---- Scroll Hint ---- */
@@ -1434,11 +1468,12 @@ html.light .social-card:hover {
     margin-bottom: 36px;
     & .profile__name         { font-size: var(--hero-name-size-mobile); }
     & .profile__avatar       { width: 96px; height: 96px; }
+    & .profile__hint         { font-size: 10px; letter-spacing: 2px; margin: -14px auto 14px; }
     & .profile__bio          { padding: 24px 24px; }
     & .profile__bio-quote    { font-size: 14px; }
     & .profile__bio-kr       { font-size: 12px; }
     & .profile__motto        { gap: 6px; }
-    & .profile__motto-item   { padding: 10px 6px 8px; }
+    & .profile__motto-item   { padding: 10px 6px 8px; min-height: 82px; }
     & .profile__motto-letter { font-size: 22px; }
     & .profile__motto-word   { font-size: 9px; letter-spacing: 1px; }
     & .profile__motto-kr     { font-size: 8px; }
@@ -1767,6 +1802,7 @@ html.light .social-card:hover {
   }
 
   .link-card, .social-card, .section-label, .platform-showcase { opacity: 1; transform: none; }
+  .hero { position: static !important; }
   .hero-bg { animation: none; }
   .profile__avatar-wrap { animation: none; }
   .link-card:hover::after { animation: none; opacity: 0; }
@@ -1784,6 +1820,7 @@ html.light .social-card:hover {
   .hero .profile__motto,
   .hero .profile__bio,
   .hero .profile__btn { animation: none; opacity: 1; transform: none; }
+  .hero .profile__hint { animation: none; opacity: 0.45; transform: none; }
   .hero__scroll-hint { animation: none; opacity: 1; }
   .hero__scroll-arrow { animation: none; opacity: 0.6; }
 }
@@ -1834,6 +1871,8 @@ html.light .social-card:hover {
 
   /* ---- Hero: tighter max height on desktop ---- */
   .hero {
+    position: sticky;
+    top: 0;
     min-height: min(100svh, 820px);
     padding-top: clamp(64px, 10vh, 120px);
     padding-bottom: clamp(88px, 12vh, 140px);
@@ -2485,6 +2524,7 @@ html.light .music-showcase__link-btn {
 .profile__subtitle + .profile__motto{position:relative}
 .profile__subtitle + .profile__motto::before{
   content:'';display:block;width:40px;height:1px;margin:0 auto 18px;
+  grid-column:1 / -1;
   background:linear-gradient(90deg,transparent,rgba(212,164,156,.35),transparent);
 }
 

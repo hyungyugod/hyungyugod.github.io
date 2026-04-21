@@ -1,96 +1,103 @@
-# PC 오빗 제거 + 프로필 전폭 재배치 + 섹션 간격 축소
+# 프로필 아바타 하단 '프로필 확인' 마이크로카피 힌트
 
 ## 개요
-PC(데스크톱) 버전에서 히어로 섹션의 orbit 컴포넌트(궤도 트랙 SVG, 6개 orbit-card, orbit-stage 래퍼)를 제거하고, 프로필이 히어로 영역의 가로 전체를 활용하도록 재배치한다. 동시에 각 섹션(category-section, category-nav, links--section, footer 등)의 상하 마진/패딩을 현재의 약 절반으로 줄여 페이지 전체의 밀도를 높인다.
+프로필 아바타를 클릭하면 모달이 열린다는 사실이 현재 시각적으로 암시되지 않아 affordance가 부족하다. 아바타와 이름 사이에 조용하고 낮은 대비의 "프로필 확인" 마이크로카피를 추가하여, 강한 시각적 노이즈 없이 상호작용 가능성을 속삭이듯 전달한다.
 
 ## 변경 유형
 디자인
 
 ## 디자인 언어 & 의도
-오빗 카드가 차지하던 공간을 해소하여 프로필이 화면 중앙에서 여유롭게 넓어지고, 방문자가 히어로에서 "한 사람의 이야기"에 더 집중할 수 있게 한다. 섹션 간격을 줄여 콘텐츠 밀도를 높이면서도 glassmorphism 카드 사이의 숨 쉴 공간은 유지하여, "정돈된 밀도감"을 만드는 것이 목표다.
+사이트 전체의 차분하고 서정적인 글래스모피즘 톤(코럴핑크 + 낮은 밀도의 세리프 무드)에 맞춰, "외치지 않고 속삭이는" 힌트를 만든다. 방문자가 아바타를 바라볼 때 눈 밑에 살짝 떠 있는 캡션처럼 인식되어, 무의식적으로 "눌러볼 수 있겠구나"를 느끼게 하는 것이 목표다. 호버/포커스 시에만 살짝 또렷해져서, 평상시에는 배경으로 물러나고 관심을 보이는 순간에만 응답하는 조심스러운 정체성을 갖는다.
 
 ## Sprint 범위 계약
-- **허용**: 오빗 제거에 따라 히어로 레이아웃/높이 조정, 프로필 max-width 확장, 관련 JS init 호출 정리
-- **금지**: 프로필 컴포넌트 내부 디자인 변경(모토 카드 리디자인, 바이오 스타일 변경 등), 새로운 애니메이션/효과 추가, 모바일 레이아웃 변경
-- **판단 기준**: "이 변경이 없으면 오빗 제거 후 레이아웃이 깨지거나 섹션 간격 축소가 적용되지 않는가?" -> YES면 허용, NO면 금지
+Generator가 SPEC 외 변경을 하려 할 때의 판단 기준:
+- **허용**:
+  - `index.html`의 `.profile__avatar-wrap` 바로 아래 / `.profile__name` 바로 위에 힌트 요소(`.profile__hint`) 1개 추가
+  - `assets/css/style.css`에 `.profile__hint` 관련 스타일 규칙 추가 (hero entrance 애니메이션 연결, hover 연동, 반응형, prefers-reduced-motion 대응)
+  - 기존 `.hero .profile__name` 등의 heroEntrance 딜레이 타이밍을 0.06~0.12s만큼 한 단계씩 뒤로 밀어 순서를 자연스럽게 맞추는 것은 허용 (아바타 → 힌트 → 이름 → 서브타이틀 순서 보장을 위한 최소 연동)
+- **금지**:
+  - 기존 `.profile__name`, `.profile__subtitle`, `.profile__motto`, `.profile__bio`, `.profile__btn`의 색상/폰트/간격/구조 변경
+  - `assets/js/main.js` 수정 (새 JS 로직 추가 없이 해결)
+  - 모달 로직(`initModal`), `js-open-profile` 동작 변경
+  - 다른 섹션(Routine, Cover band, Category, Music, Social, Footer) 수정
+  - `:root` CSS 변수 삭제/변경
+  - 강한 색상 강조(브랜드 컬러 100% 사용, 큰 배경 박스 등) — "조용한 마이크로카피" 원칙 위배
 
 ## 변경 범위
 
 ### index.html 변경사항
-1. **오빗 관련 HTML 제거**:
-   - `.orbit-stage` 래퍼(`<div class="orbit-stage" id="orbitStage">`)를 제거
-   - 내부의 `<svg class="orbit-stage__track">` 제거
-   - `<div class="orbit-stage__cards">` 및 내부 6개 `.orbit-card` 링크 모두 제거
-   - **`.profile` 섹션은 보존**: orbit-stage 밖으로 빼내어 `.hero` 직접 자식으로 배치
-   
-2. **최종 히어로 구조**:
-   ```html
-   <section class="hero" id="hero">
-     <button class="theme-toggle js-theme-toggle" ...>...</button>
-     <section class="profile">
-       <!-- 기존 프로필 내용 그대로 유지 -->
-     </section>
-     <div class="scroll-hint" ...>...</div>
-   </section>
-   ```
+- `section.profile` 내부, `.profile__avatar-wrap` 닫힘 직후, `<h1 class="profile__name">` 바로 앞에 다음 마크업 추가:
+  ```html
+  <span class="profile__hint" aria-hidden="true">프로필 확인</span>
+  ```
+- `aria-hidden="true"`: 장식적 affordance 힌트. 스크린리더는 아바타 alt "HG"와 하단 "프로필 보기" 버튼으로 이미 진입 경로 있음
+- `tabindex` 없음, 이벤트 바인딩 없음 (순수 시각 힌트)
 
 ### assets/css/style.css 변경사항
 
-1. **오빗 관련 CSS 전체 삭제**:
-   - `.orbit-stage` 블록 전체 삭제
-   - `.orbit-card`, `.orbit-card__icon`, `.orbit-card__label`, `.orbit-card__desc` 삭제
-   - `html.light .orbit-card` 삭제
-   - `html.light .orbit-stage__track` 삭제
-   - `@media (max-width: 600px)` 내 orbit 관련 규칙 삭제
-   - `:root`의 `--orbit-card-bg`, `--orbit-card-border` 변수는 **유지**
-   - `html.light`의 orbit 관련 변수 오버라이드도 **유지**
+**1) `.profile` 네이티브 중첩 내부, `& .profile__avatar` 다음·`& .profile__name` 앞에 추가**
+```css
+& .profile__hint {
+  display: block;
+  margin: -18px auto 18px;
+  font-family: var(--font);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 2.4px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  opacity: 0.45;
+  transition: opacity var(--transition), letter-spacing var(--transition);
+  pointer-events: none;
+  user-select: none;
+}
+```
 
-2. **프로필 전폭 재배치** (`.hero` 내 `.profile`):
-   - 기존 `.orbit-stage & .profile` 블록에서 설정하던 축소 스타일을 제거
-   - `.profile`에 `max-width: 720px; width: 100%;` 추가하여 가로 전폭 활용 (데스크톱 기준)
-   - `.profile__motto`의 `max-width`를 `640px`로 확장 (현재 540px)
-   - `.profile__bio`의 `max-width`를 `640px`로 확장 (현재 540px)
-   - 데스크톱(`@media (min-width: 900px)`) 내에서 `.profile`에 `max-width: 800px`으로 더 넓게
+**2) 아바타 hover/focus 시 힌트 강조 (profile 블록 밖, 인접 형제 셀렉터)**
+```css
+.profile__avatar-wrap:hover + .profile__hint,
+.profile:has(.profile__avatar:focus-visible) .profile__hint {
+  opacity: 0.75;
+  letter-spacing: 3px;
+}
+```
+- 핵심 동작 요구: "아바타 hover 또는 focus-visible 시 hint opacity 0.45→0.75, letter-spacing 2.4→3px". 구체 셀렉터는 Generator가 DOM을 확인해 확정.
 
-3. **섹션 간격 절반 축소** — 변경 대상과 값:
+**3) Hero entrance 애니메이션 체인에 삽입**
+- 신규: `.hero .profile__hint { opacity: 0; animation: heroEntrance var(--hero-entrance-duration) var(--ease-out-expo) 0.18s both; }`
+- 기존 딜레이 조정 (최소 연동):
+  - `.hero .profile__name` 0.12s → 0.24s
+  - `.hero .profile__subtitle` 0.24s → 0.32s
+  - `.hero .profile__motto` 0.36s → 0.40s
+  - `.hero .profile__bio` 0.48s → 0.52s
+  - `.hero .profile__btn` 0.60s → 0.64s
 
-   | 대상 | 현재 값 | 변경 값 | 위치 |
-   |---|---|---|---|
-   | `.category-nav` margin-bottom | 64px | 32px | 기본 |
-   | `.links--section` margin-bottom | 24px | 12px | 기본 |
-   | `.category-section` padding-top/bottom | 48px (데스크톱) | 24px | `@media (min-width: 900px)` |
-   | `.page-wrapper` padding-top | 48px (기본) / 60px (데스크톱) | 24px / 32px | 기본 + `@media (min-width: 900px)` |
-   | `.footer` margin-top | 56px | 28px | 기본 |
-   | `.social-grid` margin-bottom | 24px | 12px | 기본 |
-   | `.music-showcase` margin-bottom | 24px (데스크톱) | 12px | `@media (min-width: 900px)` |
+**4) 반응형 `@media (max-width: 520px)` 블록**
+```css
+& .profile__hint {
+  font-size: 10px;
+  letter-spacing: 2px;
+  margin: -14px auto 14px;
+}
+```
 
-4. **반응형 대응** (`@media (max-width: 520px)`):
-   - 모바일에서는 이미 orbit이 `display: none`이었으므로 레이아웃 영향 없음
-   - 모바일 `.page-wrapper` padding-top: 40px -> 24px
-   - 모바일 `.profile` margin-bottom: 72px -> 36px
+**5) `@media (prefers-reduced-motion: reduce)` 블록**
+```css
+.hero .profile__hint { animation: none; opacity: 0.45; transform: none; }
+```
 
 ### assets/js/main.js 변경사항
+**변경 없음.** `pointer-events: none`이라 기존 아바타 클릭 흐름 그대로 유지.
 
-1. **`initOrbit` 함수 전체 삭제**: orbit-stage가 DOM에 존재하지 않으므로 불필요
-2. **`DOMContentLoaded` 블록에서 `safeInit(initOrbit, 'initOrbit');` 호출 제거**
-3. **`initHeroParallax` 수정**: `.orbit-stage` 참조 제거, `.profile`만 직접 선택
-
-## 기능 상세
-
-### 기능 1: 오빗 컴포넌트 제거
-- 설명: 히어로 섹션에서 6개 플랫폼 링크가 궤도를 그리며 회전하는 orbit-card 컴포넌트를 완전히 제거한다
-- 구현 위치: HTML(orbit 마크업 삭제), CSS(orbit 스타일 삭제), JS(initOrbit 함수 및 호출 삭제)
-
-### 기능 2: 프로필 전폭 재배치
-- 설명: orbit-stage 래퍼에서 해방된 프로필이 히어로 영역 가로를 넓게 활용하도록 max-width를 확장한다
-- 구현 위치: HTML(profile을 hero 직접 자식으로 이동), CSS(max-width 확장)
-
-### 기능 3: 섹션 간격 축소
-- 설명: 모든 주요 섹션의 상하 마진/패딩을 현재의 약 절반으로 줄여 콘텐츠 밀도를 높인다
-- 구현 위치: CSS(7개 spacing 값 조정)
+## 수치 근거
+- `font-size: 11px` — 사용자 요청 범위 하한
+- `opacity: 0.45` — 사용자 요청 범위 중앙값
+- `letter-spacing: 2.4px` + uppercase — `profile__subtitle(3px)`과 같은 캡션 언어이되 한 단계 조용
+- `color: var(--text-muted)` — 테마 변수, 라이트/다크 자동 대응
+- `margin-top: -18px` — 아바타 halo(`::before inset: -4px`)와 간섭 없음
 
 ## 주의사항
-- 기존 기능 보전: orbit-card에 있던 플랫폼 링크는 하단 섹션에 모두 중복 존재하므로 접근 경로 유지됨
-- `initHeroParallax`의 `.orbit-stage` 참조 반드시 수정
-- `:root` CSS 변수: orbit 관련 변수는 삭제 금지 원칙에 따라 유지
-- 모바일 영향 최소: 모바일에서는 이미 orbit이 숨겨져 있었으므로 레이아웃 변화 거의 없음
+- **AI 슬롭 패턴 회피**: 그라디언트/박스섀도/과한 radius 없음, JS setTimeout 없음
+- **접근성**: aria-hidden 장식, pointer-events: none으로 클릭 영역 보존, 아바타 focus-visible 시 힌트 강조되어 키보드 사용자도 affordance 인지 가능
+- **보안**: 정적 한글 텍스트만 삽입, XSS 영향 없음
+- **라이트 테마**: `--text-muted`이 테마 따라 전환. 대비 부족 시 Generator가 시각 확인 후 `html.light .profile__hint { opacity: 0.55; }` 추가 판단
