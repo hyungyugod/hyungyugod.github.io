@@ -1,27 +1,39 @@
 # 자체 점검
 
+전략: Case A (최초 구현, SPEC 정밀 적용)
+
 ## SPEC 기능 체크
-- [x] **viewport 메타 정상화**: `pages/game.html`의 viewport를 `"width=device-width, initial-scale=1.0, viewport-fit=cover"`로 단순화. `user-scalable=no, maximum-scale=1` 제거(접근성 확보, iOS 자동 확대 회피).
-- [x] **모바일 4/3 aspect-ratio 오버라이드 제거**: `@media (max-width: 520px)` 블록 내부의 `.game-canvas-wrap { aspect-ratio: 4 / 3 }` 제거. 이제 기본 `16 / 10`이 모바일에서도 유지되어 640×400 캔버스 픽셀 아트 왜곡 없음.
-- [x] **body.game-page 모바일 여백**: `padding: 12px 10px 24px; gap: 12px;`로 조정.
-- [x] **.game-stage 모바일**: `padding: 10px; gap: 10px;`.
-- [x] **.game-hud 모바일**: `gap: 8px; padding: 6px 2px;`.
-- [x] **.game-touchpad__dpad 모바일**: 192×192 → 168×168로 축소(기본값과 동일화, 오버라이드만 168로 명시).
-- [x] **landscape 미디어쿼리 신설**: `@media (max-width: 520px) and (orientation: landscape)` — header 숨김, 캔버스 `max-height: 60vh` + `16/10` 재지정 + `width: auto` + `margin-inline: auto`, d-pad 128×128, stage padding/gap 8px.
+- [x] 기능 1: glassmorphism 세그먼트 트랙 — `.category-nav`에 `--bg-card` 배경 + `backdrop-filter: blur(14px) saturate(1.1)` + `-webkit-` + 보더/쉐도우 적용, `width: fit-content`로 캡슐화
+- [x] 기능 2: 아이콘 + 라벨 버튼 — 5개 버튼 각각 inline SVG 18×18 (stroke, currentColor) + `.category-nav__label` 14px/600 적용
+- [x] 기능 3: 슬라이딩 인디케이터 — `.category-nav__indicator` absolute, `translateX` + `width`를 `var(--spring-bounce)`로 이동. `updateIndicator()` 함수 추가
+- [x] 기능 4: 호버 glow + 포커스 — `:hover`에서 아이콘 `drop-shadow(0 0 6px var(--brand-25))` + 버튼 `translateY(-1px)`, `:focus-visible` 2px `var(--brand-40)` outline
+- [x] 기능 5: 모바일 가로 스크롤 세그먼트 — 520px 이하 `overflow-x: auto` + `scroll-snap-type: x mandatory` + 스크롤바 숨김
+- [x] 접근성: `role="tablist"` / `role="tab"` / `aria-selected` 동적 갱신
+- [x] reduced-motion: indicator/btn transition 단순화, hover transform 제거
+
+## 필수 연동 변경
+- 버튼에 `aria-selected` 속성 추가 — JS가 클릭 시 토글하기 위해 HTML에도 초기값 필요 (SPEC 명시)
+- `.category-nav` 자체를 `width: fit-content` + `margin: 0 auto`로 가운데 정렬 — SPEC의 "중앙정렬 `margin: 0 auto`, 래퍼 flex" 의도를 부모 래퍼 수정 없이 달성하기 위한 최소 조정
+- `will-change: transform, width` 추가 — 인디케이터 부드러운 이동을 위한 힌트
+
+## 하고 싶었으나 범위 외로 미구현
+- 없음 (SPEC 범위 내 모두 구현)
 
 ## 패턴 준수 확인
-- BEM 네이밍: 준수 (기존 클래스만 사용, 신규 클래스 없음)
-- CSS 변수 사용: 준수 (하드코딩 색상 없음, 수치 값만 조정)
-- CSS 네이티브 중첩: 준수 (새 중첩 블록 추가 없음, 기존 `&` 패턴 그대로)
-- 반응형 520px: 준수 (단일 브레이크포인트 원칙, landscape는 orientation 조합으로만 추가)
-- reduced-motion: 기존 블록 유지(동작 변경 없음)
-- esc()/safeUrl(): 해당 없음 (외부 데이터 주입 없음)
-- 가드 클래스: 해당 없음 (JS 변경 없음)
-- DOMContentLoaded 등록: 해당 없음 (JS 변경 없음)
-- -webkit-backdrop-filter: 기존 블록 유지 (이번 변경에서 backdrop-filter 신규 없음)
-- 파일 간 정합성: 클래스명/ID 변경 없음. `pages/game.html` DOM 그대로, `assets/js/game.js` 미변경.
+- BEM 네이밍: 준수 (`category-nav__indicator`, `__btn`, `__icon`, `__label`, `.is-active`, `.is-ready`)
+- CSS 변수 사용: 준수 (하드코딩 색상 없음. `rgba(0,0,0,0.12)` / `rgba(255,255,255,0.04)`는 box-shadow용 뉴트럴로 SPEC 표에 명시된 값)
+- CSS 네이티브 중첩: 준수 (모든 하위 규칙 `& ...` 형태)
+- 반응형 520px: 대응 (SPEC의 수치 그대로)
+- reduced-motion: 대응 (별도 미디어쿼리 블록)
+- esc()/safeUrl(): 해당 없음 (외부 데이터 innerHTML 삽입 없음)
+- 가드 클래스: 유지 (`if (!nav) return;`, `if (!indicator) return;`, `if (!active) return;`)
+- DOMContentLoaded 등록: 기존 `initCategoryFilter()` 호출 유지
+- -webkit-backdrop-filter: 함께 작성됨
+- 파일 간 정합성: `#categoryNav`, `.category-nav__btn`, `.is-active`, `data-filter` 모두 일치. cover-band IIFE의 `allBtn.click()` 경로는 기존 클릭 핸들러를 통과하므로 인디케이터 자동 갱신
 
-## 범위 준수
-- SPEC에 명시된 파일(`pages/game.html`, `assets/css/game.css`)만 수정.
-- `assets/js/game.js`, `index.html`, `assets/css/style.css`, `assets/js/main.js` 미변경.
-- SPEC 외 변경 없음.
+## 기능 보전 확인
+- 필터 5개 동작: 기존 `applyFilter(sections, filter)` 호출 경로 보존
+- 리플: `.ripple` 생성 로직 그대로. 버튼에 `overflow: hidden` 유지
+- 페이드 전환: `visible.forEach` + `setTimeout(200)` 경로 그대로
+- cover-band 호환: `.category-nav__btn.is-active` + `[data-filter="all"]` 선택자 그대로 동작
+- 리사이즈: `window resize` 리스너로 인디케이터 재정렬

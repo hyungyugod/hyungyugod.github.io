@@ -191,7 +191,11 @@ body.game-page {
   justify-content: center;
   padding: 16px;
   z-index: 2;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
+
+.game-overlay__panel { margin: auto; }
 
 .game-overlay.is-hidden {
   display: none;
@@ -477,11 +481,13 @@ html.light .game-overlay {
   }
 
   .game-difficulty {
-    flex-direction: column;
+    gap: 4px;
   }
 
   .game-difficulty__btn {
-    width: 100%;
+    min-width: 0;
+    padding: 7px 6px;
+    font-size: 11px;
   }
 
   .game-cta {
@@ -490,6 +496,15 @@ html.light .game-overlay {
 
   .game-btn {
     width: 100%;
+  }
+
+  .game-overlay {
+    padding: 10px;
+  }
+
+  .game-overlay__desc {
+    font-size: 11px;
+    line-height: 1.45;
   }
 
   .game-touchpad__dpad {

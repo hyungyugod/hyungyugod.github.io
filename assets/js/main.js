@@ -443,6 +443,17 @@ function initCategoryFilter() {
 
   const btns = nav.querySelectorAll('.category-nav__btn');
   const sections = document.querySelectorAll('.category-section');
+  const indicator = nav.querySelector('.category-nav__indicator');
+
+  // 활성 버튼 위치에 인디케이터 정렬
+  function updateIndicator() {
+    if (!indicator) return;
+    const active = nav.querySelector('.category-nav__btn.is-active');
+    if (!active) return;
+    indicator.style.width = active.offsetWidth + 'px';
+    indicator.style.transform = 'translateX(' + active.offsetLeft + 'px)';
+    nav.classList.add('is-ready');
+  }
 
   btns.forEach(btn => {
     // <a> 태그는 실제 링크로 이동하므로 필터 바인딩에서 제외
@@ -459,9 +470,14 @@ function initCategoryFilter() {
       btn.appendChild(ripple);
       ripple.addEventListener('animationend', () => ripple.remove());
 
-      // 활성 탭 업데이트
-      btns.forEach(b => b.classList.remove('is-active'));
+      // 활성 탭 업데이트 + aria-selected 갱신
+      btns.forEach(b => {
+        b.classList.remove('is-active');
+        b.setAttribute('aria-selected', 'false');
+      });
       btn.classList.add('is-active');
+      btn.setAttribute('aria-selected', 'true');
+      updateIndicator();
 
       // 페이드 전환
       const visible = Array.from(sections).filter(s => !s.classList.contains('is-hidden'));
@@ -487,6 +503,11 @@ function initCategoryFilter() {
       }, 200);
     });
   });
+
+  // 초기 인디케이터 정렬 (레이아웃 안정 후 이중 호출)
+  requestAnimationFrame(updateIndicator);
+  window.addEventListener('load', updateIndicator);
+  window.addEventListener('resize', updateIndicator);
 }
 
 // -------------------------------------------------------
