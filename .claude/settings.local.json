@@ -29,7 +29,16 @@
       "Bash(node tests/game-preview.js)",
       "Bash(node tests/game-sprite-zoom.js)",
       "Bash(node tests/game-sprite-light.js)",
-      "Bash(node tests/sprint3-check.js)"
+      "Bash(node tests/sprint3-check.js)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)",
+      "Bash(git fetch *)",
+      "Bash(git -C \"C:/Users/user/Desktop/hyungyugod.github.io\" merge --ff-only claude/keen-pike-c7df20)",
+      "Bash(git -C \"C:/Users/user/Desktop/hyungyugod.github.io\" push origin main)",
+      "Bash(curl -s http://localhost:3000/pages/game.html)",
+      "Bash(curl -s http://localhost:3000/assets/css/game.css)",
+      "Bash(curl -s http://localhost:3000/assets/js/game.js)",
+      "Bash(node -e \"const fs=require\\('fs'\\); const src=fs.readFileSync\\('C:/Users/user/Desktop/hyungyugod.github.io/.claude/worktrees/keen-pike-c7df20/assets/js/game.js','utf8'\\); new Function\\(src\\); console.log\\('JS_PARSE_OK', src.length, 'bytes'\\);\")"
     ]
   }
 }

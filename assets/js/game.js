@@ -39,7 +39,7 @@
   const STORAGE_KEY = 'pixelNurseBest';
 
   // 성공 판정 목표 점수 (절대값) — F 즉사 룰 하에서 반복 플레이로 점진적 달성
-  const TARGET_SCORE = { easy: 80, normal: 60, hard: 60 };
+  const TARGET_SCORE = { easy: 40, normal: 30, hard: 30 };
 
   // 난이도별 기초/최대 속도 + 추가 스폰 주기 + F 상한
   // baseSpeed → maxSpeed: 시간 경과에 따라 선형 보간
@@ -658,6 +658,9 @@
   const btnStart = document.getElementById('btnStart');
   const btnReplay = document.getElementById('btnReplay');
   const btnBackToDifficulty = document.getElementById('btnBackToDifficulty');
+  // 성공 엔딩 전용 — HG 실습 작곡 트랙으로 이어지는 외부 링크 버튼
+  const btnListenTrack = document.getElementById('btnListenTrack');
+  const endCta = overlayEnd ? overlayEnd.querySelector('.game-cta') : null;
   const diffBtns = document.querySelectorAll('.game-difficulty__btn');
   const canvasWrap = document.querySelector('.game-canvas-wrap');
   const startGoalEl = document.getElementById('startGoal');
@@ -768,6 +771,9 @@
       }
       // 오버레이 전환
       overlayEnd.classList.add('is-hidden');
+      // 성공 엔딩 전용 상태 리셋 — 링크 버튼 숨김 + CTA 레이아웃 초기화
+      if (btnListenTrack) btnListenTrack.classList.add('is-hidden');
+      if (endCta) endCta.classList.remove('game-cta--success');
       const cutOverlay = document.getElementById('overlayCutscene');
       if (cutOverlay) cutOverlay.classList.add('is-hidden');
       overlayStart.classList.remove('is-hidden');
@@ -862,6 +868,9 @@
 
     overlayStart.classList.add('is-hidden');
     overlayEnd.classList.add('is-hidden');
+    // 성공 엔딩 전용 상태 리셋 — 새 게임 시작 시 이전 성공 UI 잔존 방지
+    if (btnListenTrack) btnListenTrack.classList.add('is-hidden');
+    if (endCta) endCta.classList.remove('game-cta--success');
     const cutOverlay = document.getElementById('overlayCutscene');
     if (cutOverlay) cutOverlay.classList.add('is-hidden');
 
@@ -892,6 +901,10 @@
     if (hudCombo) {
       hudCombo.classList.remove('is-combo-bump', 'is-combo-hot');
     }
+
+    // 성공 엔딩 전용 UI 기본 리셋 — 이후 success 분기에서만 재활성화
+    if (btnListenTrack) btnListenTrack.classList.add('is-hidden');
+    if (endCta) endCta.classList.remove('game-cta--success');
 
     const prevBest = state.best[state.difficulty] || 0;
     let newRecord = false;
@@ -930,10 +943,13 @@
           endStory.textContent = `${score}개. 좋은 후렴이지만, 김간호는 더 높은 코드를 원한다.`;
         }
         playTone(988, 0.22);
+        // 성공 엔딩 — HG가 실습 기간에 만든 실제 트랙 링크 노출 (CTA 2×2 재구성)
+        if (btnListenTrack) btnListenTrack.classList.remove('is-hidden');
+        if (endCta) endCta.classList.add('game-cta--success');
       } else {
         // 시간 초과 + 미달
         endTitle.textContent = '수간호사에게 붙잡혔어요…';
-        if (score >= target - 2) {
+        if (score >= target - 1) {
           endStory.textContent = `${score}점. 한 음만 더 있었으면… 다음 교대 시간엔 반드시.`;
         } else {
           endStory.textContent = `수간호사의 눈을 피해가며 모은 ${score}점. 오늘의 후렴은 여기까지. (목표 ${target}점 / 획득 ${score}점)`;
@@ -1366,6 +1382,36 @@
           else if (state.combo >= 3) pCount = 10;
           spawnParticles(n.x + 6, n.y + 6, pCount);
         }
+      }
+    }
+
+    // 수간호사 본체 직접 충돌 — 즉사 처리 (F 충돌과 동등, SPEC 기능 2)
+    // F에만 의존하던 회피 부담을 순찰 경로 읽기로 확장한다.
+    if (state.nurseChief.active) {
+      const chief = state.nurseChief;
+      const CHIEF_HB = 14;
+      const cx = chief.x - CHIEF_HB / 2;
+      const cy = chief.y - CHIEF_HB / 2;
+      if (p.x < cx + CHIEF_HB && p.x + p.w > cx &&
+          p.y < cy + CHIEF_HB && p.y + p.h > cy) {
+        state.hits += 1;
+        state.combo = 0;
+        updateComboHud(false);
+
+        // F 충돌과 동일 연출 — 저음 2연타
+        playTone(110, 0.25);
+        setTimeout(() => playTone(82, 0.35), 100);
+
+        // 캔버스 셰이크 + 즉사 비네트 — reduced-motion 비활성
+        if (canvasWrap && !reducedMotion) {
+          canvasWrap.classList.remove('is-shake');
+          void canvasWrap.offsetWidth; // 재생 재시작용 reflow
+          canvasWrap.classList.add('is-shake', 'is-gameover');
+        }
+
+        state.gameoverReason = 'hit';
+        endGame();
+        return;
       }
     }
 

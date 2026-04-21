@@ -72,7 +72,7 @@
             <p class="game-overlay__hint">
               이동 화살표 또는 <span class="game-controls__key">W</span><span class="game-controls__key">A</span><span class="game-controls__key">S</span><span class="game-controls__key">D</span> · 모바일 방향패드
             </p>
-            <p class="game-overlay__goal" id="startGoal">목표 <strong>22</strong>점 · 45초</p>
+            <p class="game-overlay__goal" id="startGoal">목표 <strong>40</strong>점 · 45초</p>
             <div class="game-difficulty" role="radiogroup" aria-label="난이도">
               <button class="game-difficulty__btn" type="button" role="radio" aria-checked="true" data-diff="easy">하 · Easy</button>
               <button class="game-difficulty__btn" type="button" role="radio" aria-checked="false" data-diff="normal">중 · Normal</button>
@@ -97,7 +97,7 @@
 
         <!-- 종료 오버레이 -->
         <div class="game-overlay is-hidden" id="overlayEnd">
-          <div class="game-overlay__panel" role="dialog" aria-labelledby="endTitle">
+          <div class="game-overlay__panel game-overlay__panel--end" role="dialog" aria-labelledby="endTitle">
             <h2 class="game-overlay__title" id="endTitle">타임 오버</h2>
             <div class="game-overlay__score" aria-live="polite" id="endScoreWrap">
               <span>이번 점수</span>
@@ -111,6 +111,14 @@
             </ul>
             <p class="game-overlay__ending" id="endStory"></p>
             <div class="game-cta">
+              <a class="game-btn game-btn--listen is-hidden"
+                 id="btnListenTrack"
+                 href="https://www.youtube.com/watch?v=_lIkCnyABVA&list=LL&index=27"
+                 target="_blank"
+                 rel="noopener noreferrer"
+                 aria-label="HG가 실습때 만든 노래 새 탭에서 듣기">
+                🎵 HG가 실습때 만든 노래 듣기
+              </a>
               <button class="game-btn" type="button" id="btnReplay">다시 플레이</button>
               <button class="game-btn game-btn--ghost" type="button" id="btnBackToDifficulty">난이도 다시 선택</button>
               <a class="game-btn game-btn--ghost" href="/">홈으로</a>
