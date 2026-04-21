@@ -762,3 +762,114 @@ function initMottoReveal() {
 }
 
 
+/* ============================================================
+   Cover band — click to scroll to target section
+   + auto-activate matching category filter if one is filtered.
+   Append to assets/js/main.js
+   ============================================================ */
+(function () {
+  const band = document.querySelector('.cover-band');
+  if (!band) return;
+
+  const links = band.querySelectorAll('a[data-target]');
+  const nav = document.getElementById('categoryNav');
+
+  function activateCategory(target) {
+    if (!nav) return;
+    const activeBtn = nav.querySelector('.category-nav__btn.is-active');
+    if (!activeBtn) return;
+    const activeFilter = activeBtn.dataset.filter;
+    // if user is viewing "all" or already on the target, do nothing
+    if (activeFilter === 'all' || activeFilter === target) return;
+    // otherwise flip to "all" so the target section is visible
+    const allBtn = nav.querySelector('.category-nav__btn[data-filter="all"]');
+    if (allBtn) allBtn.click();
+  }
+
+  function scrollTo(target) {
+    activateCategory(target);
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        const el = document.getElementById('section-' + target);
+        if (!el) return;
+        const y = el.getBoundingClientRect().top + window.pageYOffset - 24;
+        window.scrollTo({ top: y, behavior: 'smooth' });
+      }, 40);
+    });
+  }
+
+  links.forEach(a => {
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      scrollTo(a.dataset.target);
+    });
+  });
+})();
+
+/* ============================================================
+   Streaks: mark longest + render sparkline
+   Works with the existing streak renderer in main.js — this
+   runs AFTER the first render via MutationObserver.
+   ============================================================ */
+(function () {
+  const grid = document.getElementById('streaksGrid');
+  if (!grid) return;
+
+  // Map card index → kind for sparkline coloring. Adjust if card order differs.
+  const KIND_BY_INDEX = ['diary', 'workout', 'threec'];
+
+  // Mock 6-month history per kind. Replace with real data source when available.
+  const HISTORY = {
+    diary:   [12, 18, 22, 28, 30, 31],
+    workout: [26, 24, 15,  8, 23, 16],
+    threec:  [ 0,  0,  0,  4, 18, 21],
+  };
+
+  function enhance() {
+    const cards = grid.querySelectorAll('.streak-card:not(.streak-card--loading):not([data-enhanced])');
+    if (!cards.length) return;
+
+    // find longest by reading the visible value
+    let maxVal = -Infinity, maxCard = null;
+    cards.forEach(c => {
+      const raw = c.querySelector('.streak-card__value, [class*="value"]');
+      const n = raw ? parseInt(raw.textContent.replace(/\D/g, ''), 10) : 0;
+      if (n > maxVal) { maxVal = n; maxCard = c; }
+    });
+
+    cards.forEach((c, i) => {
+      c.dataset.enhanced = '1';
+      const kind = KIND_BY_INDEX[i] || 'threec';
+      c.setAttribute('data-kind', kind);
+
+      // Longest badge
+      if (c === maxCard && !c.querySelector('.streak-card__badge')) {
+        const b = document.createElement('span');
+        b.className = 'streak-card__badge';
+        b.textContent = 'Longest';
+        c.appendChild(b);
+        c.classList.add('is-longest');
+      }
+
+      // Sparkline
+      if (!c.querySelector('.streak-card__spark')) {
+        const hist = HISTORY[kind] || [];
+        const max = Math.max(1, ...hist);
+        const spark = document.createElement('div');
+        spark.className = 'streak-card__spark';
+        spark.setAttribute('aria-hidden', 'true');
+        hist.forEach(v => {
+          const bar = document.createElement('div');
+          bar.className = 'streak-card__spark-bar';
+          bar.style.height = Math.max(8, (v / max) * 100) + '%';
+          spark.appendChild(bar);
+        });
+        c.appendChild(spark);
+      }
+    });
+  }
+
+  // Run now and on future renders
+  enhance();
+  new MutationObserver(enhance).observe(grid, { childList: true, subtree: true });
+})();
