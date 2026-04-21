@@ -15,7 +15,9 @@
       "Bash(cp C:/Users/user/hyungyugod.github.io/.claude/worktrees/reverent-torvalds-f369eb/assets/js/main.js C:/Users/user/Desktop/hyungyugod.github.io/assets/js/main.js)",
       "Bash(cp -f /c/Users/user/hyungyugod.github.io/.claude/worktrees/reverent-torvalds-f369eb/index.html /c/Users/user/Desktop/hyungyugod.github.io/index.html)",
       "Bash(cp -f /c/Users/user/hyungyugod.github.io/.claude/worktrees/reverent-torvalds-f369eb/assets/css/style.css /c/Users/user/Desktop/hyungyugod.github.io/assets/css/style.css)",
-      "Bash(cp -f /c/Users/user/hyungyugod.github.io/.claude/worktrees/reverent-torvalds-f369eb/assets/js/main.js /c/Users/user/Desktop/hyungyugod.github.io/assets/js/main.js)"
+      "Bash(cp -f /c/Users/user/hyungyugod.github.io/.claude/worktrees/reverent-torvalds-f369eb/assets/js/main.js /c/Users/user/Desktop/hyungyugod.github.io/assets/js/main.js)",
+      "Bash(python *)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:8000/pages/game.html)"
     ]
   }
 }

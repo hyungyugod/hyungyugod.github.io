@@ -445,6 +445,8 @@ function initCategoryFilter() {
   const sections = document.querySelectorAll('.category-section');
 
   btns.forEach(btn => {
+    // <a> 태그는 실제 링크로 이동하므로 필터 바인딩에서 제외
+    if (btn.tagName === 'A') return;
     btn.addEventListener('click', (e) => {
       const filter = btn.dataset.filter;
 
