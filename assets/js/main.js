@@ -393,7 +393,7 @@ function initTyping() {
 // -------------------------------------------------------
 
 function initScrollReveal() {
-  const targets = document.querySelectorAll('.link-card, .social-card, .section-label, .platform-showcase, .category-title');
+  const targets = document.querySelectorAll('.link-card, .social-card, .section-label, .platform-showcase, .game-showcase, .category-title');
 
   // prefers-reduced-motion 시 즉시 표시
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
@@ -426,7 +426,7 @@ function applyFilter(sections, filter) {
   sections.forEach(sec => {
     if (filter === 'all' || sec.dataset.category === filter) {
       sec.classList.remove('is-hidden');
-      sec.querySelectorAll('.link-card, .social-card, .section-label, .platform-showcase, .category-title')
+      sec.querySelectorAll('.link-card, .social-card, .section-label, .platform-showcase, .game-showcase, .category-title')
          .forEach(el => el.classList.add('is-visible'));
     } else {
       sec.classList.add('is-hidden');
@@ -821,27 +821,10 @@ function initMottoReveal() {
     const cards = grid.querySelectorAll('.streak-card:not(.streak-card--loading):not([data-enhanced])');
     if (!cards.length) return;
 
-    // find longest by reading the visible value
-    let maxVal = -Infinity, maxCard = null;
-    cards.forEach(c => {
-      const raw = c.querySelector('.streak-card__value, [class*="value"]');
-      const n = raw ? parseInt(raw.textContent.replace(/\D/g, ''), 10) : 0;
-      if (n > maxVal) { maxVal = n; maxCard = c; }
-    });
-
     cards.forEach((c, i) => {
       c.dataset.enhanced = '1';
       const kind = KIND_BY_INDEX[i] || 'threec';
       c.setAttribute('data-kind', kind);
-
-      // Longest badge
-      if (c === maxCard && !c.querySelector('.streak-card__badge')) {
-        const b = document.createElement('span');
-        b.className = 'streak-card__badge';
-        b.textContent = 'Longest';
-        c.appendChild(b);
-        c.classList.add('is-longest');
-      }
 
       // Sparkline
       if (!c.querySelector('.streak-card__spark')) {

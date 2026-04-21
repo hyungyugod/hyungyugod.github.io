@@ -1,25 +1,36 @@
 # 자체 점검
 
-전략: Case A — 최초 구현 (QA 피드백 없음)
+전략: Case A — 이유: 최초 구현이므로 SPEC을 정밀하게 그대로 적용.
 
 ## SPEC 기능 체크
-- [x] 기능 1: 카테고리 제목 헤더 추가 — 3개 섹션(writing/music/social) 각각 `.category-header` > `<h2 class="category-title">` + 기존 `.section-label` 구조로 래핑. 라벨 텍스트도 SPEC대로 부연 설명으로 변경.
-- [x] 기능 2: 등장 애니메이션 일관성 — `initScrollReveal()`과 `applyFilter()` 셀렉터에 `.category-title` 추가. `prefers-reduced-motion` 블록에도 포함.
-- [x] `.streaks` 내부 `<p class="section-label">Routine</p>`는 건드리지 않음.
-- [x] 모바일 520px: title 28px, 악센트 바 3px, 헤더 gap/margin 축소.
+- [x] Game 탭을 `<a class="category-nav__btn--link">` → `<button data-filter="game" type="button">`로 교체 (index.html)
+- [x] Social 섹션 바로 앞에 `#section-game` 카테고리 섹션 추가 (순서: Writing → Music → Game → Social)
+- [x] `.game-showcase` 컴포넌트 마크업: thumb(좌) + body(우) + accent bar + Playable 배지 + meta 리스트 + CTA
+- [x] `/pages/game.html`로 이동하는 두 링크(thumb, CTA) 각각 고유 `aria-label` 부여
+- [x] `.game-showcase` 스타일: glassmorphism + brand-12 border + gradient accent + 16:10 thumb + retro 스캔라인 오버레이
+- [x] hover: 박스 섀도우 brand 톤, 썸네일 scale(1.04), 아이콘 scale(1.08), 오버레이 opacity 연화, CTA 이동
+- [x] scroll-reveal 호환: `opacity:0 → is-visible` 토글 + 트랜지션
+- [x] 라이트 테마 대응: `html.light .game-showcase` 보더·섀도우 오버라이드
+- [x] 반응형 520px: 1컬럼 전환 + 패딩/폰트 축소
+- [x] `prefers-reduced-motion`: 기존 블록 셀렉터에 `.game-showcase` 추가 + thumb img transition 억제
+- [x] `.category-nav__btn--link` 규칙 및 선행 주석 제거
+- [x] main.js `initScrollReveal`와 `applyFilter` 셀렉터에 `.game-showcase` 추가
+- [x] `<a>` 가드는 유지 (SPEC 권장대로 안전하게 남김)
 
 ## 패턴 준수 확인
-- BEM 네이밍: 준수 — `.category-header`(block), `.category-title`(block). `&::before`/`&.is-visible`로 상태 표현.
-- CSS 변수 사용: 준수 — `var(--font-serif)`, `var(--text)`, `var(--brand)`, `var(--ease-out-expo)`만 사용. 하드코딩 색상 없음.
-- CSS 네이티브 중첩: 준수 — `& .section-label`, `&.is-visible`, `&::before`, 모바일 블록 내 `&::before` 모두 `&` 사용.
-- 반응형 520px: 대응 — `.category-title` 28px, `&::before` left/width 축소, `.category-header` gap/margin 축소.
-- reduced-motion: 대응 — `@media (prefers-reduced-motion: reduce)`의 opacity/transform 리셋 리스트에 `.category-title` 추가.
-- esc()/safeUrl(): 해당 없음 (정적 HTML만 변경).
-- 가드 클래스: 해당 없음 (새 init 함수 추가 없음).
-- DOMContentLoaded 등록: 해당 없음 (기존 `initScrollReveal` 확장만).
-- -webkit-backdrop-filter: 해당 없음 (blur 미사용).
-- 파일 간 정합성: `.category-title` 클래스가 HTML, CSS, JS 3곳 모두 일치. `.category-header`도 HTML/CSS 일치.
+- BEM 네이밍: 준수 (`.game-showcase__thumb`, `__body`, `__accent`, `__badge`, `__overlay` 등)
+- CSS 변수 사용: 준수 (`--bg-card`, `--brand`, `--brand-08~40`, `--text-muted`, `--transition`, `--ease-out-expo`); 라이트 테마 오버라이드는 SPEC 지정 하드코딩 RGBA 사용
+- CSS 네이티브 중첩: 준수 (`&`, `&:hover`, `& .child` 일관)
+- 반응형 520px: 대응 (grid 1컬럼 + 크기 축소)
+- reduced-motion: 대응 (기존 블록에 추가 + img transition 억제)
+- esc()/safeUrl(): 해당 없음 (내부 정적 경로만 사용)
+- 가드 클래스: `initCategoryFilter`의 `if (btn.tagName === 'A') return;` 유지
+- DOMContentLoaded 등록: `initScrollReveal`, `initCategoryFilter` 기존 등록 그대로 사용 (신규 init 없음)
+- -webkit-backdrop-filter: 컨테이너·배지 모두 함께 작성
+- 파일 간 정합성: `.game-showcase` 클래스명 HTML/CSS/JS 일치, `data-category="game"` 섹션과 `data-filter="game"` 버튼 일치
 
-## 범위 준수
-- SPEC "허용" 범위 내 변경만 수행: HTML 구조 추가, CSS 신규 블록, `initScrollReveal`/`applyFilter` 셀렉터 확장, `prefers-reduced-motion` 리스트 확장.
-- SPEC "금지"에 해당하는 변경 없음 (카드 그리드/카테고리 탭/section-label 근본 재설계/새 인터랙션/Routine/cover-band 모두 미변경).
+## 범위 외 변경 없음
+- `pages/game.html`, `game.css`, `game.js` 미수정
+- `:root` 변수 추가/변경 없음
+- 기존 `platform-showcase`/`music-showcase` 영향 없음
+- `cover-band`에 게임 커버 추가 안 함

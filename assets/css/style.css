@@ -724,20 +724,6 @@ html.light .social-card:hover {
     }
   }
 
-  /* <a> 태그로 렌더되는 Game 링크 — 버튼 외관과 동일하게 정렬 */
-  & .category-nav__btn--link {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    text-decoration: none;
-    line-height: 1;
-
-    &:hover {
-      color: var(--brand-light);
-      border-color: var(--brand-40);
-      box-shadow: 0 0 14px var(--brand-08);
-    }
-  }
 }
 
 /* ---- Category Section ---- */
@@ -1170,6 +1156,219 @@ html.light .social-card:hover {
   }
 }
 
+/* ---- Game Showcase ---- */
+.game-showcase {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  gap: 0;
+  border-radius: 16px;
+  overflow: hidden;
+  background: var(--bg-card);
+  border: 1px solid var(--brand-12);
+  backdrop-filter: blur(14px) saturate(1.1);
+  -webkit-backdrop-filter: blur(14px) saturate(1.1);
+  opacity: 0;
+  transform: translateY(24px);
+  transition:
+    opacity 0.5s ease-out,
+    transform 0.5s ease-out,
+    box-shadow var(--transition),
+    border-color var(--transition);
+
+  &.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  &:hover {
+    box-shadow: 0 8px 40px var(--brand-14), 0 0 0 1px var(--brand-25);
+  }
+
+  /* 좌측 악센트 바 */
+  & .game-showcase__accent {
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 4px;
+    z-index: 2;
+    background: linear-gradient(to bottom, var(--brand), var(--brand-light));
+  }
+
+  /* 썸네일 */
+  & .game-showcase__thumb {
+    position: relative;
+    display: block;
+    overflow: hidden;
+    aspect-ratio: 16 / 10;
+    text-decoration: none;
+
+    & img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.6s var(--ease-out-expo);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--brand-40);
+      outline-offset: 2px;
+    }
+  }
+
+  &:hover .game-showcase__thumb img {
+    transform: scale(1.04);
+  }
+
+  /* 썸네일 오버레이 (레트로 스캔라인) */
+  & .game-showcase__thumb-overlay {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+      repeating-linear-gradient(0deg, transparent 0 2px, rgba(255,255,255,0.02) 2px 3px),
+      linear-gradient(180deg, transparent 50%, rgba(15,14,21,0.5));
+    opacity: 1;
+    transition: opacity 0.4s ease;
+  }
+
+  &:hover .game-showcase__thumb-overlay {
+    opacity: 0.7;
+  }
+
+  /* Playable 배지 */
+  & .game-showcase__badge {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    background: var(--brand-25);
+    color: var(--brand-light);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    border-radius: 999px;
+    border: 1px solid var(--brand-35);
+  }
+
+  /* 본문 */
+  & .game-showcase__body {
+    padding: 24px 24px 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    position: relative;
+    z-index: 1;
+  }
+
+  & .game-showcase__top {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  & .game-showcase__icon {
+    width: 52px;
+    height: 52px;
+    border-radius: 14px;
+    background: var(--brand-12);
+    color: var(--brand-light);
+    font-size: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--brand-20);
+    transition: transform var(--transition);
+    flex-shrink: 0;
+  }
+
+  &:hover .game-showcase__icon {
+    transform: scale(1.08);
+  }
+
+  & .game-showcase__info {
+    flex: 1;
+    min-width: 0;
+  }
+
+  & .game-showcase__title {
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: -0.3px;
+    margin: 0 0 2px;
+  }
+
+  & .game-showcase__tagline {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin: 0;
+  }
+
+  & .game-showcase__meta {
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 14px;
+    padding: 0;
+    margin: 0;
+    font-size: 12px;
+    color: var(--text-muted);
+
+    & li {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    & i {
+      color: var(--brand-light);
+      font-size: 11px;
+    }
+  }
+
+  & .game-showcase__cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 18px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--brand-light);
+    text-decoration: none;
+    border-radius: 8px;
+    background: var(--brand-08);
+    border: 1px solid var(--brand-25);
+    transition: all var(--transition);
+    align-self: flex-start;
+
+    & i { font-size: 11px; transition: transform 0.3s ease; }
+
+    &:hover {
+      background: var(--brand-14);
+      border-color: var(--brand-40);
+
+      & i { transform: translateX(3px); }
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--brand-40);
+      outline-offset: 2px;
+    }
+  }
+}
+
+html.light .game-showcase {
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+html.light .game-showcase:hover {
+  box-shadow: 0 8px 40px rgba(176, 112, 104, 0.14), 0 0 0 1px rgba(176, 112, 104, 0.25);
+}
+
 /* ---- Featured Items ---- */
 .link-card__items {
   counter-reset: feat-counter;
@@ -1538,6 +1737,18 @@ html.light .social-card:hover {
     & .platform-showcase__cta { padding: 8px 14px; font-size: 12px; }
   }
 
+  .game-showcase {
+    grid-template-columns: 1fr;
+
+    & .game-showcase__body { padding: 18px 16px 16px; gap: 12px; }
+    & .game-showcase__top { gap: 12px; }
+    & .game-showcase__icon { width: 44px; height: 44px; font-size: 20px; border-radius: 11px; }
+    & .game-showcase__title { font-size: 17px; }
+    & .game-showcase__tagline { font-size: 12px; }
+    & .game-showcase__meta { font-size: 11px; gap: 6px 10px; }
+    & .game-showcase__cta { padding: 8px 14px; font-size: 12px; }
+  }
+
   .featured-item {
     & .featured-item__label { padding: 6px 8px; font-size: 9.5px; }
 
@@ -1842,7 +2053,8 @@ html.light .social-card:hover {
     transition-duration: 0.01ms !important;
   }
 
-  .link-card, .social-card, .section-label, .platform-showcase, .category-title { opacity: 1; transform: none; }
+  .link-card, .social-card, .section-label, .platform-showcase, .game-showcase, .category-title { opacity: 1; transform: none; }
+  .game-showcase .game-showcase__thumb img { transition: none; }
   .hero-bg { animation: none; }
   .profile__avatar-wrap { animation: none; }
   .link-card:hover::after { animation: none; opacity: 0; }
