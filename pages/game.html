@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no, maximum-scale=1" />
   <title>Pixel Nurse Note-Catcher · hgfolio</title>
   <meta name="description" content="30초 안에 음표를 가장 많이 모으는 미니 픽셀 게임." />
   <link rel="icon" href="/favicon.ico" />
@@ -36,6 +36,9 @@
       align-items: center;
       padding: 24px 16px 48px;
       gap: 18px;
+      touch-action: manipulation;
+      overscroll-behavior: contain;
+      -webkit-tap-highlight-color: transparent;
     }
 
     .game-topbar {
@@ -197,6 +200,7 @@
       height: 100%;
       image-rendering: pixelated;
       image-rendering: crisp-edges;
+      touch-action: none;
     }
 
     .game-overlay {
@@ -392,6 +396,62 @@
       letter-spacing: 0.5px;
     }
 
+    /* 가상 D-Pad (모바일 터치 컨트롤) */
+    .game-touchpad {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      padding: 4px 0 0;
+    }
+
+    .game-touchpad[hidden] {
+      display: none;
+    }
+
+    .game-touchpad__dpad {
+      position: relative;
+      width: 168px;
+      height: 168px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      grid-template-rows: repeat(3, 1fr);
+      gap: 6px;
+    }
+
+    .game-touchpad__btn {
+      border: 1px solid var(--border);
+      background: var(--bg-card);
+      color: var(--text-muted);
+      border-radius: var(--radius-sm);
+      font-size: 18px;
+      font-weight: 700;
+      cursor: pointer;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: none;
+      backdrop-filter: blur(14px) saturate(1.1);
+      -webkit-backdrop-filter: blur(14px) saturate(1.1);
+      transition: background 0.15s, border-color 0.15s, color 0.15s, transform 0.15s var(--spring-bounce);
+
+      &:active,
+      &.is-pressed {
+        background: var(--brand-12);
+        border-color: var(--brand-40);
+        color: var(--brand-light);
+        transform: scale(0.94);
+      }
+
+      &:focus-visible {
+        outline: 2px solid var(--brand-40);
+        outline-offset: 2px;
+      }
+    }
+
+    .game-touchpad__btn--up    { grid-column: 2; grid-row: 1; }
+    .game-touchpad__btn--left  { grid-column: 1; grid-row: 2; }
+    .game-touchpad__btn--right { grid-column: 3; grid-row: 2; }
+    .game-touchpad__btn--down  { grid-column: 2; grid-row: 3; }
+
     /* 반응형 (520px 이하) */
     @media (max-width: 520px) {
       body.game-page {
@@ -442,6 +502,19 @@
 
       .game-btn {
         width: 100%;
+      }
+
+      .game-touchpad__dpad {
+        width: 192px;
+        height: 192px;
+      }
+
+      .game-canvas-wrap {
+        aspect-ratio: 4 / 3;
+      }
+
+      .game-controls {
+        display: none;
       }
     }
 
@@ -495,7 +568,7 @@
         <div class="game-overlay" id="overlayStart">
           <div class="game-overlay__panel" role="dialog" aria-labelledby="startTitle">
             <h2 class="game-overlay__title" id="startTitle">난이도 선택</h2>
-            <p class="game-overlay__desc">화살표 또는 <span class="game-controls__key">W</span><span class="game-controls__key">A</span><span class="game-controls__key">S</span><span class="game-controls__key">D</span>로 간호사를 움직여 음표를 수집하세요.</p>
+            <p class="game-overlay__desc">화살표 또는 <span class="game-controls__key">W</span><span class="game-controls__key">A</span><span class="game-controls__key">S</span><span class="game-controls__key">D</span>로 간호사를 움직여 음표를 수집하세요. 모바일에서는 화면 아래 방향패드를 사용하세요.</p>
             <div class="game-difficulty" role="radiogroup" aria-label="난이도">
               <button class="game-difficulty__btn" type="button" role="radio" aria-checked="true" data-diff="easy">하 · Easy</button>
               <button class="game-difficulty__btn" type="button" role="radio" aria-checked="false" data-diff="normal">중 · Normal</button>
@@ -521,6 +594,15 @@
               <a class="game-btn game-btn--ghost" href="/">홈으로</a>
             </div>
           </div>
+        </div>
+      </div>
+
+      <div class="game-touchpad" id="gameTouchpad" aria-hidden="true" hidden>
+        <div class="game-touchpad__dpad">
+          <button class="game-touchpad__btn game-touchpad__btn--up"    type="button" data-dir="up"    aria-label="위로 이동">▲</button>
+          <button class="game-touchpad__btn game-touchpad__btn--left"  type="button" data-dir="left"  aria-label="왼쪽으로 이동">◀</button>
+          <button class="game-touchpad__btn game-touchpad__btn--right" type="button" data-dir="right" aria-label="오른쪽으로 이동">▶</button>
+          <button class="game-touchpad__btn game-touchpad__btn--down"  type="button" data-dir="down"  aria-label="아래로 이동">▼</button>
         </div>
       </div>
 
@@ -727,70 +809,93 @@
         }
       }
 
-      // 픽셀 간호사 (16x16) — 단순 스프라이트 맵.
-      // '.'=투명, 'S'=피부, 'H'=머리카락, 'W'=흰옷, 'C'=코럴십자, 'P'=하의, 'B'=신발, 'E'=눈
-      // 방향(dir): 'down','up','left','right', 프레임(frame): 0 idle, 1 step
+      // 픽셀 간호사 (16x20) — 치비/SD 비율 (2.2등신)
+      // '.'=투명, 'S'=피부, 'H'=머리카락, 'W'=흰옷, 'D'=모자 음영, 'C'=코럴십자
+      // 'E'=눈 동공, 'L'=눈 하이라이트(흰자), 'R'=볼터치, 'M'=입, 'P'=하의, 'B'=신발
+      // 방향(dir): 'down','up','left','right', 프레임(frame): 0 idle, 1/2 step
+      const NURSE_W = 16;
+      const NURSE_H = 20;
       function nurseSprite(dir, frame) {
-        // 16x16 치비 간호사 — 큰 머리, 큰 눈, 볼터치, 미소
-        // R = 볼터치(rose), M = 입술(coral)
+        // 16x20 — 머리(행 1-10, 50%) + 몸통/다리(행 11-19)
         const base = [
-          '................',
-          '....HHHHHHH.....',
-          '...HWWWCWWWH....',
-          '...HWWWCWWWH....',
-          '...HSSSSSSSH....',
-          '...HSSSSSSSH....',
-          '...SEE.S.EES....',
-          '...SRSSSSSRS....',
-          '....SSMMMSS.....',
-          '...WWWWWWWWW....',
-          '...WWWCCCWWW....',
-          '...WWWWWWWWW....',
-          '....WWWWWWW.....',
-          '....PPP.PPP.....',
-          '....PPP.PPP.....',
-          '....BB...BB.....'
+          '................', // 0
+          '....WWWWWWWW....', // 1 모자 상단
+          '...WWWWCCWWWW...', // 2 모자 중단 + 코럴 십자
+          '..WDDDDDDDDDDW..', // 3 모자 그림자 라인
+          '..HHSSSSSSSSHH..', // 4 앞머리 + 이마
+          '..HSSSSSSSSSSH..', // 5
+          '..SSEESSSSEESS..', // 6 눈 동공
+          '..SSELSSSSELSS..', // 7 눈 하이라이트
+          '..RSSSSMMSSSSR..', // 8 볼터치 + 작은 입
+          '..SSSSSSSSSSSS..', // 9
+          '...SSSSSSSSSS...', // 10 턱
+          '....WWWWWWWW....', // 11 어깨/상의 시작
+          '...WWWWCCWWWW...', // 12 가슴 십자 상단
+          '...WWWCCCCWWW...', // 13 가슴 십자 중단
+          '....WWWWWWWW....', // 14 상의 밑단
+          '....PPPPPPPP....', // 15 하의 시작
+          '....PPP..PPP....', // 16
+          '....PPP..PPP....', // 17
+          '....BB....BB....', // 18 발
+          '....BB....BB....'  // 19
         ];
-        // 걷기 프레임 — 다리/신발 교차
-        if (frame === 1) {
-          base[13] = '....PPPP.PP.....';
-          base[14] = '....PPPP.PP.....';
-          base[15] = '.....BB..BB.....';
-        } else if (frame === 2) {
-          base[13] = '....PP.PPPP.....';
-          base[14] = '....PP.PPPP.....';
-          base[15] = '....BB..BB......';
-        }
-        // 방향별 시선
+
+        // 방향별 얼굴 처리
         if (dir === 'up') {
-          base[6] = '...SSS.S.SSS....';
-          base[7] = '...SRSSSSSRS....';
+          // 뒷모습 — 얼굴 자리 전체를 머리카락으로
+          base[4] = '..HHHHHHHHHHHH..';
+          base[5] = '..HHHHHHHHHHHH..';
+          base[6] = '..HHHHHHHHHHHH..';
+          base[7] = '..HHHHHHHHHHHH..';
+          base[8] = '..HHHHHHHHHHHH..';
+          base[9] = '..HHHHHHHHHHHH..';
+          base[10] = '...HHHHHHHHHH...';
         } else if (dir === 'left') {
-          base[6] = '...SEE.S.SSS....';
+          // 오른쪽 눈만 + 오른쪽 볼
+          base[6] = '..SSSSSSSSEESS..';
+          base[7] = '..SSSSSSSSELSS..';
+          base[8] = '..SSSSSMMSSSSR..';
         } else if (dir === 'right') {
-          base[6] = '...SSS.S.EES....';
+          // 왼쪽 눈만 + 왼쪽 볼
+          base[6] = '..SSEESSSSSSSS..';
+          base[7] = '..SSELSSSSSSSS..';
+          base[8] = '..RSSSSMMSSSSS..';
         }
+
+        // 걷기 프레임 — 발만 교차 (행 18-19)
+        if (frame === 1) {
+          base[18] = '....BB...BBB....';
+          base[19] = '....BBB...BB....';
+        } else if (frame === 2) {
+          base[18] = '....BBB...BB....';
+          base[19] = '....BB...BBB....';
+        }
+
         return base;
       }
 
       function drawNurse(x, y, dir, frame) {
         const sprite = nurseSprite(dir, frame);
         const palette = {
-          'S': '#fbe0d0',
-          'H': '#2e2020',
-          'W': '#ffffff',
-          'C': '#c4847a',
-          'P': '#e8bcb4',
-          'B': '#a85f56',
-          'E': '#2a1f25',
-          'R': '#f5a8a0',
-          'M': '#c4847a'
+          'S': '#fbe0d0', // 피부
+          'H': '#2e2020', // 머리카락
+          'W': '#ffffff', // 흰옷/모자
+          'D': '#e6dde6', // 모자 음영
+          'C': '#c4847a', // 코럴 십자
+          'P': '#e8bcb4', // 하의
+          'B': '#a85f56', // 신발
+          'E': '#2a1f25', // 눈 동공
+          'L': '#ffffff', // 흰자 하이라이트
+          'R': '#f5a8a0', // 볼터치
+          'M': '#c4847a'  // 입
         };
         const SCALE = 2;
-        // 히트박스(16x16) 기준으로 중앙 정렬, 발은 히트박스 하단에 맞춤
+        // 히트박스(14x14) 기준 중앙 정렬. 머리가 커졌으므로 oy를 -24로 내림.
         const ox = Math.round(x) - 8;
-        const oy = Math.round(y) - 16;
-        for (let r = 0; r < 16; r++) {
+        let oy = Math.round(y) - 24;
+        // 걷기 바운스 — reduced-motion 비활성
+        if (frame !== 0 && !reducedMotion) oy -= 1;
+        for (let r = 0; r < 20; r++) {
           const row = sprite[r];
           for (let c = 0; c < 16; c++) {
             const ch = row[c];
@@ -844,7 +949,7 @@
         running: false,
         difficulty: 'easy',
         map: null,
-        player: { x: 0, y: 0, w: 16, h: 16, dir: 'down', frameAcc: 0, frame: 0, stunUntil: 0 },
+        player: { x: 0, y: 0, w: 14, h: 14, dir: 'down', frameAcc: 0, frame: 0, stunUntil: 0 },
         notes: [],      // {x, y, born, bobSeed}
         obstacles: [],  // {x, y, dx, dy}
         keys: Object.create(null),
@@ -901,7 +1006,11 @@
         });
       });
 
-      btnStart.addEventListener('click', () => startGame());
+      btnStart.addEventListener('click', () => {
+        // iOS 오디오 언락 — 첫 유저 제스처에서 무음 톤
+        playTone(0, 0.001);
+        startGame();
+      });
       btnReplay.addEventListener('click', () => {
         overlayEnd.classList.add('is-hidden');
         overlayStart.classList.remove('is-hidden');
@@ -938,8 +1047,8 @@
         state.timeLeft = GAME_DURATION;
         state.notes = [];
         state.obstacles = [];
-        state.player.x = TILE * 2 + 2;
-        state.player.y = TILE * 2 + 2;
+        state.player.x = TILE * 2 + 3;
+        state.player.y = TILE * 2 + 3;
         state.player.dir = 'down';
         state.player.frame = 0;
         state.player.frameAcc = 0;
@@ -1165,10 +1274,47 @@
       }
 
       // =====================================================
+      // 모바일 터치 컨트롤
+      // =====================================================
+      function isTouchDevice() {
+        return window.matchMedia('(pointer: coarse)').matches || ('ontouchstart' in window);
+      }
+
+      function initTouchControls() {
+        const pad = document.getElementById('gameTouchpad');
+        if (!pad) return;
+        pad.hidden = false;
+        pad.setAttribute('aria-hidden', 'false');
+        const controlsHint = document.querySelector('.game-controls');
+        if (controlsHint) controlsHint.style.display = 'none';
+        const btns = pad.querySelectorAll('.game-touchpad__btn');
+        btns.forEach(btn => {
+          const dir = btn.dataset.dir;
+          const press = (e) => {
+            e.preventDefault();
+            state.keys[dir] = true;
+            btn.classList.add('is-pressed');
+          };
+          const release = (e) => {
+            e.preventDefault();
+            state.keys[dir] = false;
+            btn.classList.remove('is-pressed');
+          };
+          btn.addEventListener('pointerdown', press, { passive: false });
+          btn.addEventListener('pointerup', release, { passive: false });
+          btn.addEventListener('pointercancel', release, { passive: false });
+          btn.addEventListener('pointerleave', release, { passive: false });
+          btn.addEventListener('contextmenu', e => e.preventDefault());
+        });
+        canvas.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
+      }
+
+      // =====================================================
       // 초기화
       // =====================================================
       loadBest();
       updateBestHud();
+      if (isTouchDevice()) initTouchControls();
 
       // 기본 난이도 easy 활성 표시는 이미 HTML에서 aria-checked="true"
       // 초기에는 캔버스에 easy 맵을 스냅샷으로 그려 놓는다 (미리보기)

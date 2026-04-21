@@ -1,177 +1,138 @@
-# SPEC.md — Pixel Nurse Note-Catcher 게임 페이지
+# Pixel Nurse — 치비 얼굴 강화 + 모바일 터치 플레이 지원
 
 ## 개요
-카테고리 내비게이션의 `Game` 버튼이 현재 섹션 링크 없이 존재한다. 이 버튼을 누르면 신규 서브페이지 `pages/game.html`이 열리고, 픽셀 아트 스타일의 간호사 캐릭터가 건물 안을 뛰어다니며 30초 안에 음표를 최대한 많이 획득하는 캔버스 게임을 플레이할 수 있게 한다. 사이트 본체의 글래스모피즘 + 코럴핑크(`--brand: #c4847a`) 정체성과 다크/라이트 테마를 그대로 계승한다.
+게임 페이지(`pages/game.html`)의 픽셀 간호사 캐릭터를 현재의 "일반 두등신"에서 **머리 비중이 큰 치비/SD 스타일**로 재설계하여 귀여움을 극대화한다. 동시에 키보드 전용이던 조작을 **가상 D-Pad 기반 터치 컨트롤**로 확장해 모바일/태블릿에서도 온전히 플레이 가능하게 만든다. 게임 로직(속도/난이도/수집/장애물/점수)은 일절 건드리지 않는다.
 
 ## 변경 유형
-**혼합** (디자인 + 기능)
+**혼합** (디자인: 스프라이트 리디자인 / 기능: 터치 입력 + 반응형 캔버스 뷰포트)
 
 ## 디자인 언어 & 의도
-레트로 픽셀 게임의 저해상도 감성과 사이트 본체의 차분한 글래스모피즘을 결합하여, "방문자가 잠시 숨을 돌리는 미니 공간"을 만든다. 간호학과 전공(프로필 모달에 명시됨)을 유쾌하게 드러내는 간호사 캐릭터가 음표(프로듀서 활동)를 수집하는 설정으로 포트폴리오의 두 정체성을 한 화면에 녹인다. 게임 HUD·버튼·모달은 본체와 동일한 `--brand`, `--bg-card`, `--radius`, `backdrop-filter`를 사용하여 일관성을 유지하며, 라이트/다크 테마가 `localStorage('theme')`를 통해 자동 적용된다.
+간호사는 **얼굴이 전체 신장의 절반에 가까운 2.2등신 치비**로 바뀐다. 커다란 동그란 눈, 얼굴 양쪽의 도톰한 볼터치, 배시시 웃는 작은 입이 한눈에 "귀여움"으로 읽혀야 하며, 몸과 다리는 상대적으로 작고 아담해져 움직일 때 통통 튀는 느낌을 준다. 사이트의 코럴핑크(`--brand`) 팔레트는 얼굴 악센트(볼·입·모자 십자가)에 집중 배치해 픽셀 캔버스 안에서도 브랜드 톤이 그대로 살아나도록 한다.
 
 ## Sprint 범위 계약
-Generator가 SPEC 외 변경을 하려 할 때의 판단 기준:
-- **허용**:
-  - `pages/game.html` 내부의 스타일/스크립트(단일 파일 내 `<style>`, `<script>`)는 이 파일 한정으로 자유롭게 작성 가능
-  - `index.html`의 Game 버튼을 `<a>` 링크처럼 동작시키기 위한 최소 JS 연동 (main.js 내 `initCategoryFilter`에서 링크는 필터 루프 제외)
-  - Game 버튼 자체의 포인터 아이콘/스타일 보정이 필요하면 `style.css`에 스코프 추가
-- **금지**:
-  - 게임 로직을 `main.js`에 추가 (게임은 `pages/game.html` 내부에 완전히 격리)
-  - 다른 카테고리 탭(All/Writing/Music/Social) 동작 변경
-  - 새로운 외부 라이브러리/CDN (Phaser, Pixi 등) 추가
-  - `assets/img/`에 새 이미지 추가 (픽셀 아트는 캔버스에서 코드로 그린다)
-  - 새 CSS/JS 파일 생성 (단, `pages/game.html`은 단일 HTML 파일이므로 내부 `<style>`/`<script>` 허용)
-- **판단 기준**: "이 변경이 없으면 게임 페이지 진입/테마 동기화/복귀가 제대로 동작하지 않는가?" → YES면 허용, NO면 금지
+- **허용**: `pages/game.html` 내부의 인라인 `<style>`, 인라인 `<script>`, 그리고 `<body>` 마크업 수정. 새 DOM(가상 D-Pad)과 그에 필요한 이벤트 핸들러/상수 추가. 기존 `nurseSprite`/`drawNurse` 전면 재작성 및 히트박스 상수 변경. `KEY_MAP`에 대응하는 `state.keys` 방향 플래그를 터치 입력에서도 그대로 on/off 하도록 공유.
+- **금지**: `index.html`, `assets/css/style.css`, `assets/js/main.js` 수정. `DIFFICULTY` 표의 speed/notes/noteTtl/obstacles/obsSpeed/stun 값 변경. 맵 구조(`buildMap`) 변경. 수집/스턴 판정식 변경. 음표/장애물 스프라이트 변경. 새 파일 생성. 라이브러리 추가.
+- **판단 기준**: "이 변경이 없으면 치비 얼굴이 제대로 보이지 않는가 / 모바일에서 조작이 불가능한가?" → YES면 허용, NO면 금지. 예: 히트박스(`player.w/h`)를 16→14로 줄이는 것은 큰 머리가 벽에 박혀 보이지 않게 하기 위한 최소 연동 → 허용. "터치할 때 진동 피드백 추가" → SPEC에 없고 필수 아님 → 금지.
 
 ---
 
 ## 변경 범위
 
-### index.html 변경사항
-1. 라인 159 근방의 `Game` 버튼을 **`<a class="category-nav__btn category-nav__btn--link" href="/pages/game.html">Game</a>`** 로 교체
-2. 기존 4개 버튼(All/Writing/Music/Social)은 그대로 유지
+### pages/game.html — `<head>` 메타
+- `<meta name="viewport">`에 `viewport-fit=cover, user-scalable=no, maximum-scale=1` 추가 → iOS 더블탭 줌·핀치줌으로 인한 게임 조작 방해 방지.
+- 모바일 터치 제스처가 페이지 스크롤/새로고침을 트리거하지 않도록 `body.game-page`에 `overscroll-behavior: contain; touch-action: manipulation;` 스타일 추가.
 
-### pages/game.html (신규 생성)
-- `<!DOCTYPE html>` + `<html lang="ko">`
-- `<head>`에 `<link rel="stylesheet" href="/assets/css/style.css">` + 테마 FOUC 방지 스크립트
-- `<body class="game-page">` 안에 다음 구조:
-  - 돌아가기 링크 `<a class="game-back" href="/">← 돌아가기</a>`
-  - 테마 토글 버튼 (메인의 `.theme-toggle` 재사용, 페이지 내부에서 바인딩)
-  - `<main class="game-shell">`:
-    - `<header class="game-header">` 제목/부제
-    - `<section class="game-stage">`:
-      - HUD (TIME / SCORE / BEST)
-      - `<canvas id="gameCanvas" width="640" height="400">`
-      - 시작 오버레이 (난이도 radiogroup 3개 + 시작 버튼)
-      - 종료 오버레이 (점수 표시 + 다시 플레이 / 홈으로)
-    - `<footer class="game-footer">`
+### pages/game.html — `<body>` 마크업
+- `.game-canvas-wrap` **바로 아래**(`.game-controls` 위)에 가상 D-Pad 컨테이너 추가:
+  ```
+  <div class="game-touchpad" id="gameTouchpad" aria-hidden="true" hidden>
+    <div class="game-touchpad__dpad">
+      <button class="game-touchpad__btn game-touchpad__btn--up"    type="button" data-dir="up"    aria-label="위로 이동">▲</button>
+      <button class="game-touchpad__btn game-touchpad__btn--left"  type="button" data-dir="left"  aria-label="왼쪽으로 이동">◀</button>
+      <button class="game-touchpad__btn game-touchpad__btn--right" type="button" data-dir="right" aria-label="오른쪽으로 이동">▶</button>
+      <button class="game-touchpad__btn game-touchpad__btn--down"  type="button" data-dir="down"  aria-label="아래로 이동">▼</button>
+    </div>
+  </div>
+  ```
+- 기존 `.game-controls` 블록(키보드 안내)은 그대로 둔다. 단 JS에서 터치 환경으로 감지되면 `.game-controls`는 `display:none`으로, `#gameTouchpad`는 `hidden` 제거 + `aria-hidden="false"`.
+- 시작 오버레이의 안내 문구 `.game-overlay__desc`에 모바일용 보조 문장 삽입: "모바일에서는 화면 아래 방향패드를 사용하세요."
 
-내부 `<script>`에 포함:
-- 테마 토글 바인딩 (main.js의 `initThemeToggle`와 동일 로직 페이지 내부 재구현)
-- 게임 로직 (아래 "게임 상세 스펙" 참조)
-
-### assets/css/style.css 변경사항
-1. **Game 버튼 링크 스타일 (필수)**:
-   - `.category-nav__btn--link` 추가: `<a>` 태그에도 버튼과 동일한 스타일이 적용되도록 `display:inline-flex; text-decoration:none;` 보정
-   - 호버 시 글로우 강조
-2. 게임 페이지 고유 레이아웃 스타일은 `pages/game.html` 내부 `<style>`에 작성 (단일 파일 유지). 공통 변수/토큰은 재사용
-
-### assets/js/main.js 변경사항
-1. `initCategoryFilter()` 내부 루프: `<a>` 태그는 필터 바인딩에서 제외
-   ```js
-   btns.forEach(btn => {
-     if (btn.tagName === 'A') return;
-     btn.addEventListener('click', ...);
-   });
+### pages/game.html — `<style>` 내부 CSS 추가/수정
+1. **body.game-page** 규칙에 추가: `touch-action: manipulation;`, `overscroll-behavior: contain;`, `-webkit-tap-highlight-color: transparent;`
+2. **`#gameCanvas`**: `touch-action: none;` 추가.
+3. **가상 D-Pad 컴포넌트** (BEM, `var(--bg-card)`/`var(--border)`/`var(--brand-*)` 사용, 네이티브 중첩 `&`):
    ```
-2. 그 외 변경 없음
+   .game-touchpad { width:100%; display:flex; justify-content:center; padding:4px 0 0; }
+   .game-touchpad[hidden] { display:none; }
+   .game-touchpad__dpad {
+     position:relative; width:168px; height:168px;
+     display:grid; grid-template-columns:repeat(3,1fr); grid-template-rows:repeat(3,1fr); gap:6px;
+   }
+   .game-touchpad__btn {
+     border:1px solid var(--border); background:var(--bg-card); color:var(--text-muted);
+     border-radius:var(--radius-sm); font-size:18px; font-weight:700;
+     cursor:pointer; user-select:none; -webkit-user-select:none; touch-action:none;
+     backdrop-filter:blur(14px) saturate(1.1); -webkit-backdrop-filter:blur(14px) saturate(1.1);
+     transition:background .15s, border-color .15s, color .15s, transform .15s var(--spring-bounce);
+     &:active, &.is-pressed {
+       background:var(--brand-12); border-color:var(--brand-40); color:var(--brand-light); transform:scale(.94);
+     }
+     &:focus-visible { outline:2px solid var(--brand-40); outline-offset:2px; }
+   }
+   .game-touchpad__btn--up    { grid-column:2; grid-row:1; }
+   .game-touchpad__btn--left  { grid-column:1; grid-row:2; }
+   .game-touchpad__btn--right { grid-column:3; grid-row:2; }
+   .game-touchpad__btn--down  { grid-column:2; grid-row:3; }
+   ```
+4. **`@media (max-width: 520px)`** 블록 내부에 추가:
+   - `.game-touchpad__dpad { width: 192px; height: 192px; }`
+   - `.game-canvas-wrap { aspect-ratio: 4 / 3; }`
+   - `.game-controls { display: none; }`
+
+### pages/game.html — `<script>` 내부 JS 변경
+
+#### A. 스프라이트 재설계 — 치비 비율
+- **신규 상수**: `const NURSE_W = 16; const NURSE_H = 20;` (세로 긴 스프라이트).
+- **`nurseSprite(dir, frame)` 전면 재작성**: 16×20 그리드.
+  - 행 0~1: 투명/모자 윗단
+  - 행 1~3: 간호사 모자(흰 `W`), 중앙 코럴 십자 `C`
+  - 행 3~10: **얼굴 8행(전체 40%)** — 앞머리 `H`, 얼굴 피부 `S`, 큰 눈 `E`(2칸 폭 2행 높이, 흰자 `L` 1칸), 좌우 볼터치 `R`, 중앙 작은 입 `M`
+  - 행 11~14: 몸통(흰 `W`, 가슴 코럴 십자 `C`)
+  - 행 15~17: 하의 `P`
+  - 행 18~19: 발 `B` (걷기 프레임에서 좌우 교차)
+- **방향별 처리**: `down` 정면 두 눈 / `up` 눈 한 행 위 or 뒷모습 / `left` 오른쪽 눈만 + 한쪽 볼 / `right` 좌우 반전.
+- **걷기 프레임**: 15~19행만 교차. 1프레임 바운스(`frame!==0 && !reducedMotion`에서 `oy -= 1`).
+- **팔레트 확장**: 기존 `S,H,W,C,P,B,E,R,M` + `L: '#ffffff'`(흰자 하이라이트), `D: '#e6dde6'`(모자 음영).
+- **`drawNurse(x,y,dir,frame)`**: `SCALE=2`, `ox = Math.round(x)-8`, **`oy = Math.round(y)-24`**(기존 -16에서 변경), 루프 상한 `r<20`.
+- **히트박스 축소**: `state.player.w = 14; state.player.h = 14;` (초기값). `player.x/y` 초기값 `TILE*2+3`으로 3px 안쪽 조정.
+
+#### B. 모바일 터치 컨트롤
+- **감지 함수**:
+  ```
+  function isTouchDevice() {
+    return window.matchMedia('(pointer: coarse)').matches || ('ontouchstart' in window);
+  }
+  ```
+- **`initTouchControls()`** (초기화 시 호출):
+  ```
+  function initTouchControls() {
+    const pad = document.getElementById('gameTouchpad');
+    if (!pad) return;
+    pad.hidden = false;
+    pad.setAttribute('aria-hidden', 'false');
+    const controlsHint = document.querySelector('.game-controls');
+    if (controlsHint) controlsHint.style.display = 'none';
+    const btns = pad.querySelectorAll('.game-touchpad__btn');
+    btns.forEach(btn => {
+      const dir = btn.dataset.dir;
+      const press = (e) => { e.preventDefault(); state.keys[dir] = true;  btn.classList.add('is-pressed'); };
+      const release=(e) => { e.preventDefault(); state.keys[dir] = false; btn.classList.remove('is-pressed'); };
+      btn.addEventListener('pointerdown',   press,   { passive:false });
+      btn.addEventListener('pointerup',     release, { passive:false });
+      btn.addEventListener('pointercancel', release, { passive:false });
+      btn.addEventListener('pointerleave',  release, { passive:false });
+      btn.addEventListener('contextmenu', e => e.preventDefault());
+    });
+    canvas.addEventListener('touchmove', e => e.preventDefault(), { passive:false });
+  }
+  if (isTouchDevice()) initTouchControls();
+  ```
+- **키보드와 공존**: 기존 `KEY_MAP`/`keydown`/`keyup` 유지. `state.keys` 공유.
+- **iOS 오디오 언락**: `btnStart` 클릭 핸들러 **맨 앞**에 `playTone(0, 0.001)` 1줄 추가(기존 `audioCtx.state==='suspended'` resume 로직 재사용).
 
 ---
 
-## 게임 상세 스펙
-
-### 캔버스 & 좌표계
-- 캔버스 크기: **640 × 400 px** (논리), CSS `max-width:100%; aspect-ratio:16/10;` 반응형
-- 타일 크기: **20 × 20 px** → 32열 × 20행 그리드
-- 픽셀 렌더링: `ctx.imageSmoothingEnabled = false;`, CSS `image-rendering: pixelated;`
-- 좌표는 정수 픽셀로 스냅
-
-### 맵 (건물 내부)
-- 외곽 벽 1타일 두께 + 내부에 **병동 복도 구조**: 중앙 가로 복도 + 수직 복도 2개 + 방 4개(모서리)
-- 정적 2D 배열 `map[row][col]` (0=빈칸, 1=벽)
-- 벽 색상: 다크 `#2a2233`, 라이트 `#d4ccd6`
-- 바닥은 은은한 체크 패턴
-
-### 캐릭터 (픽셀 간호사)
-- 크기: **16×16 px** (1타일 내부에 여백)
-- 코드로 픽셀 그리기 (이미지 파일 금지):
-  - 머리: `#f5d0c0`
-  - 머리카락: `#3a2a2a`
-  - 간호사 캡: `#ffffff` + 코럴 십자가
-  - 상의: `#ffffff`
-  - 하의: `#e4b8b0`
-  - 신발: `#b07068`
-- 4방향 idle + 2프레임 걷기 애니메이션
-- 이동: 화살표 + WASD, 벽 충돌 정지
-
-### 음표 아이템
-- 크기: **12×12 px**, 8분 음표 형태
-- 색상: `var(--brand)` + 하이라이트
-- 빈 타일 무작위 스폰, 획득 시 +1 점수 + 짧은 사인파 효과음 + 즉시 재스폰
-
-### 장애물 (중·상 난이도)
-- 10×10 px 작은 유닛, 복도 랜덤 이동
-- 충돌 시 스턴 + 점수 -1 (최소 0)
-- 개수: 하=0, 중=2, 상=5
-
-### 난이도별 파라미터
-
-| 파라미터 | 하 (easy) | 중 (normal) | 상 (hard) |
-|---|---|---|---|
-| 캐릭터 속도 (px/s) | 180 | 140 | 100 |
-| 동시 음표 수 | 6 | 4 | 2 |
-| 음표 수명 (ms) | ∞ | 5000 | 2500 |
-| 장애물 수 | 0 | 2 | 5 |
-| 장애물 속도 (px/s) | — | 90 | 150 |
-| 맵 복잡도 | 외곽 + 기둥 1개 | 중앙 + 방 2개 | 방 4개 + 기둥 다수 |
-| 스턴 시간 (ms) | — | 500 | 800 |
-
-상(hard)은 속도가 느린데 장애물이 빠르고 음표가 금방 사라져 실질적으로 달성이 어려워야 한다. 체감상 중=15~25개, 상=5~10개 목표.
-
-### HUD
-- 캔버스 상단 외부 flex 3칸: TIME / SCORE / BEST
-- `font-variant-numeric: tabular-nums;`
-- TIME 10초 이하 시 `color: var(--brand-light)` + 미세 펄스 (reduced-motion 시 비활성)
-
-### 게임 흐름
-1. 시작 화면: 난이도 3버튼(기본 "하") + 시작
-2. 플레이 중: 30초 카운트다운, `requestAnimationFrame` + delta time
-3. 종료: 점수 + 최고점 갱신 시 "신기록!" + 다시 플레이/홈으로
-
-### 최고점 저장
-- `localStorage` 키: `pixelNurseBest` → `{"easy":0,"normal":0,"hard":0}`
-- BEST는 현재 선택 난이도 기준 표시
-- 파싱은 `try/catch`로 방어
-
-### 접근성
-- `prefers-reduced-motion`: 걷기 애니메이션·펄스·깜빡임 비활성
-- 키보드만으로 전 흐름 진행
-- 난이도 버튼 `role="radiogroup"` + `aria-checked`
-- 종료 점수는 `aria-live="polite"` 영역에 반영
-
-### 보안
-- 외부 fetch / 외부 URL 없음
-- localStorage 파싱은 `try/catch`
-- 모든 이벤트는 `addEventListener` (인라인 금지)
-
-### 반응형
-- 520px 이하: 캔버스 `width:100%`, HUD 폰트 축소, 시작 오버레이 버튼 세로 정렬
-- 모바일 터치 조작은 이번 스프린트에서 생략 (키보드 안내 문구만 표시)
-
----
-
-## 평가 가능한 Acceptance Criteria
-
-1. [ ] 메인 페이지에서 `Game` 버튼 클릭 시 `/pages/game.html`로 이동한다
-2. [ ] 게임 페이지 최초 진입 시 난이도 선택 오버레이가 표시되고 "하"가 기본 선택된다
-3. [ ] 방향키/WASD로 간호사 캐릭터가 이동하며, 벽에 막혀 통과하지 못한다
-4. [ ] 캐릭터가 음표 위에 겹치면 점수 +1 되고 음표가 다른 위치에 즉시 재스폰된다
-5. [ ] 시작 후 정확히 30초가 지나면 종료 오버레이가 뜬다 (±0.5s)
-6. [ ] 난이도 "상"에서 캐릭터 속도가 느리고, 장애물 5개, 음표 수명 2.5초
-7. [ ] 종료 시 최고점이 `pixelNurseBest`에 저장되고 재접속 시 BEST HUD에 복원된다
-8. [ ] 테마 토글이 동작하며 캔버스 배경·HUD 색상도 함께 바뀐다
-9. [ ] "홈으로" 링크가 `/`로 복귀한다
-10. [ ] `prefers-reduced-motion: reduce` 시 걷기 애니메이션·카운트다운 펄스 비활성
-11. [ ] 콘솔 에러 없이 실행된다
-12. [ ] 520px에서 캔버스가 뷰포트를 넘지 않고 오버레이 버튼이 세로 정렬된다
-13. [ ] 캔버스는 `image-rendering: pixelated`로 픽셀 외관 유지
-14. [ ] 외부 라이브러리/이미지 없이 순수 HTML/CSS/JS로 구현되었다
-15. [ ] `index.html`의 나머지 4개 카테고리 탭 동작이 이전과 동일하다
-
----
+## 기능 상세
+1. **치비 간호사 스프라이트** — 16×16→16×20, 얼굴 40%, 큰 눈/볼터치/작은 입, 방향별 시선, 걷기 바운스.
+2. **가상 D-Pad 터치 컨트롤** — 4버튼(상/하/좌/우), pointer events 통합, `.is-pressed` 피드백, 동시 누름 대각선 이동 지원.
+3. **모바일 뷰포트 & 제스처 방지** — viewport 메타, `touch-action`, `overscroll-behavior`, 520px 이하 `aspect-ratio:4/3`.
+4. **입력 환경 자동 감지** — `pointer:coarse`/`ontouchstart`로 터치 UI 표시+키보드 안내 숨김. 하이브리드 기기 둘 다 동작.
+5. **iOS 오디오 언락** — 첫 시작 탭에서 무음 톤 resume.
 
 ## 주의사항
-- **Game 버튼 교체 시**: `<button data-filter="Game">`이 그대로 남으면 `initCategoryFilter`가 click에 반응해 다른 섹션을 모두 숨기는 사고 발생. 반드시 `<a>`로 교체 + main.js 루프에서 `<a>` 제외
-- **단일 파일 구조 예외**: `pages/game.html`은 서브페이지이므로 내부 `<style>`/`<script>` 허용. 새 외부 CSS/JS 파일은 여전히 금지
-- **테마 동기화**: `<head>` 최상단에 `<script>if(localStorage.getItem('theme')==='light')document.documentElement.classList.add('light');</script>` 포함 (FOUC 방지)
-- **Canvas 접근성**: 종료 오버레이에서 점수를 텍스트로 표시하는 것이 필수
+- **기존 기능 보전**: `update()` 이동·수집·스턴 판정식 동일. 히트박스 14×14로 축소는 큰 머리 시각 보정 의도.
+- **삭제·교체**: `nurseSprite` 본문 전체, `drawNurse` oy(-16→-24)·루프(r<16→r<20), `player.w/h`(16→14).
+- **접근성**: 한국어 `aria-label`, `:focus-visible`, `hidden`/`aria-hidden` 일관. reduced-motion은 글로벌 `*` 룰로 커버.
+- **보안**: 정적 DOM만 추가, 외부 데이터 없음 → `innerHTML` 금지, `textContent`/`setAttribute`만.
+- **테마**: `var(--bg-card)/--border/--brand-*`만 사용 → 다크·라이트 자동 대응.
+- **성능**: 스프라이트 픽셀 25% 증가, 캔버스 캐릭터 1개 → 영향 무시 가능.
