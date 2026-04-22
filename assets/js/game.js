@@ -80,7 +80,7 @@
       textByDiff: {
         easy: '수간호사가 순찰을 돈다. 그 틈을 타, 김간호는 주머니 속 작곡 노트를 슬쩍 꺼낸다… 음표를 모으자.',
         normal: '수간호사가 순찰을 돈다. 그 틈을 타, 김간호는 주머니 속 작곡 노트를 슬쩍 꺼낸다… 음표를 모으자.',
-        hard: '학교에서 나온 깐깐한 이교수가 오늘따라 청진기를 휘두른다. 날아오는 청진기를 피하며 음표를 모으자.'
+        hard: '학교에서 나온 깐깐한 이교수가 오늘따라 청진기를 휘두른다. 날아오는 청진기를 피하며 음표를 모으자. 수간호사는 언제나 그렇듯 순찰을 돈다.'
       }
     },
     mid1: {
@@ -981,7 +981,7 @@
       if (hitEnd && !success) {
         // F 즉사 종료 (목표 미달) — 수간호사에게 걸린 서사
         endTitle.textContent = '수간호사에게 걸렸어요!';
-        endStory.textContent = 'F 한 장에 노래가 멈췄다. 김간호는 오늘만큼은 작곡을 포기하고 차트를 정리한다.';
+        endStory.textContent = 'F 한 장에 노래가 멈췄다. 김간호는 오늘만큼은 작곡을 포기하고 EMR을 받아쓴다.';
         endStory.classList.add('game-overlay__ending--fail');
         playTone(165, 0.3);
       } else if (success) {
