@@ -970,28 +970,136 @@ html.light .game-overlay--cutscene {
   }
 }
 
-/* 가로 모드 (모바일 landscape) */
+/* 세로 모드 (모바일 portrait) — D-pad 숨김, 회전 안내 오버레이가 채움 */
+@media (max-width: 520px) and (orientation: portrait) {
+  .game-touchpad {
+    display: none !important;
+  }
+}
+
+/* 가로 모드 (모바일 landscape) — 캔버스를 뷰포트에 꽉 채우는 "게임판" 모드 */
 @media (max-width: 520px) and (orientation: landscape) {
-  .game-header {
+  body.game-page {
+    padding: 4px;
+    gap: 4px;
+  }
+
+  .game-topbar,
+  .game-header,
+  .game-footer,
+  .game-controls {
     display: none;
   }
 
+  .game-touchpad {
+    display: none !important;
+  }
+
+  .game-shell {
+    padding: 0;
+    gap: 4px;
+    max-width: 100%;
+  }
+
   .game-stage {
-    padding: 8px;
-    gap: 8px;
+    padding: 6px;
+    gap: 6px;
+  }
+
+  .game-hud {
+    padding: 2px 2px;
   }
 
   .game-canvas-wrap {
-    max-height: 60vh;
     aspect-ratio: 16 / 10;
+    max-height: calc(100vh - 60px);
+    max-height: calc(100dvh - 60px);
+    max-width: 100%;
     width: auto;
     margin-inline: auto;
   }
 
-  .game-touchpad__dpad {
-    width: 128px;
-    height: 128px;
+  #gameCanvas {
+    cursor: pointer;
+    touch-action: none;
   }
+}
+
+/* =====================================================
+   회전 안내 오버레이 — 모바일 세로 모드에서만 노출
+   JS `initOrientationHint()`가 `hidden` 속성과 `.is-visible` 토글
+   ===================================================== */
+.game-rotate-hint {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(9, 8, 15, 0.88);
+  backdrop-filter: blur(14px) saturate(1.1);
+  -webkit-backdrop-filter: blur(14px) saturate(1.1);
+
+  &[hidden] {
+    display: none;
+  }
+
+  & .game-rotate-hint__panel {
+    width: 100%;
+    max-width: 320px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 26px 22px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    text-align: center;
+    backdrop-filter: blur(14px) saturate(1.1);
+    -webkit-backdrop-filter: blur(14px) saturate(1.1);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.45);
+  }
+
+  & .game-rotate-hint__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    border: 1px solid var(--brand-40);
+    background: var(--brand-12);
+    color: var(--brand-light);
+    font-size: 30px;
+    line-height: 1;
+    animation: gameRotateSpin 2.4s linear infinite;
+    box-shadow: 0 0 18px var(--brand-14);
+  }
+
+  & .game-rotate-hint__title {
+    font-family: var(--font-serif);
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: 0.3px;
+  }
+
+  & .game-rotate-hint__desc {
+    font-size: 12px;
+    color: var(--text-muted);
+    line-height: 1.5;
+  }
+}
+
+html.light .game-rotate-hint {
+  background: rgba(245, 244, 248, 0.88);
+}
+
+@keyframes gameRotateSpin {
+  0%   { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
 /* 접근성 — reduced motion */
@@ -1021,6 +1129,10 @@ html.light .game-overlay--cutscene {
   .game-hud__value.is-combo-bump {
     animation: none;
     transform: none;
+  }
+
+  .game-rotate-hint__icon {
+    animation: none;
   }
 
   * {

@@ -1555,33 +1555,119 @@
     return window.matchMedia('(pointer: coarse)').matches || ('ontouchstart' in window);
   }
 
+  /**
+   * 터치 디바이스 전용 초기화.
+   * 기존 D-pad 버튼 바인딩을 제거하고, 캔버스 탭 기반 상대방향 이동으로 대체한다.
+   */
   function initTouchControls() {
-    const pad = document.getElementById('gameTouchpad');
-    if (!pad) return;
-    pad.hidden = false;
-    pad.setAttribute('aria-hidden', 'false');
+    if (!canvas) return;
     const controlsHint = document.querySelector('.game-controls');
     if (controlsHint) controlsHint.style.display = 'none';
-    const btns = pad.querySelectorAll('.game-touchpad__btn');
-    btns.forEach(btn => {
-      const dir = btn.dataset.dir;
-      const press = (e) => {
-        e.preventDefault();
-        state.keys[dir] = true;
-        btn.classList.add('is-pressed');
-      };
-      const release = (e) => {
-        e.preventDefault();
-        state.keys[dir] = false;
-        btn.classList.remove('is-pressed');
-      };
-      btn.addEventListener('pointerdown', press, { passive: false });
-      btn.addEventListener('pointerup', release, { passive: false });
-      btn.addEventListener('pointercancel', release, { passive: false });
-      btn.addEventListener('pointerleave', release, { passive: false });
-      btn.addEventListener('contextmenu', e => e.preventDefault());
-    });
+    // 캔버스 위에서의 기본 스크롤/줌 제스처 차단
     canvas.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
+    initCanvasTapMove();
+  }
+
+  /**
+   * 캔버스 탭/드래그로 플레이어를 상대 방향으로 이동시킨다.
+   * 플레이어 중심 대비 포인터 좌표의 우세 축을 4방향으로 판정하여 state.keys에 반영.
+   * 데드존(TILE*0.4) 내에서는 정지, 오버레이 활성 중에는 무시.
+   */
+  function initCanvasTapMove() {
+    if (!canvas) return;
+
+    const DEAD_ZONE = TILE * 0.4;
+    let activePointerId = null;
+
+    const clearKeys = () => {
+      state.keys.up = false;
+      state.keys.down = false;
+      state.keys.left = false;
+      state.keys.right = false;
+    };
+
+    const resolveDir = (clientX, clientY) => {
+      const rect = canvas.getBoundingClientRect();
+      if (rect.width === 0 || rect.height === 0) return null;
+      const scaleX = CANVAS_W / rect.width;
+      const scaleY = CANVAS_H / rect.height;
+      const tx = (clientX - rect.left) * scaleX;
+      const ty = (clientY - rect.top) * scaleY;
+      const p = state.player;
+      if (!p) return null;
+      const px = p.x + p.w / 2;
+      const py = p.y + p.h / 2;
+      const dx = tx - px;
+      const dy = ty - py;
+      if (Math.abs(dx) < DEAD_ZONE && Math.abs(dy) < DEAD_ZONE) return null;
+      // 우세 축 기반 4방향 결정
+      if (Math.abs(dx) >= Math.abs(dy)) {
+        return dx > 0 ? 'right' : 'left';
+      }
+      return dy > 0 ? 'down' : 'up';
+    };
+
+    const applyDir = (dir) => {
+      clearKeys();
+      if (dir) state.keys[dir] = true;
+    };
+
+    const onDown = (e) => {
+      if (isAnyOverlayOpen()) return;
+      e.preventDefault();
+      activePointerId = e.pointerId;
+      applyDir(resolveDir(e.clientX, e.clientY));
+    };
+
+    const onMove = (e) => {
+      if (activePointerId === null || e.pointerId !== activePointerId) return;
+      if (isAnyOverlayOpen()) { clearKeys(); return; }
+      e.preventDefault();
+      applyDir(resolveDir(e.clientX, e.clientY));
+    };
+
+    const onEnd = (e) => {
+      if (activePointerId !== null && e.pointerId !== activePointerId) return;
+      activePointerId = null;
+      clearKeys();
+    };
+
+    canvas.addEventListener('pointerdown', onDown, { passive: false });
+    canvas.addEventListener('pointermove', onMove, { passive: false });
+    canvas.addEventListener('pointerup', onEnd, { passive: false });
+    canvas.addEventListener('pointercancel', onEnd, { passive: false });
+    canvas.addEventListener('pointerleave', onEnd, { passive: false });
+    canvas.addEventListener('contextmenu', e => e.preventDefault());
+  }
+
+  /**
+   * 모바일 세로 모드에서 "가로로 돌려주세요" 오버레이를 토글한다.
+   * orientation lock API는 사용하지 않고 안내만 표시 (브라우저 호환성).
+   */
+  function initOrientationHint() {
+    const hint = document.getElementById('rotateHint');
+    if (!hint) return;
+    const mql = window.matchMedia('(max-width: 520px) and (orientation: portrait)');
+
+    const apply = (matches) => {
+      if (matches) {
+        hint.hidden = false;
+        hint.setAttribute('aria-hidden', 'false');
+        hint.classList.add('is-visible');
+      } else {
+        hint.hidden = true;
+        hint.setAttribute('aria-hidden', 'true');
+        hint.classList.remove('is-visible');
+      }
+    };
+
+    apply(mql.matches);
+    // 최신 브라우저는 addEventListener 지원, 일부 구형은 addListener만
+    if (typeof mql.addEventListener === 'function') {
+      mql.addEventListener('change', (e) => apply(e.matches));
+    } else if (typeof mql.addListener === 'function') {
+      mql.addListener((e) => apply(e.matches));
+    }
   }
 
   // =====================================================
@@ -1591,6 +1677,7 @@
   updateBestHud();
   updateStartGoal();
   if (isTouchDevice()) initTouchControls();
+  initOrientationHint();
 
   /**
    * 시작 오버레이 뒤 캔버스 프리뷰 — 김간호 + 수간호사 + F 한 장

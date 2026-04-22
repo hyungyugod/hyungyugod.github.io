@@ -70,7 +70,7 @@
               <br /><strong>F에 닿으면 즉시 실패</strong> — 단 한 장도 허용되지 않는다.
             </p>
             <p class="game-overlay__hint">
-              이동 화살표 또는 <span class="game-controls__key">W</span><span class="game-controls__key">A</span><span class="game-controls__key">S</span><span class="game-controls__key">D</span> · 모바일 방향패드
+              이동 화살표 또는 <span class="game-controls__key">W</span><span class="game-controls__key">A</span><span class="game-controls__key">S</span><span class="game-controls__key">D</span> · 모바일: 화면을 터치한 방향으로 이동
             </p>
             <p class="game-overlay__goal" id="startGoal">목표 <strong>40</strong>점 · 45초</p>
             <div class="game-difficulty" role="radiogroup" aria-label="난이도">
@@ -146,6 +146,15 @@
       © hgfolio · a tiny room to catch your breath
     </footer>
   </main>
+
+  <!-- 모바일 세로 모드 회전 안내 오버레이 -->
+  <div class="game-rotate-hint" id="rotateHint" role="dialog" aria-labelledby="rotateHintTitle" aria-hidden="true" hidden>
+    <div class="game-rotate-hint__panel">
+      <span class="game-rotate-hint__icon" aria-hidden="true">⟳</span>
+      <h2 class="game-rotate-hint__title" id="rotateHintTitle">기기를 가로로 돌려주세요</h2>
+      <p class="game-rotate-hint__desc">가로 모드에서 맵을 터치해 이동합니다.</p>
+    </div>
+  </div>
 
   <script src="/assets/js/game.js"></script>
 </body>
