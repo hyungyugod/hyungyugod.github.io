@@ -41,7 +41,11 @@
       "Bash(node -e \"const fs=require\\('fs'\\); const src=fs.readFileSync\\('C:/Users/user/Desktop/hyungyugod.github.io/.claude/worktrees/keen-pike-c7df20/assets/js/game.js','utf8'\\); new Function\\(src\\); console.log\\('JS_PARSE_OK', src.length, 'bytes'\\);\")",
       "Bash(python -m http.server 8000)",
       "Bash(curl -sS -o /dev/null -w \"HTTP %{http_code}\\\\n\" http://localhost:8000/ --max-time 3)",
-      "Bash(node -e ' *)"
+      "Bash(node -e ' *)",
+      "Bash(node -c C:/Users/user/Desktop/hyungyugod.github.io/assets/js/game.js)",
+      "Bash(grep -nE \"\\\\\\\\\\\\$[a-zA-Z]|@mixin|@include|@extend\" assets/css/game.css)",
+      "Bash(grep -nE '\\\\$[a-zA-Z]|@mixin|@include|@extend' assets/css/game.css)",
+      "Bash(node -c assets/js/game.js)"
     ]
   }
 }

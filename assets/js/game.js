@@ -31,6 +31,11 @@
         const id = card.dataset.char;
         if (cv && id) drawCharacterCardAvatar(cv, id);
       });
+      // 스킬 오버레이가 열려 있으면 아바타/악센트 재렌더 (새 테마 팔레트 반영)
+      const skillOv = document.getElementById('overlaySkill');
+      if (skillOv && !skillOv.classList.contains('is-hidden')) {
+        if (typeof renderSkillOverlay === 'function') renderSkillOverlay();
+      }
     });
   }
 
@@ -63,7 +68,7 @@
 
   // 성공 판정 목표 점수 (절대값) — F 즉사 룰 하에서 반복 플레이로 점진적 달성
   // 하/상 +10 갱신 — 진입 곡선과 최종 도전치를 모두 강화. 중은 구 상값(30) 유지.
-  const TARGET_SCORE = { easy: 50, normal: 30, hard: 40 };
+  const TARGET_SCORE = { easy: 50, normal: 30, hard: 130 };
 
   // 난이도별 기초/최대 속도 + 추가 스폰 주기 + F 상한
   // baseSpeed → maxSpeed: 시간 경과에 따라 선형 보간
@@ -100,6 +105,29 @@
 
   // 콤보 안전지대 최소 맨해튼 거리 (타일)
   const SPAWN_SAFE_DIST = 4;
+
+  // =====================================================
+  // 스킬 시스템 — 캐릭터별 능동 스킬 5종
+  //  - durationMs: 효과 지속 시간 (무적/슬로우/돌진 등). 0이면 즉발.
+  //  - cooldownMs: 재사용 대기 시간.
+  //  - abbr: HUD 쿨다운 링 안쪽 표시용 짧은 라벨.
+  // =====================================================
+  // 김간호(kim)는 기본 캐릭터로 스킬 없음 — SKILLS 맵에 엔트리 없음.
+  const SKILLS = {
+    jung: { name: '암벽등반 돌진', desc: '바라보는 방향으로 3타일 돌진하며 앞을 막는 벽 1칸을 부순다.', durationMs: 260,  cooldownMs: 22000, abbr: '돌진' },
+    geon: { name: '북클럽 소집', desc: '주변 6타일 안의 음표를 한번에 끌어와 수집한다.',     durationMs: 0,    cooldownMs: 20000, abbr: '소집' },
+    im:   { name: '벼락치기',   desc: '수간호사를 매혹시켜 F 대신 A를 던지게 한다. A를 먹으면 점수 2배.', durationMs: 4000, cooldownMs: 25000, abbr: '매혹' },
+    lee:  { name: '대만여행',   desc: '가장 먼 빈 타일로 순간 이동하고 0.5초 착지 무적.',    durationMs: 500,  cooldownMs: 22000, abbr: '여행' }
+  };
+  const hasSkill = (id) => Boolean(SKILLS[id]);
+  // 임간호 "벼락치기" 활성 판정 — 수간호사가 매혹 상태(F→A)로 전환되는 동안 true.
+  const isImCharmed = (now) => state.characterId === 'im'
+    && state.skill && state.skill.activeUntil > 0
+    && now < state.skill.activeUntil;
+  const JUNG_DASH_TILES = 3;
+  const JUNG_DASH_PX = JUNG_DASH_TILES * TILE;
+  const JUNG_BREAK_RADIUS = 18;
+  const GEON_MAGNET_RADIUS = 6 * TILE;
 
   // 컷씬 사전 — 정적 상수이므로 textContent로 안전하게 주입
   const CUTSCENES = {
@@ -647,7 +675,7 @@
   }
 
   /**
-   * 변기(화캉스 보너스) 12×12 픽셀 드로잉.
+   * 변기(화캉스 보너스) 16×16 픽셀 드로잉.
    * 상단 물탱크 + 하단 시트 + 물방울 포인트. 라이트/다크 공통 가독성.
    */
   function drawToilet(x, y, bob) {
@@ -655,44 +683,57 @@
     const oy = Math.round(y + bob);
     // 외곽 섀도 (가독성)
     ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
-    ctx.fillRect(ox + 1, oy + 1, 12, 12);
-    // 물탱크 (상단 4×8 흰색)
+    ctx.fillRect(ox + 1, oy + 1, 16, 16);
+    // 물탱크 (상단 흰색)
     ctx.fillStyle = '#ffffff';
-    ctx.fillRect(ox + 2, oy + 1, 8, 4);
+    ctx.fillRect(ox + 3, oy + 1, 10, 5);
     // 물탱크 뚜껑 (상단 1px 연회색)
     ctx.fillStyle = '#cfd3da';
-    ctx.fillRect(ox + 2, oy + 1, 8, 1);
+    ctx.fillRect(ox + 3, oy + 1, 10, 1);
     // 시트 (하단 타원형 흰색)
     ctx.fillStyle = '#ffffff';
-    ctx.fillRect(ox + 1, oy + 6, 10, 4);
-    ctx.fillRect(ox + 2, oy + 10, 8, 1);
+    ctx.fillRect(ox + 1, oy + 8, 14, 5);
+    ctx.fillRect(ox + 2, oy + 13, 12, 1);
     // 시트 테두리 (연회색)
     ctx.fillStyle = '#cfd3da';
-    ctx.fillRect(ox + 1, oy + 6, 10, 1);
+    ctx.fillRect(ox + 1, oy + 8, 14, 1);
     // 물 하이라이트 (옅은 파랑)
     ctx.fillStyle = '#a9d6ef';
-    ctx.fillRect(ox + 4, oy + 8, 4, 1);
+    ctx.fillRect(ox + 5, oy + 11, 6, 1);
     // 중앙 구멍 (검정 2×2)
     ctx.fillStyle = '#1a1a22';
-    ctx.fillRect(ox + 5, oy + 8, 2, 2);
+    ctx.fillRect(ox + 7, oy + 11, 2, 2);
   }
 
-  function drawObstacle(x, y) {
-    // 12x12 빨간 'F' 투사체 — 수간호사가 던지는 낙제점
+  function drawObstacle(x, y, type) {
+    // 12x12 투사체. type='F'(기본, 치명) 또는 'A'(매혹 상태, 수집물 + 점수 2배).
     const ox = Math.round(x);
     const oy = Math.round(y);
-    const red = isLightTheme() ? '#e8283a' : '#ff3b4e';
     // 외곽 섀도
     ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
     ctx.fillRect(ox + 1, oy + 1, 12, 12);
-    // 흰 테두리 (가독성 확보)
+    // 흰 테두리
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(ox, oy, 12, 12);
-    // F 본체
+    if (type === 'A') {
+      // A 본체 — 분홍 (매혹/보상 시그널)
+      const pink = isLightTheme() ? '#e84d8d' : '#ff6fa8';
+      ctx.fillStyle = pink;
+      // 삼각 윤곽
+      ctx.fillRect(ox + 5, oy + 1, 2, 2);          // 꼭짓점
+      ctx.fillRect(ox + 4, oy + 3, 1, 2);          // 좌 경사
+      ctx.fillRect(ox + 7, oy + 3, 1, 2);          // 우 경사
+      ctx.fillRect(ox + 3, oy + 5, 1, 6);          // 좌 다리
+      ctx.fillRect(ox + 8, oy + 5, 1, 6);          // 우 다리
+      ctx.fillRect(ox + 4, oy + 7, 4, 2);          // 가로획
+      return;
+    }
+    // 기본 F
+    const red = isLightTheme() ? '#e8283a' : '#ff3b4e';
     ctx.fillStyle = red;
-    ctx.fillRect(ox + 2, oy + 1, 8, 2); // 상단 가로
-    ctx.fillRect(ox + 2, oy + 1, 2, 10); // 세로 줄기
-    ctx.fillRect(ox + 2, oy + 5, 6, 2); // 중단 가로
+    ctx.fillRect(ox + 2, oy + 1, 8, 2);
+    ctx.fillRect(ox + 2, oy + 1, 2, 10);
+    ctx.fillRect(ox + 2, oy + 5, 6, 2);
   }
 
   // 픽셀 수간호사 (16x20) — 백발 + 안경 + 간호사 캡 + 흰 간호사복 + 얼굴 주름 — 나이 든 수간호사
@@ -805,7 +846,7 @@
     return chiefPaletteCache;
   }
 
-  function drawNurseChief(x, y, dir, frame, throwArm) {
+  function drawNurseChief(x, y, dir, frame, throwArm, hearted) {
     const sprite = nurseChiefSprite(dir, frame, throwArm);
     const palette = getChiefPalette();
     const SCALE = 2;
@@ -820,6 +861,20 @@
         ctx.fillStyle = palette[ch];
         ctx.fillRect(ox + c * SCALE, oy + r * SCALE, SCALE, SCALE);
       }
+    }
+    // 매혹 상태 — 안경 렌즈 위에 핑크 하트눈 오버레이 (3×3 sprite 픽셀)
+    if (hearted) {
+      ctx.fillStyle = '#ff4d8d';
+      const heart = (hc, hr) => {
+        const hx = ox + hc * SCALE;
+        const hy = oy + hr * SCALE;
+        ctx.fillRect(hx,             hy,             SCALE, SCALE);
+        ctx.fillRect(hx + 2 * SCALE, hy,             SCALE, SCALE);
+        ctx.fillRect(hx,             hy + SCALE,     3 * SCALE, SCALE);
+        ctx.fillRect(hx + SCALE,     hy + 2 * SCALE, SCALE, SCALE);
+      };
+      heart(3, 6);  // 좌측 눈 (안경 렌즈 위)
+      heart(9, 6);  // 우측 눈
     }
   }
 
@@ -852,7 +907,9 @@
     // 선택된 플레이어 캐릭터 ID — CHARACTER_IDS 중 하나. 기본 'kim'(기존 김간호).
     characterId: 'kim',
     map: null,
-    player: { x: 0, y: 0, w: 14, h: 14, dir: 'down', frameAcc: 0, frame: 0, stunUntil: 0, frozenUntil: 0 },
+    player: { x: 0, y: 0, w: 14, h: 14, dir: 'down', frameAcc: 0, frame: 0, stunUntil: 0, frozenUntil: 0, invincibleUntil: 0 },
+    // 스킬 상태 — readyAt(재사용 가능 시각), activeUntil(효과 종료 시각), lastUsedAt(마지막 발동), flashUntil(HUD 플래시 종료)
+    skill: { readyAt: 0, activeUntil: 0, lastUsedAt: 0, flashUntil: 0 },
     notes: [],         // {x, y, born, bobSeed}
     obstacles: [],     // {x, y, dx, dy}
     stethoscopes: [],  // {x, y, dx, dy, born} — 이교수 청진기 투사체
@@ -988,6 +1045,15 @@
   const characterGrid = document.getElementById('characterGrid');
   const btnCharacterBack = document.getElementById('btnCharacterBack');
   const btnCharacterConfirm = document.getElementById('btnCharacterConfirm');
+  // 스킬 오버레이 관련 DOM
+  const overlaySkill = document.getElementById('overlaySkill');
+  const skillCard = document.getElementById('skillCard');
+  const btnSkillBack = document.getElementById('btnSkillBack');
+  const btnSkillStart = document.getElementById('btnSkillStart');
+  const hudSkill = document.getElementById('hudSkill');
+  const hudSkillLabel = document.getElementById('hudSkillLabel');
+  const hudSkillSlot = document.getElementById('hudSkillSlot');
+  const keypadSkillBtn = document.getElementById('keypadSkill');
 
   function updateBestHud() {
     if (hudBest) hudBest.textContent = String(state.best[state.difficulty] || 0);
@@ -1199,6 +1265,8 @@
     cards.forEach((c) => {
       c.setAttribute('aria-checked', c.dataset.char === id ? 'true' : 'false');
     });
+    // 스킬 HUD/키패드 악센트를 새 캐릭터로 즉시 갱신
+    if (typeof updateSkillHud === 'function') updateSkillHud(performance.now());
   }
 
   /**
@@ -1253,9 +1321,114 @@
       saveCharacter();
       applyNurseNameToDom();
       if (overlayCharacter) overlayCharacter.classList.add('is-hidden');
+      if (overlaySkill && hasSkill(state.characterId)) {
+        renderSkillOverlay();
+        overlaySkill.classList.remove('is-hidden');
+        if (btnSkillStart) btnSkillStart.focus({ preventScroll: true });
+      } else {
+        startGame();
+      }
+    });
+  }
+
+  // =====================================================
+  // 스킬 오버레이 — 아바타 + 캐릭터명 + 스킬명/설명/쿨다운
+  // 플로우: 캐릭터 오버레이 → 스킬 오버레이 → startGame
+  // 렌더는 DOM API만 사용 (innerHTML 금지) — XSS 안전
+  // =====================================================
+  /**
+   * 스킬 카드(#skillCard)를 선택된 캐릭터 기준으로 재구성한다.
+   * 기존 자식을 removeChild로 전량 제거한 뒤 DOM API로 트리 재구축.
+   * 아바타는 기존 `drawCharacterCardAvatar(canvas, charId)`를 재사용 (스프라이트/팔레트 동일 보장).
+   */
+  function renderSkillOverlay() {
+    if (!skillCard || !overlaySkill) return;
+    const id = state.characterId || 'kim';
+    const def = SKILLS[id];
+    if (!def) return; // 김간호(스킬 없음) 방어
+
+    const nurse = CHARACTERS.find(c => c.id === id);
+    const nurseName = nurse ? nurse.name : '김간호';
+
+    // 패널에 data-char 주입 — CSS 악센트 변수 스코프 발동
+    const panel = overlaySkill.querySelector('.game-overlay__panel--skill');
+    if (panel) panel.setAttribute('data-char', id);
+    if (hudSkillSlot) hudSkillSlot.setAttribute('data-char', id);
+    if (keypadSkillBtn) keypadSkillBtn.setAttribute('data-char', id);
+
+    // 기존 자식 제거
+    while (skillCard.firstChild) skillCard.removeChild(skillCard.firstChild);
+
+    // 아바타 컨테이너 + canvas
+    const avatar = document.createElement('span');
+    avatar.className = 'game-skill-card__avatar';
+    avatar.setAttribute('aria-hidden', 'true');
+    const canvas = document.createElement('canvas');
+    canvas.className = 'game-skill-card__avatar-canvas';
+    canvas.setAttribute('aria-hidden', 'true');
+    avatar.appendChild(canvas);
+    skillCard.appendChild(avatar);
+    drawCharacterCardAvatar(canvas, id);
+
+    // 캐릭터명
+    const nameEl = document.createElement('span');
+    nameEl.className = 'game-skill-card__name';
+    nameEl.textContent = nurseName;
+    skillCard.appendChild(nameEl);
+
+    // 스킬명 (악센트 컬러 + 글로우)
+    const skillNameEl = document.createElement('span');
+    skillNameEl.className = 'game-skill-card__skill-name';
+    skillNameEl.id = 'skillDesc';
+    skillNameEl.textContent = def.name;
+    skillCard.appendChild(skillNameEl);
+
+    // 설명
+    const descEl = document.createElement('p');
+    descEl.className = 'game-skill-card__desc';
+    descEl.textContent = def.desc;
+    skillCard.appendChild(descEl);
+
+    // 쿨다운
+    const cdEl = document.createElement('p');
+    cdEl.className = 'game-skill-card__cooldown';
+    const cdLabel = document.createElement('span');
+    cdLabel.textContent = '쿨다운 ';
+    const cdValue = document.createElement('b');
+    cdValue.textContent = String(Math.round(def.cooldownMs / 1000)) + '초';
+    cdEl.appendChild(cdLabel);
+    cdEl.appendChild(cdValue);
+    skillCard.appendChild(cdEl);
+  }
+
+  if (btnSkillStart) {
+    btnSkillStart.addEventListener('click', () => {
+      if (overlaySkill) overlaySkill.classList.add('is-hidden');
       startGame();
     });
   }
+
+  if (btnSkillBack) {
+    btnSkillBack.addEventListener('click', () => {
+      if (overlaySkill) overlaySkill.classList.add('is-hidden');
+      if (overlayCharacter) {
+        overlayCharacter.classList.remove('is-hidden');
+        const activeCard = characterGrid
+          ? characterGrid.querySelector('.game-character-card[data-char="' + state.characterId + '"]')
+          : null;
+        if (activeCard) activeCard.focus({ preventScroll: true });
+      }
+    });
+  }
+
+  // 스킬 오버레이 Esc — Back과 동일 동작
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    if (overlaySkill && !overlaySkill.classList.contains('is-hidden')) {
+      e.preventDefault();
+      if (btnSkillBack) btnSkillBack.click();
+    }
+  });
 
   if (btnCharacterBack) {
     btnCharacterBack.addEventListener('click', () => {
@@ -1283,8 +1456,18 @@
     return (overlayStart && !overlayStart.classList.contains('is-hidden')) ||
            (overlayEnd && !overlayEnd.classList.contains('is-hidden')) ||
            (overlayCharacter && !overlayCharacter.classList.contains('is-hidden')) ||
+           (overlaySkill && !overlaySkill.classList.contains('is-hidden')) ||
            (cutOverlay && !cutOverlay.classList.contains('is-hidden'));
   }
+
+  // 스킬 발동 키 — Shift (좌/우 모두). 오버레이 중이면 무시.
+  window.addEventListener('keydown', (e) => {
+    if (e.code !== 'ShiftLeft' && e.code !== 'ShiftRight') return;
+    if (e.repeat) return;
+    if (isAnyOverlayOpen() || !state.running) return;
+    e.preventDefault();
+    tryActivateSkill();
+  });
 
   window.addEventListener('keydown', (e) => {
     const dir = KEY_MAP[e.code];
@@ -1335,6 +1518,15 @@
     state.player.frameAcc = 0;
     state.player.stunUntil = 0;
     state.player.frozenUntil = 0;
+    state.player.invincibleUntil = 0;
+
+    // 스킬 상태 초기화 — 게임 시작과 동시에 사용 가능 (readyAt = now)
+    const nowSkillInit = performance.now();
+    state.skill.readyAt = nowSkillInit;
+    state.skill.activeUntil = 0;
+    state.skill.lastUsedAt = 0;
+    state.skill.flashUntil = 0;
+    updateSkillHud(nowSkillInit);
 
     // 컷씬 추적 Set 초기화
     state.cutscenesShown = new Set();
@@ -1397,6 +1589,18 @@
     // HUD 콤보 초기 톤 정리 (다음 게임 대비)
     if (hudCombo) {
       hudCombo.classList.remove('is-combo-bump', 'is-combo-hot');
+    }
+
+    // 스킬 상태/HUD 정리 — 잔존 브레싱/플래시 클래스 제거
+    state.skill.readyAt = 0;
+    state.skill.activeUntil = 0;
+    state.skill.flashUntil = 0;
+    state.player.invincibleUntil = 0;
+    if (hudSkillSlot) {
+      hudSkillSlot.classList.remove('is-skill-ready', 'is-skill-cooling', 'is-skill-flash');
+    }
+    if (keypadSkillBtn) {
+      keypadSkillBtn.classList.remove('is-skill-ready', 'is-skill-cooling', 'is-skill-flash', 'is-pressed');
     }
 
     // 성공 엔딩 전용 UI 기본 리셋 — 이후 success 분기에서만 재활성화
@@ -1584,8 +1788,8 @@
     const avoid = state.map ? [playerTile()] : [];
     const tile = findEmptyTile(state.map, Math.random, avoid);
     state.toilets.push({
-      x: tile.c * TILE + (TILE - 12) / 2,
-      y: tile.r * TILE + (TILE - 12) / 2,
+      x: tile.c * TILE + (TILE - 16) / 2,
+      y: tile.r * TILE + (TILE - 16) / 2,
       born: performance.now(),
       bobSeed: Math.random() * Math.PI * 2
     });
@@ -1601,7 +1805,8 @@
       x: tile.c * TILE + (TILE - 12) / 2,
       y: tile.r * TILE + (TILE - 12) / 2,
       dx: d[0],
-      dy: d[1]
+      dy: d[1],
+      type: isImCharmed(performance.now()) ? 'A' : 'F'
     });
   }
 
@@ -1777,7 +1982,7 @@
         sx = tile.c * TILE + (TILE - 12) / 2;
         sy = tile.r * TILE + (TILE - 12) / 2;
       }
-      state.obstacles.push({ x: sx, y: sy, dx: dx, dy: dy });
+      state.obstacles.push({ x: sx, y: sy, dx: dx, dy: dy, type: isImCharmed(performance.now()) ? 'A' : 'F' });
     }
     // 투척 순간 팔 올림 플래그 (이미 updateNurseChief에서도 처리되나 즉시 반영)
     // 효과음 — 공기 가르는 얕은 톤
@@ -2142,6 +2347,226 @@
   }
 
   // =====================================================
+  // 스킬 발동 & 효과 처리
+  //  - tryActivateSkill: 쿨다운 판정 + 실행 + 상태/사운드/파티클
+  //  - executeSkill: 캐릭터별 실제 효과 분기. 발동 불가(예: geon 수집 0개)는 false 반환.
+  //  - updateSkillHud: HUD 링/라벨/상태 클래스 + keypad 버튼 동기화.
+  // =====================================================
+  /**
+   * 스킬 발동 시도. 쿨다운/오버레이 상태 확인 후 executeSkill에 위임.
+   */
+  function tryActivateSkill() {
+    if (!state.running) return;
+    if (isAnyOverlayOpen()) return;
+    if (!hasSkill(state.characterId)) return; // 김간호는 스킬 없음
+    const now = performance.now();
+    if (now < state.skill.readyAt) return;
+    const def = SKILLS[state.characterId];
+    const fired = executeSkill(state.characterId, now);
+    if (!fired) return; // 예: geon 수집 0개 → 쿨다운 미소모
+    state.skill.lastUsedAt = now;
+    state.skill.readyAt = now + def.cooldownMs;
+    state.skill.activeUntil = now + def.durationMs;
+    state.skill.flashUntil = now + 400;
+    // 발동 사운드 — 2음 상승
+    playTone(660, 0.08);
+    setTimeout(() => playTone(880, 0.1), 70);
+    // 파티클 — 플레이어 중심에서 확산 (reduced-motion 비활성)
+    if (!reducedMotion) {
+      spawnParticles(state.player.x + 7, state.player.y + 7, 12);
+    }
+    updateSkillHud(now);
+  }
+
+  /**
+   * 캐릭터별 스킬 효과 실행.
+   * @param {string} id - state.characterId
+   * @param {number} now - performance.now()
+   * @returns {boolean} 발동 성공 여부 (false면 쿨다운 미소모)
+   */
+  function executeSkill(id, now) {
+    const p = state.player;
+
+    if (id === 'jung') {
+      // 암벽등반 돌진 — 현재 dir 벡터로 3타일 전진, 벽에 막히면 전방 벽 1칸을 부수고 중단
+      let vx = 0, vy = 0;
+      if (p.dir === 'up') vy = -1;
+      else if (p.dir === 'down') vy = 1;
+      else if (p.dir === 'left') vx = -1;
+      else vx = 1;
+      const STEP = TILE / 2;
+      let traveled = 0;
+      while (traveled < JUNG_DASH_PX) {
+        const nx = p.x + vx * STEP;
+        const ny = p.y + vy * STEP;
+        if (state.map && isWallAt(state.map, nx, ny, p.w, p.h)) {
+          // 전방 벽 1칸 분쇄 — 바운딩 박스 4 코너 중 첫 벽 타일
+          const corners = [
+            [nx, ny],
+            [nx + p.w - 1, ny],
+            [nx, ny + p.h - 1],
+            [nx + p.w - 1, ny + p.h - 1]
+          ];
+          for (const [cx, cy] of corners) {
+            const col = Math.floor(cx / TILE);
+            const row = Math.floor(cy / TILE);
+            if (state.map[row] && state.map[row][col] === 1) {
+              state.map[row][col] = 0;
+              if (!reducedMotion) {
+                spawnParticles(col * TILE + TILE / 2, row * TILE + TILE / 2, 14);
+              }
+              playTone(180, 0.12);
+              break;
+            }
+          }
+          break;
+        }
+        p.x = nx;
+        p.y = ny;
+        traveled += STEP;
+      }
+      p.invincibleUntil = now + 260;
+      return true;
+    }
+
+    if (id === 'geon') {
+      // 북클럽 소집 — 주변 6타일 이내 음표 일괄 수집. 0개면 실패.
+      const pcx = p.x + p.w / 2;
+      const pcy = p.y + p.h / 2;
+      const collected = [];
+      for (let i = state.notes.length - 1; i >= 0; i--) {
+        const n = state.notes[i];
+        const nx = n.x + 6;
+        const ny = n.y + 6;
+        const d = Math.hypot(nx - pcx, ny - pcy);
+        if (d <= GEON_MAGNET_RADIUS) {
+          collected.push({ x: n.x, y: n.y });
+          state.notes.splice(i, 1);
+        }
+      }
+      if (collected.length === 0) return false;
+
+      // 기존 음표 수집 공식 그대로 N회 적용 (combo/score/hud/scale 동기)
+      for (let k = 0; k < collected.length; k++) {
+        state.combo += 1;
+        if (state.combo > state.maxCombo) state.maxCombo = state.combo;
+        state.collected += 1;
+        let gain = 1;
+        if (state.combo >= 7) gain += 3;
+        else if (state.combo >= 5) gain += 2;
+        else if (state.combo >= 3) gain += 1;
+        state.score += gain;
+      }
+      hudScore.textContent = String(state.score);
+      updateComboHud(true);
+      // 사운드는 마지막 1회 — 다중 재생 오버플로 방지
+      const freqIdx = Math.min(state.combo - 1, SCALE_FREQS.length - 1);
+      playTone(SCALE_FREQS[freqIdx], 0.12);
+      // 파티클 — 각 위치에 4개
+      if (!reducedMotion) {
+        for (const c of collected) spawnParticles(c.x + 6, c.y + 6, 4);
+      }
+      return true;
+    }
+
+    if (id === 'im') {
+      // 벼락치기 — 매혹. 필드의 기존 F를 즉시 A로 전환하고, 지속시간 동안 신규 투척도 A로.
+      for (const o of state.obstacles) o.type = 'A';
+      return true;
+    }
+
+    if (id === 'lee') {
+      // 워프 — 가장 먼 빈 타일로 순간 이동 + 0.5s 무적
+      const CHIEF_SAFE = SPAWN_SAFE_DIST;
+      const pcTile = playerTile();
+      const hasChief = state.nurseChief.active;
+      const chiefTile = hasChief ? {
+        c: Math.floor(state.nurseChief.x / TILE),
+        r: Math.floor(state.nurseChief.y / TILE)
+      } : null;
+      const hasProf = state.professor.active;
+      const profTile = hasProf ? {
+        c: Math.floor(state.professor.x / TILE),
+        r: Math.floor(state.professor.y / TILE)
+      } : null;
+
+      let bestTile = null;
+      let bestScore = -1;
+      for (let r = 1; r < ROWS - 1; r++) {
+        for (let c = 1; c < COLS - 1; c++) {
+          if (!state.map || state.map[r][c] !== 0) continue;
+          // NPC 안전 거리
+          if (chiefTile && Math.abs(chiefTile.c - c) + Math.abs(chiefTile.r - r) < CHIEF_SAFE) continue;
+          if (profTile && Math.abs(profTile.c - c) + Math.abs(profTile.r - r) < CHIEF_SAFE) continue;
+          const d = Math.abs(pcTile.c - c) + Math.abs(pcTile.r - r);
+          if (d > bestScore) {
+            bestScore = d;
+            bestTile = { c, r };
+          }
+        }
+      }
+      if (!bestTile) return false;
+
+      // 출발 파티클
+      if (!reducedMotion) {
+        spawnParticles(p.x + p.w / 2, p.y + p.h / 2, 10);
+      }
+      p.x = bestTile.c * TILE + 3;
+      p.y = bestTile.r * TILE + 3;
+      p.invincibleUntil = now + 500;
+      // 도착 파티클
+      if (!reducedMotion) {
+        spawnParticles(p.x + p.w / 2, p.y + p.h / 2, 10);
+      }
+      return true;
+    }
+
+    return false;
+  }
+
+  /**
+   * HUD 스킬 슬롯 + 모바일 스킬 버튼 상태 동기화.
+   * conic-gradient 진행률(--skill-prog 0~1)과 ready/cooling/flash 클래스 토글.
+   */
+  function updateSkillHud(now) {
+    const id = state.characterId || 'kim';
+    // 김간호(스킬 없음): HUD 슬롯/모바일 버튼 숨김
+    if (!hasSkill(id)) {
+      if (hudSkillSlot) hudSkillSlot.classList.add('is-hidden');
+      if (keypadSkillBtn) keypadSkillBtn.classList.add('is-hidden');
+      return;
+    }
+    if (hudSkillSlot) hudSkillSlot.classList.remove('is-hidden');
+    if (keypadSkillBtn) keypadSkillBtn.classList.remove('is-hidden');
+    const def = SKILLS[id];
+    if (hudSkillLabel) hudSkillLabel.textContent = def.abbr;
+    // 패널/HUD/키패드 악센트 동기화 — 캐릭터 변경 시 data-char 재주입
+    if (hudSkillSlot && hudSkillSlot.getAttribute('data-char') !== id) {
+      hudSkillSlot.setAttribute('data-char', id);
+    }
+    if (keypadSkillBtn && keypadSkillBtn.getAttribute('data-char') !== id) {
+      keypadSkillBtn.setAttribute('data-char', id);
+    }
+
+    const cd = def.cooldownMs;
+    const remaining = Math.max(0, state.skill.readyAt - now);
+    const prog = cd > 0 ? (1 - Math.max(0, Math.min(1, remaining / cd))) : 1;
+    if (hudSkill) hudSkill.style.setProperty('--skill-prog', String(prog));
+
+    const ready = remaining <= 0;
+    const flashing = now < state.skill.flashUntil;
+
+    const applyState = (el) => {
+      if (!el) return;
+      el.classList.toggle('is-skill-ready', ready && !flashing);
+      el.classList.toggle('is-skill-cooling', !ready);
+      el.classList.toggle('is-skill-flash', flashing);
+    };
+    applyState(hudSkillSlot);
+    applyState(keypadSkillBtn);
+  }
+
+  // =====================================================
   // 매 프레임 업데이트
   // =====================================================
   function update(dt, now) {
@@ -2188,8 +2613,11 @@
       p.frame = 0;
     }
 
+    // (임간호 벼락치기는 슬로우에서 "F→A 매혹 전환"으로 변경됨. dtSlow는 dt와 동일.)
+    const dtSlow = dt;
+
     // 장애물(F) 이동 — 속도 보간, 히트박스 12×12
-    const oStep = currentObsSpeed() * dt;
+    const oStep = currentObsSpeed() * dtSlow;
     for (const o of state.obstacles) {
       let tries = 0;
       let moved = false;
@@ -2208,15 +2636,15 @@
       }
     }
 
-    // 수간호사 NPC 업데이트 — 패트롤 이동 + 투척 타이머 처리
-    updateNurseChief(dt, now);
+    // 수간호사 NPC 업데이트 — 패트롤 이동 + 투척 타이머 처리 (im 슬로우 반영)
+    updateNurseChief(dtSlow, now);
 
     // 이교수 NPC 업데이트 — 상 난이도 전용 (active=false면 함수 내부 가드)
-    updateProfessor(dt, now);
+    updateProfessor(dtSlow, now);
 
     // 청진기 투사체 이동 — 직선 비행, 벽/화면 밖 도달 시 소멸 (관통 X)
     {
-      const sStep = PROFESSOR.stethoSpeed * dt;
+      const sStep = PROFESSOR.stethoSpeed * dtSlow;
       for (let i = state.stethoscopes.length - 1; i >= 0; i--) {
         const s = state.stethoscopes[i];
         s.x += s.dx * sStep;
@@ -2284,8 +2712,8 @@
     // 변기(화캉스 보너스) 수집 판정 — 음표 2개어치 (콤보 +2, 각 단계 gain 합산)
     for (let i = state.toilets.length - 1; i >= 0; i--) {
       const t = state.toilets[i];
-      if (p.x < t.x + 12 && p.x + p.w > t.x &&
-          p.y < t.y + 12 && p.y + p.h > t.y) {
+      if (p.x < t.x + 16 && p.x + p.w > t.x &&
+          p.y < t.y + 16 && p.y + p.h > t.y) {
         state.toilets.splice(i, 1);
 
         // 음표 1개분 gain 로직을 bonusMultiplier(=2)회 적용
@@ -2311,7 +2739,7 @@
         setTimeout(() => playTone(SCALE_FREQS[freqIdx2], 0.09), 70);
 
         // 파티클
-        if (!reducedMotion) spawnParticles(t.x + 6, t.y + 6, 16);
+        if (!reducedMotion) spawnParticles(t.x + 8, t.y + 8, 16);
 
         // 토스트
         state.toiletToastUntil = now + TOILET.toastDuration;
@@ -2320,7 +2748,8 @@
 
     // 수간호사 본체 직접 충돌 — 즉사 처리 (F 충돌과 동등, SPEC 기능 2)
     // F에만 의존하던 회피 부담을 순찰 경로 읽기로 확장한다.
-    if (state.nurseChief.active) {
+    // 스킬 무적(invincibleUntil) 중에는 충돌 판정 전체 스킵.
+    if (state.nurseChief.active && now >= p.invincibleUntil) {
       const chief = state.nurseChief;
       const CHIEF_HB = 14;
       const cx = chief.x - CHIEF_HB / 2;
@@ -2348,8 +2777,8 @@
       }
     }
 
-    // 이교수 본체 충돌 — 수간호사와 동일하게 즉사 처리
-    if (state.professor.active) {
+    // 이교수 본체 충돌 — 수간호사와 동일하게 즉사 처리 (무적 중 스킵)
+    if (state.professor.active && now >= p.invincibleUntil) {
       const prof = state.professor;
       const PROF_HB = 14;
       const cx = prof.x - PROF_HB / 2;
@@ -2377,7 +2806,10 @@
 
     // 청진기 투사체 충돌 — 즉사 X, 2초 정지(frozenUntil) + 콤보 리셋 + 청진기 소멸
     // hits를 증가시키지 않으므로 정확도 통계가 디버프로 인해 깎이지 않는다.
+    // 스킬 무적 중에는 스킵 (청진기는 관통하지 않고 그대로 비행 계속).
+    const stethoSkip = now < p.invincibleUntil;
     for (let i = state.stethoscopes.length - 1; i >= 0; i--) {
+      if (stethoSkip) break;
       const s = state.stethoscopes[i];
       // 충돌 박스 12×12 (스프라이트 14×8보다 약간 넉넉하게)
       const sx = s.x - 6;
@@ -2395,9 +2827,37 @@
       }
     }
 
+    // 매혹 중 A 수집 — F 충돌보다 먼저 처리. 각 A는 점수 2배(콤보 포함).
+    for (let i = state.obstacles.length - 1; i >= 0; i--) {
+      const o = state.obstacles[i];
+      if (o.type !== 'A') continue;
+      if (p.x < o.x + 12 && p.x + p.w > o.x &&
+          p.y < o.y + 12 && p.y + p.h > o.y) {
+        state.obstacles.splice(i, 1);
+        state.combo += 1;
+        if (state.combo > state.maxCombo) state.maxCombo = state.combo;
+        state.collected += 1;
+        let gain = 1;
+        if (state.combo >= 7) gain += 3;
+        else if (state.combo >= 5) gain += 2;
+        else if (state.combo >= 3) gain += 1;
+        state.score += gain * 2; // 점수 2배
+        hudScore.textContent = String(state.score);
+        updateComboHud(true);
+        const freqIdx = Math.min(state.combo - 1, SCALE_FREQS.length - 1);
+        playTone(SCALE_FREQS[freqIdx], 0.1);
+        setTimeout(() => playTone(SCALE_FREQS[freqIdx] * 1.26, 0.09), 60);
+        if (!reducedMotion) spawnParticles(o.x + 6, o.y + 6, 12);
+      }
+    }
+
     // 장애물(F) 충돌 — 즉사 처리 (SPEC 기능 6)
     // 한 번이라도 F에 닿으면 즉시 endGame
+    // 스킬 무적(invincibleUntil) 중에는 충돌 루프 전체를 스킵하여 F를 흘려보낸다.
+    const fSkip = now < p.invincibleUntil;
     for (const o of state.obstacles) {
+      if (fSkip) break;
+      if (o.type === 'A') continue; // A는 위 블록에서 이미 처리
       if (p.x < o.x + 12 && p.x + p.w > o.x &&
           p.y < o.y + 12 && p.y + p.h > o.y) {
         state.hits += 1;
@@ -2423,6 +2883,9 @@
 
     // 파티클 물리 업데이트
     if (state.particles.length > 0) updateParticles(dt);
+
+    // 스킬 HUD — 쿨다운 링/라벨/브레싱/플래시 상태 동기화
+    updateSkillHud(now);
 
     // 타이머
     state.timeLeft -= dt;
@@ -2477,13 +2940,13 @@
     }
 
     // 장애물
-    for (const o of state.obstacles) drawObstacle(o.x, o.y);
+    for (const o of state.obstacles) drawObstacle(o.x, o.y, o.type);
 
     // 수간호사 NPC (플레이어보다 먼저 — 층 순서 유지)
     const chief = state.nurseChief;
     if (chief.active) {
       const throwArm = now < chief.throwArmUntil || chief.telegraphUntil > 0;
-      drawNurseChief(chief.x, chief.y, chief.dir, chief.frame, throwArm);
+      drawNurseChief(chief.x, chief.y, chief.dir, chief.frame, throwArm, isImCharmed(now));
       // 텔레그래프(!) — 투척 전 0.4s 머리 위에 표시
       if (chief.telegraphUntil > 0 && now < chief.telegraphUntil) {
         drawTelegraph(chief.x, chief.y, now);
@@ -2622,6 +3085,30 @@
     root.hidden = false;
     root.setAttribute('aria-hidden', 'false');
 
+    // 중앙 스킬 버튼 — 방향 버튼과 달리 단발성 발동 (pointerdown)
+    if (keypadSkillBtn) {
+      let skillPointerId = null;
+      keypadSkillBtn.addEventListener('pointerdown', (e) => {
+        if (isAnyOverlayOpen() || !state.running) return;
+        if (skillPointerId !== null) return;
+        e.preventDefault();
+        skillPointerId = e.pointerId;
+        try { keypadSkillBtn.setPointerCapture(e.pointerId); } catch (_) { /* 무시 */ }
+        keypadSkillBtn.classList.add('is-pressed');
+        tryActivateSkill();
+      });
+      const releaseSkill = (e) => {
+        if (skillPointerId === null) return;
+        if (e && e.pointerId !== skillPointerId) return;
+        skillPointerId = null;
+        keypadSkillBtn.classList.remove('is-pressed');
+      };
+      keypadSkillBtn.addEventListener('pointerup', releaseSkill);
+      keypadSkillBtn.addEventListener('pointercancel', releaseSkill);
+      keypadSkillBtn.addEventListener('pointerleave', releaseSkill);
+      keypadSkillBtn.addEventListener('contextmenu', (e) => e.preventDefault());
+    }
+
     const btns = root.querySelectorAll('.game-keypad__btn');
     btns.forEach((btn) => {
       const dir = btn.dataset.dir;
@@ -2669,6 +3156,8 @@
     dpadPressCount.down = 0;
     dpadPressCount.left = 0;
     dpadPressCount.right = 0;
+    // 스킬 버튼 is-pressed 잔존 방지 — 팬텀 입력 차단
+    if (keypadSkillBtn) keypadSkillBtn.classList.remove('is-pressed');
   }
 
   /**
@@ -2753,6 +3242,8 @@
   updateBestHud();
   updateStartGoal();
   if (isTouchDevice()) initTouchControls();
+  // 스킬 HUD 라벨 초기화 — 게임 시작 전에도 "회피" 등 캐릭터별 abbr을 표기
+  updateSkillHud(performance.now());
 
   /**
    * 시작 오버레이 뒤 캔버스 프리뷰 — 김간호 + 수간호사 + F 한 장

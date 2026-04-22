@@ -1,174 +1,283 @@
-# 화캉스 보너스 — 변기 아이템 (저확률) 추가
+# SPEC.md
 
 ## 개요
-맵에 낮은 확률로 등장하는 변기 모양 아이템을 추가한다. 플레이어가 수집하면 "화캉스 보너스!" 토스트가 잠깐 뜨고, 음표 2개어치 점수(현재 콤보 가산 포함)를 한 번에 얻는다. 12초에 한 번씩 저확률 판정, 맵에 최대 1개만 존재.
+픽셀 작곡 게임 "김간호는 음악박사"에 캐릭터별 능동 스킬 5종을 추가한다. 지금까지 5명 캐릭터는 외형·이름·속마음 대사만 달랐으나, 이번 업데이트로 각 캐릭터의 서사(곡괭이·책·공부·여행)가 게임 메카닉으로 번역된다. 캐릭터 확정 후 스킬 설명 오버레이를 거쳐 게임이 시작되며, 데스크톱은 Shift, 모바일은 십자키 중앙의 신규 원형 버튼으로 사용한다.
 
 ## 변경 유형
-**기능 (+약간의 디자인)**
+**혼합 (디자인 + 기능)** — 새 로직(스킬 시스템·쿨다운·캐릭터별 효과), 새 DOM(스킬 오버레이·스킬 HUD·중앙 스킬 버튼), 새 스타일(악센트 컬러·쿨다운 원형 게이지·모바일 버튼).
 
 ## 디자인 언어 & 의도
-병동에서 몰래 작곡하던 와중 "화장실=잠깐의 해방"이라는 병맛 유머. 등장 자체가 희소 이벤트라 플레이어가 맵을 훑다가 발견하면 눈이 커지도록. 수집 시 화캉스 밈을 한 줄 토스트로 전달. 기존 음표 흐름을 깨지 않도록 최대 1개·짧은 TTL.
+5명이 모두 "같은 스프라이트 다른 옷"이었던 상태에서, 각자의 서사가 손끝에서 발동되는 순간을 만든다. 스킬 오버레이는 기존 게임 오버레이(glassmorphism + 코럴핑크)와 동일 톤이되, 스킬별 악센트 글로우가 카드 테두리에 번지며 "이 캐릭터만의 색"을 각인한다. 인게임 HUD의 쿨다운 게이지는 HUD 시간 슬롯과 동일 서체·사이즈로, 십자키 중앙 스킬 버튼은 방향 버튼(코럴 `--brand`)과 대비되는 웜 옐로우 악센트로 "주역 버튼" 위계를 만든다.
 
 ## Sprint 범위 계약
-- **허용**:
-  - 새 상태 배열 `state.toilets = []` (항목 `{x, y, born, bobSeed}`)
-  - `spawnToilet()` 신규 함수 — 기존 `findEmptyTile` 재사용
-  - `drawToilet(x, y, bob)` 신규 함수 — 12×12 픽셀 변기(물탱크+시트) 표현
-  - 업데이트 루프에 "12초 주기 × 15% 확률" 스폰 시도 + TTL(8초) 만료 정리 + 최대 1개 상한
-  - 수집 판정 — 음표 수집과 동일 히트박스 패턴, gain 계산은 "음표 1개분 × 2"로 (콤보 보너스도 반영, 콤보는 +2 증가)
-  - "화캉스 보너스!" 토스트 — 기존 HUD 레이어 위 canvas 중앙 상단에 0.9초 표시 (reduced-motion 시에도 정적 표시)
-  - 수집 사운드는 기존 `playTone` 재사용 (살짝 높은 음 2연타)
+Generator가 SPEC 외 변경을 하려 할 때의 판단 기준:
+- **허용**: 스킬 시스템 동작에 필수적인 기존 코드 연동 — (a) `startGame()`에서 스킬 상태 초기화, (b) `update()` 루프에 스킬 효과 틱 추가, (c) `endGame()`에서 스킬 타이머 클린업, (d) 오버레이 플로우 전환(`btnCharacterConfirm` → 스킬 오버레이), (e) `isAnyOverlayOpen()` 새 오버레이 포함, (f) `clearDpadPressed()`에 스킬 버튼 포함.
 - **금지**:
-  - 기존 음표/F/수간호사/이교수 로직 수정
-  - 새 난이도 파라미터 키 추가(=기존 DIFFICULTY 스키마 수정)
-  - 새 오버레이/모달/컷씬 추가
-  - 기존 파일 외 신규 파일 생성
-  - 테마 시스템·폰트·색상 변수 변경
+  - 캐릭터 스프라이트/팔레트/`nurseSprite`·`drawCharacterCardAvatar` 수정
+  - 맵 생성(`buildMap`) 수정
+  - 수간호사/이교수 AI 및 패트롤 경로 수정
+  - F 투사체(`spawnObstacle`) 생성 로직 수정
+  - 난이도 테이블(`DIFFICULTY`/`TARGET_SCORE`) 수치 변경
+  - 캐릭터 추가/삭제, 이름·태그 변경
+  - 컷씬(`CUTSCENES`)·화캉스 변기(`TOILET`)·콤보 점수 공식 수정
+  - 테마 토글, localStorage 키, 기존 키 바인딩(`KEY_MAP`) 수정
+- **판단 기준**: "이 변경이 없으면 SPEC 스킬이 발동·해제·렌더되지 못하는가?" → YES면 허용. 외적 재디자인·사이드 이펙트 확장은 금지.
+
+---
 
 ## 변경 범위
 
-### pages/game.html
-변경 없음.
+### pages/game.html 변경사항
 
-### assets/css/game.css
-변경 없음. (토스트는 canvas에 그리므로 DOM/CSS 불필요.)
+1. **스킬 설명 오버레이 추가** — `overlayCharacter`와 `overlayCutscene` 사이에 삽입:
+```html
+<div class="game-overlay is-hidden" id="overlaySkill">
+  <div class="game-overlay__panel game-overlay__panel--skill" role="dialog" aria-labelledby="skillTitle" aria-describedby="skillDesc">
+    <h2 class="game-overlay__title" id="skillTitle">특수 스킬</h2>
+    <div class="game-skill-card" id="skillCard">
+      <!-- JS가 채움: 아바타 canvas + 이름 + 스킬명 + 설명 + 쿨다운 + 키 안내 -->
+    </div>
+    <p class="game-overlay__hint" id="skillKeyHint">
+      <span class="game-controls__key">Shift</span> · 모바일: 십자키 중앙 버튼
+    </p>
+    <div class="game-cta">
+      <button class="game-btn game-btn--ghost" type="button" id="btnSkillBack">← 캐릭터 다시</button>
+      <button class="game-btn" type="button" id="btnSkillStart">시작</button>
+    </div>
+  </div>
+</div>
+```
 
-### assets/js/game.js
+2. **인게임 HUD 스킬 슬롯 추가** — 기존 `.game-hud` 내부 Best 슬롯 다음:
+```html
+<div class="game-hud__slot game-hud__slot--skill" id="hudSkillSlot">
+  <span class="game-hud__label">Skill</span>
+  <span class="game-hud__skill" id="hudSkill" aria-live="polite">
+    <span class="game-hud__skill-ring" aria-hidden="true"></span>
+    <span class="game-hud__skill-label" id="hudSkillLabel">—</span>
+  </span>
+</div>
+```
 
-#### 1. 상수 추가 (DIFFICULTY 근처)
+3. **모바일 중앙 스킬 버튼 추가** — `.game-keypad__dpad` 내부, `data-dir` 4버튼 뒤:
+```html
+<button class="game-keypad__btn game-keypad__skill"
+        type="button"
+        id="keypadSkill"
+        aria-label="스킬 사용">
+  <span class="game-keypad__skill-label" aria-hidden="true">SK</span>
+</button>
+```
+grid 중앙(`grid-column: 2; grid-row: 2;`)에 위치.
+
+4. **컨트롤 힌트 업데이트** — 기존 `.game-controls` 끝에 추가:
+```html
+<span>스킬 <span class="game-controls__key">Shift</span></span>
+```
+
+### assets/css/game.css 변경사항
+
+> **주의**: 스킬 관련 스타일은 `game.css`에 추가한다 (게임 전용 파일). `style.css`는 건드리지 않음. 만약 game.css가 없다면 기존 게임 CSS 위치에 추가.
+
+1. **스킬 악센트 컬러** — `.game-overlay__panel--skill` 및 `.game-keypad__skill`에 `data-char` 속성으로 스코프 변수:
+   - kim: `#d4a49c` (브랜드 라이트 — 기본)
+   - jung: `#b8a87a` (산·흙 웜 골드)
+   - geon: `#9ab5c4` (책·잉크 쿨 블루그레이)
+   - im: `#c9a8d4` (공부·집중 소프트 라벤더)
+   - lee: `#e8c588` (여행·햇살 웜 옐로우)
+   - 공통 글로우: `--skill-accent-glow: color-mix(in srgb, var(--skill-accent) 30%, transparent)` (폴백 `var(--brand-20)`)
+
+2. **`.game-overlay__panel--skill`** — 기존 `.game-overlay__panel--character` 레이아웃과 동일 폭·패딩:
+```css
+.game-overlay__panel--skill {
+  max-width: 520px;
+  text-align: center;
+  & .game-skill-card { /* glassmorphism + border */ }
+  & .game-skill-card__avatar { /* 64px, drawCharacterCardAvatar 재사용 */ }
+  & .game-skill-card__skill-name { color: var(--skill-accent); text-shadow: 0 0 12px var(--skill-accent-glow); }
+  & .game-skill-card__desc { color: var(--text-muted); }
+}
+```
+카드 진입 `translateY(8px)` → `0` 페이드인, reduced-motion에서 즉시.
+
+3. **`.game-hud__slot--skill`** — 원형 쿨다운 게이지 (`conic-gradient(var(--brand) calc(var(--skill-prog) * 360deg), var(--brand-08) 0)`), 28×28px. 상태 클래스: `.is-skill-ready`(풀차+브레싱), `.is-skill-cooling`(회색+부분), `.is-skill-flash`(0.4s 플래시).
+
+4. **`.game-keypad__skill`** — 중앙 원형 버튼:
+```css
+.game-keypad__skill {
+  grid-column: 2; grid-row: 2;
+  width: 72px; height: 72px; border-radius: 50%;
+  border: 1px solid var(--skill-accent, var(--brand-40));
+  background: var(--bg-card);
+  color: var(--skill-accent, var(--brand-light));
+  font-weight: 800;
+  &.is-skill-cooling { opacity: 0.45; color: var(--text-dim); }
+  &.is-skill-ready { box-shadow: 0 0 18px var(--skill-accent-glow); }
+}
+@media (max-width: 380px) {
+  .game-keypad__skill { width: 60px; height: 60px; font-size: 15px; }
+}
+```
+터치 타겟 72/60px (둘 다 48px 이상).
+
+5. **반응형** — `@media (max-width: 520px)`에 패널 폭/패딩 축소.
+
+6. **접근성** — `prefers-reduced-motion: reduce`에서 브레싱/플래시/카드 진입 transition 비활성.
+
+### assets/js/game.js 변경사항
+
+1. **스킬 상수**:
 ```js
-const TOILET = {
-  spawnInterval: 12,   // sec — 판정 주기
-  spawnChance: 0.15,   // 15% — 주기마다 굴림
-  ttl: 8000,           // ms — 미수집 시 자동 제거
-  bonusMultiplier: 2,  // 음표 2개어치
-  toastDuration: 900   // ms — "화캉스 보너스!" 표시 시간
+const SKILLS = {
+  kim:  { name: '응급 회피',    desc: '잠깐 무적 상태가 되어 F를 흘려보낸다.',            durationMs: 1000, cooldownMs: 18000, abbr: '회피' },
+  jung: { name: '곡괭이 돌진',  desc: '바라보는 방향으로 3타일 돌진하며 F 1개를 분쇄한다.', durationMs: 260,  cooldownMs: 22000, abbr: '돌진' },
+  geon: { name: '북클럽 소집',  desc: '주변 6타일 안의 음표를 한번에 끌어와 수집한다.',      durationMs: 0,    cooldownMs: 20000, abbr: '소집' },
+  im:   { name: '벼락치기',    desc: '2초간 F와 수간호사의 속도를 40% 느려지게 한다.',      durationMs: 2000, cooldownMs: 25000, abbr: '집중' },
+  lee:  { name: '워프',        desc: '가장 먼 빈 타일로 순간 이동하고 0.5초 착지 무적.',     durationMs: 500,  cooldownMs: 22000, abbr: '워프' }
 };
+const IM_SLOW_FACTOR = 0.6;
+const JUNG_DASH_TILES = 3;
+const JUNG_DASH_PX = JUNG_DASH_TILES * TILE;
+const JUNG_BREAK_RADIUS = 18;
+const GEON_MAGNET_RADIUS = 6 * TILE;
 ```
 
-#### 2. state 확장 (line ≈ 815)
+2. **state 확장**:
 ```js
-toilets: [],            // {x, y, born, bobSeed}
-nextToiletAt: 0,        // 다음 스폰 판정 시각(ms)
-toiletToastUntil: 0     // 토스트 만료 시각(ms), 0이면 비표시
+skill: { readyAt: 0, activeUntil: 0, lastUsedAt: 0, flashUntil: 0 }
 ```
-초기화 지점(startGame, resetRound 등)에서 `state.toilets = []; state.nextToiletAt = now + TOILET.spawnInterval * 1000; state.toiletToastUntil = 0;`
+`state.player`에 `invincibleUntil: 0` 추가.
 
-#### 3. spawnToilet() 신규
+3. **DOM 참조 추가**: `overlaySkill`, `skillCard`, `btnSkillBack`, `btnSkillStart`, `hudSkill`, `hudSkillLabel`, `hudSkillSlot`, `keypadSkillBtn`.
+
+4. **`renderSkillOverlay()`** — `skillCard`를 removeChild로 비우고 DOM API로 재구성 (innerHTML 금지). canvas + `drawCharacterCardAvatar(canvas, state.characterId)` 재사용. panel에 `data-char="${state.characterId}"` 설정.
+
+5. **플로우 전환** — `btnCharacterConfirm` 핸들러 수정:
 ```js
-function spawnToilet() {
-  if (state.toilets.length >= 1) return;
-  const avoid = state.map ? [playerTile()] : [];
-  const tile = findEmptyTile(state.map, Math.random, avoid);
-  state.toilets.push({
-    x: tile.c * TILE + (TILE - 12) / 2,
-    y: tile.r * TILE + (TILE - 12) / 2,
-    born: performance.now(),
-    bobSeed: Math.random() * Math.PI * 2
-  });
-}
-```
-
-#### 4. drawToilet(x, y, bob) 신규
-12×12 픽셀 변기. 간단 구성:
-- 하단(시트): 흰색 타원 윤곽, 중앙에 검정 구멍 2×2
-- 상단(물탱크): 흰색 사각 + 상단 회색 뚜껑 1px
-- 외곽: 살짝 회색 섀도 1px (가독성)
-- 포인트 색: 아주 옅은 파랑 하이라이트 1px (물)
-- 색상은 라이트/다크 테마에서 모두 보이는 중립(흰 + 연회색 + 연파랑 + 검정)으로 고정
-
-#### 5. 업데이트 루프에 스폰·만료 삽입 (음표 보충 바로 뒤)
-```js
-// 변기 TTL 만료
-state.toilets = state.toilets.filter(t => (now - t.born) < TOILET.ttl);
-// 주기 판정
-if (now >= state.nextToiletAt) {
-  state.nextToiletAt = now + TOILET.spawnInterval * 1000;
-  if (Math.random() < TOILET.spawnChance) spawnToilet();
-}
-```
-
-#### 6. 수집 판정 (음표 수집 루프 바로 뒤)
-```js
-for (let i = state.toilets.length - 1; i >= 0; i--) {
-  const t = state.toilets[i];
-  if (p.x < t.x + 12 && p.x + p.w > t.x &&
-      p.y < t.y + 12 && p.y + p.h > t.y) {
-    state.toilets.splice(i, 1);
-    // 음표 2개어치 — 콤보 2 증가, 각 단계의 gain 합산
-    let totalGain = 0;
-    for (let k = 0; k < TOILET.bonusMultiplier; k++) {
-      state.combo += 1;
-      if (state.combo > state.maxCombo) state.maxCombo = state.combo;
-      state.collected += 1;
-      let gain = 1;
-      if (state.combo >= 7) gain += 3;
-      else if (state.combo >= 5) gain += 2;
-      else if (state.combo >= 3) gain += 1;
-      totalGain += gain;
-    }
-    state.score += totalGain;
-    hudScore.textContent = String(state.score);
-    updateComboHud(true);
-    // 사운드 2연타
-    const freqIdx = Math.min(state.combo - 1, SCALE_FREQS.length - 1);
-    playTone(SCALE_FREQS[freqIdx], 0.09);
-    setTimeout(() => playTone(SCALE_FREQS[Math.min(freqIdx + 1, SCALE_FREQS.length - 1)], 0.09), 70);
-    // 파티클
-    if (!reducedMotion) spawnParticles(t.x + 6, t.y + 6, 16);
-    // 토스트
-    state.toiletToastUntil = now + TOILET.toastDuration;
+btnCharacterConfirm.addEventListener('click', () => {
+  saveCharacter();
+  applyNurseNameToDom();
+  if (overlayCharacter) overlayCharacter.classList.add('is-hidden');
+  if (overlaySkill) {
+    renderSkillOverlay();
+    overlaySkill.classList.remove('is-hidden');
+    if (btnSkillStart) btnSkillStart.focus({ preventScroll: true });
+  } else {
+    startGame();
   }
-}
+});
 ```
+`btnSkillStart` → startGame / `btnSkillBack` → 캐릭터 오버레이 복귀 / Esc → Back.
 
-#### 7. 렌더 — 음표 그리기 루프 다음에 변기 + 토스트 추가
+6. **`isAnyOverlayOpen()` 확장** — `overlaySkill` 포함.
+
+7. **`startGame()` 초기화 추가**:
 ```js
-for (const t of state.toilets) {
-  const bob = reducedMotion ? 0 : Math.sin((now / 220) + t.bobSeed) * 1.2;
-  // TTL 말기 깜빡임
-  const left = TOILET.ttl - (now - t.born);
-  if (left < 1000 && !reducedMotion && Math.floor(now / 120) % 2 === 0) continue;
-  drawToilet(t.x, t.y, bob);
-}
+state.skill.readyAt = performance.now();
+state.skill.activeUntil = 0;
+state.skill.lastUsedAt = 0;
+state.skill.flashUntil = 0;
+state.player.invincibleUntil = 0;
+updateSkillHud(performance.now());
 ```
-토스트(render 마지막, HUD보다 위):
+
+8. **키 바인딩** — keydown 핸들러:
 ```js
-if (now < state.toiletToastUntil) {
-  const remain = state.toiletToastUntil - now;
-  const alpha = Math.min(1, remain / 300); // 마지막 300ms 페이드아웃
-  ctx.save();
-  ctx.globalAlpha = alpha;
-  const text = '화캉스 보너스!';
-  ctx.font = 'bold 18px "Pretendard", system-ui, sans-serif';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  const cx = CANVAS_W / 2;
-  const cy = 40;
-  // 외곽 그림자
-  ctx.fillStyle = 'rgba(0,0,0,0.5)';
-  ctx.fillRect(cx - 110, cy - 18, 220, 36);
-  // 본체 배경
-  ctx.fillStyle = isLightTheme() ? '#fff5d6' : '#3a2a10';
-  ctx.fillRect(cx - 108, cy - 16, 216, 32);
-  // 텍스트
-  ctx.fillStyle = isLightTheme() ? '#8a5a00' : '#ffd580';
-  ctx.fillText(text, cx, cy);
-  ctx.restore();
+if ((e.code === 'ShiftLeft' || e.code === 'ShiftRight') && !e.repeat) {
+  if (isAnyOverlayOpen() || !state.running) return;
+  e.preventDefault();
+  tryActivateSkill();
 }
 ```
 
-## 기능 상세
-- **스폰 확률**: 12초마다 15% 굴림 → 기대 간격 ≈ 80초 (45초 플레이에서 0~1개 등장, 대부분 없거나 한 번)
-- **맵 상한**: 1개
-- **TTL**: 8초, 마지막 1초 깜빡임
-- **보상**: 음표 2개어치 = 콤보 +2 + 각 단계 gain 합산 (콤보 3/5/7 보너스 자동 반영)
-- **피드백**: 파티클 16개 + 사운드 2연타 + "화캉스 보너스!" 토스트 0.9초
-- **초기화**: 새 게임 시작·재시작 시 toilets 비움 + nextToiletAt 재설정
+9. **모바일 스킬 버튼 바인딩** — `initKeypad()` 끝에 pointerdown으로 `tryActivateSkill()` 호출.
 
-## 주의사항
-- 토스트는 textContent 대상 아님 (canvas 직접 그리기). 동적 입력 없음 → XSS 무관.
-- 기존 state 초기화 경로(startGame, 재시작 분기)를 모두 찾아 3개 필드 초기화 누락 없도록.
-- `spawnInterval/ttl/chance`는 상수로만 조정 — 난이도별 차등 금지(Sprint 범위).
-- 반응형/저사양: reduced-motion은 깜빡임과 bob·파티클만 차단, 토스트 자체는 정적으로 표시.
-- 픽셀 일관성: drawNote처럼 정수 좌표 + 12×12 히트박스 유지.
+10. **`tryActivateSkill()`**:
+```js
+function tryActivateSkill() {
+  const now = performance.now();
+  if (now < state.skill.readyAt) return;
+  const def = SKILLS[state.characterId] || SKILLS.kim;
+  const fired = executeSkill(state.characterId, now);
+  if (!fired) return;
+  state.skill.lastUsedAt = now;
+  state.skill.readyAt = now + def.cooldownMs;
+  state.skill.activeUntil = now + def.durationMs;
+  state.skill.flashUntil = now + 400;
+  playTone(660, 0.08);
+  setTimeout(() => playTone(880, 0.1), 70);
+  if (!reducedMotion) spawnParticles(state.player.x + 7, state.player.y + 7, 12);
+  updateSkillHud(now);
+}
+```
+
+11. **`executeSkill(id, now)`** — 실패 시 false 반환:
+- **kim**: `invincibleUntil = now + 1000` → true
+- **jung**: player.dir 벡터, `JUNG_DASH_PX`를 TILE/2 간격으로 쪼개 `isWallAt` 체크하며 전진. 경로 중 F 가장 가까운 1개가 `< JUNG_BREAK_RADIUS`면 제거 + 파티클. `invincibleUntil = now + 260` → true
+- **geon**: 플레이어 중심 거리 ≤ `GEON_MAGNET_RADIUS`인 음표 수집 — 기존 음표 수집 공식(combo++, gain, hudScore, updateComboHud) 재실행. 사운드는 마지막 1회만, 파티클 각 위치 4개. 수집 0개면 false (발동 실패).
+- **im**: `activeUntil = now + 2000` → true
+- **lee**: 맵 전 칸 중 `m[r][c]===0`이고 수간호사/이교수로부터 `SPAWN_SAFE_DIST` 이상인 칸들 중 플레이어로부터 맨해튼 거리 최대 칸. `player.x/y = 타일좌상단 + 3`. `invincibleUntil = now + 500`. 파티클 출발·도착 2연. → true
+
+12. **임간호 슬로우 적용** — `update()` 내:
+```js
+const imSlow = (state.characterId === 'im' && performance.now() < state.skill.activeUntil) ? IM_SLOW_FACTOR : 1;
+```
+F 이동 `dt * imSlow`, 청진기 `dt * imSlow`, `updateNurseChief(dt * imSlow, now)`, `updateProfessor(dt * imSlow, now)`. **플레이어 속도는 원본 dt 유지**.
+
+13. **무적 판정** — F/수간호사/이교수/청진기 충돌 블록 진입 직후:
+```js
+if (performance.now() < state.player.invincibleUntil) return; // 블록 스킵
+```
+
+14. **`updateSkillHud(now)`**:
+- `hudSkillLabel.textContent = def.abbr`
+- `prog = 1 - Math.max(0, Math.min(1, (state.skill.readyAt - now) / def.cooldownMs))`
+- `hudSkill.style.setProperty('--skill-prog', String(prog))`
+- 상태 클래스 토글 (`is-skill-ready/cooling/flash`) — HUD와 keypadSkillBtn 동시.
+- 매 프레임 호출 (update 말미).
+
+15. **`endGame()` 정리** — skill 필드 초기화 + HUD 클래스 제거.
+
+16. **`clearDpadPressed()`에 keypadSkillBtn is-pressed 제거 추가**.
+
+17. **테마 토글 시** — `overlaySkill`이 열려 있으면 `renderSkillOverlay()` 재호출하여 아바타 재렌더.
+
+18. **조이콘 매핑** — 기존 매핑이 확인되면 남는 버튼 하나 할당, 없으면 생략.
+
+---
+
+## 밸런스 (게임 45초 기준)
+
+| 캐릭터 | CD | 평균 사용 | 강도 | 리스크 |
+|---|---|---|---|---|
+| kim | 18s | 2~3회 | 중 | 점수 이득 없음 |
+| jung | 22s | 2회 | 상 | F 1개 확정 분쇄 but 짧은 거리 |
+| geon | 20s | 2회 | 상 | 음표 0개면 실패(쿨다운 미소모) |
+| im | 25s | 1~2회 | 상 | 광역 디버프 → CD 최장 |
+| lee | 22s | 2회 | 중상 | 불확정 워프 |
+
+기존 F 즉사 룰·TARGET_SCORE 불변이므로 난이도 곡선 유지.
+
+---
+
+## 수락 기준
+
+1. 5개 캐릭터 각각 의도한 스킬이 작동한다.
+2. 쿨다운 동작: 연타 방지, 18~25s 이후 재사용 가능.
+3. 오버레이 플로우: 난이도 → 캐릭터 → **스킬 설명** → 게임. 뒤로가기 왕복 가능.
+4. 모바일 중앙 버튼으로 스킬 사용 가능 (터치 타겟 48px+).
+5. 데스크톱 Shift/좌우 모두 스킬 사용 가능.
+6. HUD 쿨다운 게이지 시각 반영.
+7. **기존 게임플레이 전부 동일**: 이동/F 회피/음표 수집/콤보/변기/컷씬/엔딩/테마 토글.
+8. `prefers-reduced-motion`에서 애니메이션 비활성.
+9. XSS 없음: `innerHTML`에 동적 주입 금지, 모두 `textContent`/createElement.
+
+---
+
+## 주의
+
+- **범위 위반 방지**: 스프라이트·맵·AI·F 스폰·콤보 공식·난이도 수치 수정 금지.
+- **시그니처 보존**: `updateNurseChief`/`updateProfessor` 본체 불변, 호출부에서 `dt * imSlow`만 스케일.
+- **팬텀 입력**: `clearDpadPressed`에 스킬 버튼 포함.
+- **보안**: `skillCard` 렌더는 `createElement` + `textContent`만 사용.
+- **파일 경로**: `pages/game.html`, `assets/css/game.css` (없으면 기존 게임 CSS 위치), `assets/js/game.js`.

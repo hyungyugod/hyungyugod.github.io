@@ -54,6 +54,13 @@
           <span class="game-hud__label">Best</span>
           <span class="game-hud__value" id="hudBest">0</span>
         </div>
+        <div class="game-hud__slot game-hud__slot--skill" id="hudSkillSlot">
+          <span class="game-hud__label">Skill</span>
+          <span class="game-hud__skill" id="hudSkill" aria-live="polite">
+            <span class="game-hud__skill-ring" aria-hidden="true"></span>
+            <span class="game-hud__skill-label" id="hudSkillLabel">—</span>
+          </span>
+        </div>
       </div>
 
       <div class="game-canvas-wrap">
@@ -94,6 +101,23 @@
             <div class="game-cta">
               <button class="game-btn game-btn--ghost" type="button" id="btnCharacterBack">← 난이도 다시</button>
               <button class="game-btn" type="button" id="btnCharacterConfirm">이 친구로 시작</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 스킬 설명 오버레이 -->
+        <div class="game-overlay is-hidden" id="overlaySkill">
+          <div class="game-overlay__panel game-overlay__panel--skill" role="dialog" aria-labelledby="skillTitle" aria-describedby="skillDesc">
+            <h2 class="game-overlay__title" id="skillTitle">특수 스킬</h2>
+            <div class="game-skill-card" id="skillCard">
+              <!-- JS가 DOM API로 채움: 아바타 canvas + 이름 + 스킬명 + 설명 + 쿨다운 + 키 안내 -->
+            </div>
+            <p class="game-overlay__hint" id="skillKeyHint">
+              <span class="game-controls__key">Shift</span> · 모바일: 십자키 중앙 버튼
+            </p>
+            <div class="game-cta">
+              <button class="game-btn game-btn--ghost" type="button" id="btnSkillBack">← 캐릭터 다시</button>
+              <button class="game-btn" type="button" id="btnSkillStart">시작</button>
             </div>
           </div>
         </div>
@@ -148,6 +172,12 @@
           <button class="game-keypad__btn game-keypad__btn--left"  type="button" data-dir="left"  aria-label="왼쪽으로 이동">◀</button>
           <button class="game-keypad__btn game-keypad__btn--right" type="button" data-dir="right" aria-label="오른쪽으로 이동">▶</button>
           <button class="game-keypad__btn game-keypad__btn--down"  type="button" data-dir="down"  aria-label="아래로 이동">▼</button>
+          <button class="game-keypad__btn game-keypad__skill"
+                  type="button"
+                  id="keypadSkill"
+                  aria-label="스킬 사용">
+            <span class="game-keypad__skill-label" aria-hidden="true">SK</span>
+          </button>
         </div>
       </div>
 
@@ -155,6 +185,7 @@
         <span>이동 <span class="game-controls__key">←↑↓→</span> / <span class="game-controls__key">WASD</span></span>
         <span>수집 <span class="game-controls__key">접촉</span></span>
         <span>모바일: 하단 키패드 또는 화면 터치</span>
+        <span>스킬 <span class="game-controls__key">Shift</span></span>
       </div>
     </section>
 

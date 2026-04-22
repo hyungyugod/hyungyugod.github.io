@@ -899,6 +899,262 @@ html.light .game-overlay--cutscene {
   }
 }
 
+/* =====================================================
+   스킬 시스템 — 오버레이 / HUD 쿨다운 링 / 모바일 중앙 버튼
+   캐릭터별 악센트(--skill-accent)는 data-char로 스코프 주입.
+   ===================================================== */
+
+/* 공통 악센트 폴백 — data-char 미지정 시 브랜드 라이트 톤 */
+.game-overlay__panel--skill,
+.game-keypad__skill,
+.game-hud__slot--skill {
+  --skill-accent: var(--brand-light);
+  --skill-accent-glow: var(--brand-20);
+}
+
+/* 캐릭터별 악센트 스코프 — SPEC 팔레트 */
+.game-overlay__panel--skill[data-char="kim"],
+.game-keypad__skill[data-char="kim"],
+.game-hud__slot--skill[data-char="kim"] {
+  --skill-accent: #d4a49c;
+  --skill-accent-glow: color-mix(in srgb, #d4a49c 30%, transparent);
+}
+
+.game-overlay__panel--skill[data-char="jung"],
+.game-keypad__skill[data-char="jung"],
+.game-hud__slot--skill[data-char="jung"] {
+  --skill-accent: #b8a87a;
+  --skill-accent-glow: color-mix(in srgb, #b8a87a 30%, transparent);
+}
+
+.game-overlay__panel--skill[data-char="geon"],
+.game-keypad__skill[data-char="geon"],
+.game-hud__slot--skill[data-char="geon"] {
+  --skill-accent: #9ab5c4;
+  --skill-accent-glow: color-mix(in srgb, #9ab5c4 30%, transparent);
+}
+
+.game-overlay__panel--skill[data-char="im"],
+.game-keypad__skill[data-char="im"],
+.game-hud__slot--skill[data-char="im"] {
+  --skill-accent: #c9a8d4;
+  --skill-accent-glow: color-mix(in srgb, #c9a8d4 30%, transparent);
+}
+
+.game-overlay__panel--skill[data-char="lee"],
+.game-keypad__skill[data-char="lee"],
+.game-hud__slot--skill[data-char="lee"] {
+  --skill-accent: #e8c588;
+  --skill-accent-glow: color-mix(in srgb, #e8c588 30%, transparent);
+}
+
+/* 스킬 오버레이 패널 — 캐릭터 오버레이와 동일 톤, 악센트 테두리 글로우 */
+.game-overlay__panel--skill {
+  max-width: 420px;
+  text-align: center;
+  border-color: var(--skill-accent);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4),
+              0 0 24px var(--skill-accent-glow);
+  animation: gameSkillCardIn 0.32s ease-out both;
+}
+
+@keyframes gameSkillCardIn {
+  from { transform: translateY(8px); opacity: 0; }
+  to   { transform: translateY(0); opacity: 1; }
+}
+
+.game-skill-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 12px;
+  background: var(--brand-06);
+  border: 1px solid var(--skill-accent);
+  border-radius: var(--radius-sm);
+  backdrop-filter: blur(14px) saturate(1.1);
+  -webkit-backdrop-filter: blur(14px) saturate(1.1);
+}
+
+.game-skill-card__avatar {
+  width: 64px;
+  height: 80px;
+  border: 1px solid var(--skill-accent);
+  border-radius: 4px;
+  background: var(--bg-dark);
+  overflow: hidden;
+  image-rendering: pixelated;
+}
+
+.game-skill-card__avatar-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+}
+
+.game-skill-card__name {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  color: var(--text-muted);
+}
+
+.game-skill-card__skill-name {
+  font-family: var(--font-serif);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--skill-accent);
+  text-shadow: 0 0 12px var(--skill-accent-glow);
+  letter-spacing: 0.4px;
+}
+
+.game-skill-card__desc {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.5;
+  max-width: 280px;
+}
+
+.game-skill-card__cooldown {
+  font-size: 11px;
+  color: var(--text-dim);
+  letter-spacing: 0.3px;
+
+  & b {
+    color: var(--skill-accent);
+    font-weight: 700;
+  }
+}
+
+/* HUD 스킬 슬롯 — 원형 쿨다운 게이지 */
+.game-hud__slot--skill {
+  flex: 0 0 auto;
+  min-width: 42px;
+}
+
+.game-hud__skill {
+  position: relative;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  --skill-prog: 0;
+}
+
+.game-hud__skill-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: conic-gradient(
+    var(--skill-accent) calc(var(--skill-prog) * 360deg),
+    var(--brand-08) 0
+  );
+  /* 내부를 뚫어 링 형태로 — 마스크로 중심을 비움 */
+  -webkit-mask: radial-gradient(circle, transparent 52%, #000 53%);
+          mask: radial-gradient(circle, transparent 52%, #000 53%);
+  transition: background 0.18s linear;
+}
+
+.game-hud__skill-label {
+  position: relative;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-muted);
+  letter-spacing: 0.3px;
+  font-variant-numeric: tabular-nums;
+}
+
+.game-hud__slot--skill.is-skill-ready .game-hud__skill-label {
+  color: var(--skill-accent);
+}
+
+.game-hud__slot--skill.is-skill-ready .game-hud__skill {
+  animation: gameSkillBreath 1.6s ease-in-out infinite;
+}
+
+@keyframes gameSkillBreath {
+  0%, 100% { box-shadow: 0 0 0 0 var(--skill-accent-glow); }
+  50%      { box-shadow: 0 0 10px 2px var(--skill-accent-glow); }
+}
+
+.game-hud__slot--skill.is-skill-cooling .game-hud__skill-label {
+  color: var(--text-dim);
+}
+
+.game-hud__slot--skill.is-skill-flash .game-hud__skill {
+  animation: gameSkillFlash 0.4s ease-out;
+}
+
+@keyframes gameSkillFlash {
+  0%   { filter: brightness(1.9); transform: scale(1.18); }
+  100% { filter: brightness(1);   transform: scale(1); }
+}
+
+/* 모바일 키패드 중앙 스킬 버튼 — 웜 옐로우 악센트(기본은 캐릭터별) */
+.game-keypad__skill {
+  grid-column: 2;
+  grid-row: 2;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  border: 1px solid var(--skill-accent);
+  background: var(--bg-card);
+  color: var(--skill-accent);
+  font-weight: 800;
+  font-size: 15px;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+  backdrop-filter: blur(14px) saturate(1.1);
+  -webkit-backdrop-filter: blur(14px) saturate(1.1);
+  transition: background 0.15s, border-color 0.15s, color 0.15s, box-shadow 0.25s, transform 0.15s var(--spring-bounce);
+
+  &.is-skill-cooling {
+    opacity: 0.45;
+    color: var(--text-dim);
+    border-color: var(--border);
+  }
+
+  &.is-skill-ready {
+    box-shadow: 0 0 18px var(--skill-accent-glow);
+    animation: gameSkillBreath 1.6s ease-in-out infinite;
+  }
+
+  &.is-skill-flash {
+    animation: gameSkillFlash 0.4s ease-out;
+  }
+
+  &:active,
+  &.is-pressed {
+    transform: scale(0.92);
+    background: var(--brand-12);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--skill-accent);
+    outline-offset: 2px;
+  }
+}
+
+.game-keypad__skill-label {
+  pointer-events: none;
+}
+
+/* 초소형 기기 — 스킬 버튼 축소 */
+@media (max-width: 380px) {
+  .game-keypad__skill {
+    width: 60px;
+    height: 60px;
+    font-size: 13px;
+  }
+}
+
 /* 반응형 (520px 이하) */
 @media (max-width: 520px) {
   body.game-page {
@@ -1174,6 +1430,36 @@ html.light .game-overlay--cutscene {
   .game-controls {
     display: none;
   }
+
+  /* 스킬 오버레이 — 모바일 컴팩트 */
+  .game-overlay__panel--skill {
+    max-width: 340px;
+    padding: 14px 12px;
+    gap: 10px;
+  }
+
+  .game-skill-card {
+    padding: 10px;
+    gap: 6px;
+  }
+
+  .game-skill-card__skill-name {
+    font-size: 17px;
+  }
+
+  .game-skill-card__desc {
+    font-size: 11px;
+  }
+
+  /* HUD 스킬 슬롯 — 모바일 축소 */
+  .game-hud__skill {
+    width: 24px;
+    height: 24px;
+  }
+
+  .game-hud__skill-label {
+    font-size: 9px;
+  }
 }
 
 /* 접근성 — reduced motion */
@@ -1221,6 +1507,26 @@ html.light .game-overlay--cutscene {
 
   .game-character-card:hover {
     transform: none;
+  }
+
+  /* 스킬 시스템 — 브레싱/플래시/카드 진입 트랜지션 비활성 */
+  .game-overlay__panel--skill {
+    animation: none;
+  }
+
+  .game-hud__slot--skill.is-skill-ready .game-hud__skill,
+  .game-keypad__skill.is-skill-ready {
+    animation: none;
+    box-shadow: none;
+  }
+
+  .game-hud__slot--skill.is-skill-flash .game-hud__skill,
+  .game-keypad__skill.is-skill-flash {
+    animation: none;
+  }
+
+  .game-keypad__skill {
+    transition: none;
   }
 
   * {
