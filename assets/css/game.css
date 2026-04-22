@@ -24,6 +24,17 @@
   --nurse-bun: #3a2a20;
   --nurse-bun-shadow: #5a4230;
   --nurse-pants: #9ec9e8;
+  /* 이교수(Professor Lee) NPC — 검정 뽀글머리 + 안경 + V넥 검정 자켓 + 흰 셔츠 (수간호사와 명도 대비) */
+  --prof-hair: #1a1216;
+  --prof-hair-shadow: #0c080a;
+  --prof-hair-curl: #2a1e22;
+  --prof-coat: #181418;
+  --prof-coat-shadow: #0a0608;
+  --prof-coat-accent: #3a2e34;
+  --prof-glass-frame: #1f1a1f;
+  --prof-stethoscope: #c8c8d0;
+  --prof-stethoscope-tube: #2a2228;
+  --prof-stethoscope-bell: #d8d4dc;
 }
 
 html.light {
@@ -39,6 +50,17 @@ html.light {
   --nurse-bun: #2e2018;
   --nurse-bun-shadow: #4a3428;
   --nurse-pants: #7fb5d8;
+  /* 라이트 테마 — 살짝 톤업하여 흰 배경에서도 이교수의 검정 실루엣이 잘 식별되도록 */
+  --prof-hair: #221820;
+  --prof-hair-shadow: #120c10;
+  --prof-hair-curl: #3a2a30;
+  --prof-coat: #1f1a20;
+  --prof-coat-shadow: #100a10;
+  --prof-coat-accent: #4a3a44;
+  --prof-glass-frame: #2a242a;
+  --prof-stethoscope: #b0b0b8;
+  --prof-stethoscope-tube: #1f1a20;
+  --prof-stethoscope-bell: #c8c4cc;
 }
 
 body.game-page {

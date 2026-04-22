@@ -5,6 +5,8 @@
   let chiefPaletteCache = null;
   // 김간호(플레이어) 번(Bun) 머리 팔레트 캐시 — 테마 전환 시 무효화 (drawNurse에서 사용)
   let nursePaletteCache = null;
+  // 이교수 색상 팔레트 캐시 — 테마 전환 시 무효화 (drawProfessor / drawStethoscope에서 사용)
+  let professorPaletteCache = null;
 
   // =====================================================
   // 테마 토글 (main.js initThemeToggle과 동일 로직 재현)
@@ -20,6 +22,8 @@
       chiefPaletteCache = null;
       // 김간호 번 팔레트 캐시 무효화 — 동일 이유
       nursePaletteCache = null;
+      // 이교수 팔레트 캐시 무효화 — 동일 이유
+      professorPaletteCache = null;
     });
   }
 
@@ -39,15 +43,27 @@
   const STORAGE_KEY = 'pixelNurseBest';
 
   // 성공 판정 목표 점수 (절대값) — F 즉사 룰 하에서 반복 플레이로 점진적 달성
-  const TARGET_SCORE = { easy: 40, normal: 30, hard: 30 };
+  // 하/상 +10 갱신 — 진입 곡선과 최종 도전치를 모두 강화. 중은 구 상값(30) 유지.
+  const TARGET_SCORE = { easy: 50, normal: 30, hard: 40 };
 
   // 난이도별 기초/최대 속도 + 추가 스폰 주기 + F 상한
   // baseSpeed → maxSpeed: 시간 경과에 따라 선형 보간
   // throwBurst: 수간호사가 한 번 투척 시 동시에 던지는 F 개수
+  // ※ 'normal' 분기: 구 'hard' 파라미터를 격하 수용. 새 'hard'는 강화된 신규 값 + 이교수 등장.
   const DIFFICULTY = {
-    easy:   { baseSpeed: 140, maxSpeed: 210, notes: 5, noteTtl: Infinity, obstacles: 1, obsBaseSpeed: 60,  obsMaxSpeed: 110, stun: 400, map: 'easy',   spawnInterval: [3.5, 2.0], maxObstacles: 2,  throwBurst: 1 },
-    normal: { baseSpeed: 150, maxSpeed: 230, notes: 5, noteTtl: 5500,     obstacles: 3, obsBaseSpeed: 120, obsMaxSpeed: 210, stun: 500, map: 'normal', spawnInterval: [1.6, 0.6], maxObstacles: 6,  throwBurst: 2 },
-    hard:   { baseSpeed: 160, maxSpeed: 250, notes: 4, noteTtl: 3500,     obstacles: 5, obsBaseSpeed: 170, obsMaxSpeed: 290, stun: 700, map: 'hard',   spawnInterval: [1.0, 0.35], maxObstacles: 10, throwBurst: 3 }
+    easy:   { baseSpeed: 140, maxSpeed: 210, notes: 5, noteTtl: Infinity, obstacles: 1, obsBaseSpeed: 60,  obsMaxSpeed: 110, stun: 400, map: 'easy', spawnInterval: [3.5, 2.0],  maxObstacles: 2,  throwBurst: 1 },
+    normal: { baseSpeed: 160, maxSpeed: 250, notes: 4, noteTtl: 3500,     obstacles: 5, obsBaseSpeed: 170, obsMaxSpeed: 290, stun: 700, map: 'hard', spawnInterval: [1.0, 0.35], maxObstacles: 10, throwBurst: 3 },
+    hard:   { baseSpeed: 160, maxSpeed: 250, notes: 4, noteTtl: 2800,     obstacles: 6, obsBaseSpeed: 200, obsMaxSpeed: 340, stun: 700, map: 'hard', spawnInterval: [0.8, 0.25], maxObstacles: 14, throwBurst: 4 }
+  };
+
+  // 이교수(Professor Lee) — 상 난이도 전용 듀얼 보스 NPC.
+  // 청진기를 던져 플레이어를 2초간 그 자리에 묶어두는 "협공 압박" 메커닉의 핵심.
+  const PROFESSOR = {
+    patrolSpeed: 70,            // px/s — 수간호사보다 살짝 느리고, 새 hard 수간호사(100)와 차등
+    throwInterval: [2.5, 1.4],  // sec — 시간 경과 보간 (curveT)
+    stethoSpeed: 220,           // px/s — 청진기 투사체 속도
+    stethoMax: 4,               // 동시 투사체 상한
+    freezeDuration: 2000        // ms — 피격 시 정지 디버프 시간
   };
 
   // 콤보 단계별 수집 사운드 — C장조 스케일 (C4→D4→E4→G4→A4→C5→D5→E5→G5→A5)
@@ -593,10 +609,11 @@
     running: false,
     difficulty: 'easy',
     map: null,
-    player: { x: 0, y: 0, w: 14, h: 14, dir: 'down', frameAcc: 0, frame: 0, stunUntil: 0 },
-    notes: [],      // {x, y, born, bobSeed}
-    obstacles: [],  // {x, y, dx, dy}
-    particles: [],  // {x, y, vx, vy, life, maxLife}
+    player: { x: 0, y: 0, w: 14, h: 14, dir: 'down', frameAcc: 0, frame: 0, stunUntil: 0, frozenUntil: 0 },
+    notes: [],         // {x, y, born, bobSeed}
+    obstacles: [],     // {x, y, dx, dy}
+    stethoscopes: [],  // {x, y, dx, dy, born} — 이교수 청진기 투사체
+    particles: [],     // {x, y, vx, vy, life, maxLife}
     keys: Object.create(null),
     score: 0,
     combo: 0,
@@ -621,6 +638,19 @@
       throwTimer: 0,       // 다음 투척까지 남은 초
       telegraphUntil: 0,   // 느낌표(!) 텔레그래프 종료 시각(ms)
       throwArmUntil: 0,    // 팔 올림 프레임 종료 시각(ms)
+      active: false
+    },
+    // 이교수 NPC — 상 난이도에서만 active=true. 청진기를 투척해 플레이어를 2초간 정지시킨다.
+    professor: {
+      x: 0, y: 0,
+      dir: 'down',
+      frameAcc: 0,
+      frame: 0,
+      patrolPath: [],
+      patrolIdx: 0,
+      throwTimer: 0,
+      telegraphUntil: 0,
+      throwArmUntil: 0,
       active: false
     }
   };
@@ -757,10 +787,13 @@
       state.timeLeft = GAME_DURATION;
       state.notes = [];
       state.obstacles = [];
+      state.stethoscopes = [];
       state.particles = [];
       state.keys = Object.create(null);
       state.gameoverReason = null;
       state.nurseChief.active = false;
+      state.professor.active = false;
+      state.player.frozenUntil = 0;
       // HUD 리셋
       hudTime.textContent = String(GAME_DURATION);
       hudTime.classList.remove('is-warning');
@@ -837,6 +870,7 @@
     state.timeLeft = GAME_DURATION;
     state.notes = [];
     state.obstacles = [];
+    state.stethoscopes = [];
     state.particles = [];
     state.keys = Object.create(null);
     clearDpadPressed();
@@ -847,12 +881,20 @@
     state.player.frame = 0;
     state.player.frameAcc = 0;
     state.player.stunUntil = 0;
+    state.player.frozenUntil = 0;
 
     // 컷씬 추적 Set 초기화
     state.cutscenesShown = new Set();
 
     // 수간호사 NPC 초기화 — 난이도별 패트롤 경로
     initNurseChief();
+
+    // 이교수 NPC 초기화 — 상 난이도 전용. 그 외 난이도는 명시적으로 비활성화.
+    if (state.difficulty === 'hard') {
+      initProfessor();
+    } else {
+      state.professor.active = false;
+    }
 
     // 비네트/셰이크 잔존 클래스 정리
     if (canvasWrap) {
@@ -1105,7 +1147,8 @@
         { x: rightX, y: bottomY },
         { x: leftX, y: bottomY }
       ];
-      chief.speed = 80;
+      // 상 난이도 강화 — 80→100 (이교수와 협공 시 압박 가중)
+      chief.speed = 100;
     }
 
     // 플레이어 스폰 지점과 가장 먼 순찰 포인트에서 시작 — 첫 프레임 본체 충돌 즉사 방지
@@ -1244,6 +1287,321 @@
     playTone(220, 0.06);
   }
 
+  // =====================================================
+  // 이교수(Professor Lee) NPC — 상 난이도 전용 듀얼 보스
+  //   · 16×20 픽셀 스프라이트 (수간호사와 동일 사이즈)
+  //   · 검정 뽀글머리 + 안경 + V넥 검정 자켓 + 흰 셔츠 — 흰옷 백발 수간호사와 시각적 대비
+  //   · 청진기 투척으로 플레이어를 2초간 정지(frozenUntil)
+  // =====================================================
+  function professorSprite(dir, frame, throwArm) {
+    const base = [
+      '................', // 0
+      '....HHHHHHHH....', // 1 머리 윗단
+      '...HcHHHHHHcH...', // 2 뽀글 컬 하이라이트
+      '..HcHHHHHHHHcH..', // 3 머리 폭 최대 (뽀글 인상)
+      '..HHHSSSSSSHHH..', // 4 헤어라인 + 이마
+      '..HHSSSSSSSSHH..', // 5
+      '..HhSGGSSGGShH..', // 6 안경테
+      '..HhSGgSSgGShH..', // 7 안경 렌즈
+      '..HhSSNSSNSShH..', // 8 눈 밑 음영
+      '..HhSSSMMSSShH..', // 9 입 (얇은 한 줄)
+      '..HhhSNNNNShhH..', // 10 턱 + 머리 어깨까지 흘러내림
+      '...JJAAWWAAJJ...', // 11 자켓 어깨 + V넥 + 흰 셔츠
+      '..JJJJAWWAJJJJ..', // 12
+      '..JjjjAWWAjjjJ..', // 13 자켓 음영
+      '..JJJJJJJJJJJJ..', // 14
+      '...JJJJJJJJJJ...', // 15
+      '....JJJ..JJJ....', // 16 하의
+      '....JJJ..JJJ....', // 17
+      '....BB....BB....', // 18 구두
+      '....BB....BB....'  // 19
+    ];
+
+    // 방향별 얼굴 — up은 뒷통수 (안경/입 제거), 좌우는 안경/입을 편향
+    if (dir === 'up') {
+      base[4] = '..HHHHHHHHHHHH..';
+      base[5] = '..HhHHHHHHHHhH..';
+      base[6] = '..HhHHHHHHHHhH..';
+      base[7] = '..HhHHHHHHHHhH..';
+      base[8] = '..HhHHHHHHHHhH..';
+      base[9] = '..HhHHHHHHHHhH..';
+      base[10] = '..HhhHHHHHHHhH..';
+    } else if (dir === 'left') {
+      base[6] = '..HhSSSSSSGGSH..';
+      base[7] = '..HhSSSSSSgGSH..';
+      base[8] = '..HhSSSSSSNSSH..';
+      base[9] = '..HhSSSMMSSSSH..';
+    } else if (dir === 'right') {
+      base[6] = '..HSGGSSSSSShH..';
+      base[7] = '..HSGgSSSSSShH..';
+      base[8] = '..HSSNSSSSSShH..';
+      base[9] = '..HSSSSMMSSShH..';
+    }
+
+    // 걷기 프레임 — 발만 교차
+    if (frame === 1) {
+      base[18] = '....BB...BBB....';
+      base[19] = '....BBB...BB....';
+    } else if (frame === 2) {
+      base[18] = '....BBB...BB....';
+      base[19] = '....BB...BBB....';
+    }
+
+    // 투척 자세 — 자켓 소매(J)를 어깨 위로 올린 실루엣
+    if (throwArm) {
+      if (dir === 'left') {
+        base[10] = '..JJhSNNNNShhH..';
+        base[11] = '..JJJJAAWWAAJJ..';
+      } else if (dir === 'right') {
+        base[10] = '..HhhSNNNNShJJ..';
+        base[11] = '..JJAAWWAAJJJJ..';
+      } else {
+        base[10] = '..JJhSNNNNShJJ..';
+        base[11] = '..JJJAAWWAAJJJ..';
+      }
+    }
+
+    return base;
+  }
+
+  /**
+   * 이교수 팔레트 — CSS 변수에서 읽어 테마 반응형 (캐시 + 테마 토글 시 무효화)
+   */
+  function getProfessorPalette() {
+    if (professorPaletteCache) return professorPaletteCache;
+    const rootStyle = getComputedStyle(document.documentElement);
+    const readVar = (name, fallback) => {
+      const v = rootStyle.getPropertyValue(name).trim();
+      return v || fallback;
+    };
+    professorPaletteCache = {
+      'S': '#f5d5c0',                                          // 피부
+      'N': '#c08878',                                          // 피부 음영
+      'H': readVar('--prof-hair', '#1a1216'),                  // 검정 뽀글머리
+      'h': readVar('--prof-hair-shadow', '#0c080a'),           // 머리 음영
+      'c': readVar('--prof-hair-curl', '#2a1e22'),             // 컬 하이라이트
+      'G': readVar('--prof-glass-frame', '#1f1a1f'),           // 안경테
+      'g': '#e8c8b8',                                          // 렌즈 안 (피부 톤)
+      'M': '#5a3030',                                          // 입
+      'J': readVar('--prof-coat', '#181418'),                  // 검정 자켓
+      'j': readVar('--prof-coat-shadow', '#0a0608'),           // 자켓 음영
+      'A': readVar('--prof-coat-accent', '#3a2e34'),           // V넥 칼라
+      'W': '#e8e4e8',                                          // 흰 셔츠
+      'B': '#0a0608'                                           // 검정 구두
+    };
+    return professorPaletteCache;
+  }
+
+  function drawProfessor(x, y, dir, frame, throwArm) {
+    const sprite = professorSprite(dir, frame, throwArm);
+    const palette = getProfessorPalette();
+    const SCALE = 2;
+    const ox = Math.round(x) - 8;
+    let oy = Math.round(y) - 24;
+    if (frame !== 0 && !reducedMotion) oy -= 1;
+    for (let r = 0; r < 20; r++) {
+      const row = sprite[r];
+      for (let c = 0; c < 16; c++) {
+        const ch = row[c];
+        if (ch === '.' || !palette[ch]) continue;
+        ctx.fillStyle = palette[ch];
+        ctx.fillRect(ox + c * SCALE, oy + r * SCALE, SCALE, SCALE);
+      }
+    }
+  }
+
+  /**
+   * 청진기 투사체 — 14×8 픽셀 도트 스프라이트, 비행 중 자체 회전
+   * @param {number} x - 중심 x
+   * @param {number} y - 중심 y
+   * @param {number} rot - 라디안 회전 (reduced-motion 시 0 권장)
+   */
+  function drawStethoscope(x, y, rot) {
+    const palette = getProfessorPalette();
+    const tubeColor = palette['J'] || '#181418';
+    const bellColor = getComputedStyle(document.documentElement).getPropertyValue('--prof-stethoscope-bell').trim() || '#d8d4dc';
+    const rimColor = getComputedStyle(document.documentElement).getPropertyValue('--prof-stethoscope').trim() || '#c8c8d0';
+    const tubeStrong = getComputedStyle(document.documentElement).getPropertyValue('--prof-stethoscope-tube').trim() || '#2a2228';
+
+    // 14×8 도트 매트릭스 (t=튜브, B=벨, m=림)
+    const sprite = [
+      '..tt......tt..',
+      '..tt......tt..',
+      '..tt......tt..',
+      '...tt....tt...',
+      '....tttttt....',
+      '....tBBBBt....',
+      '....BBBBBB....',
+      '.....mmmm.....'
+    ];
+    const SCALE = 2;
+    const W = 14, H = 8;
+    const halfW = (W * SCALE) / 2;
+    const halfH = (H * SCALE) / 2;
+
+    ctx.save();
+    ctx.translate(Math.round(x), Math.round(y));
+    if (rot && !reducedMotion) ctx.rotate(rot);
+    for (let r = 0; r < H; r++) {
+      const row = sprite[r];
+      for (let c = 0; c < W; c++) {
+        const ch = row[c];
+        if (ch === '.') continue;
+        if (ch === 't') ctx.fillStyle = tubeStrong || tubeColor;
+        else if (ch === 'B') ctx.fillStyle = bellColor;
+        else if (ch === 'm') ctx.fillStyle = rimColor;
+        ctx.fillRect(-halfW + c * SCALE, -halfH + r * SCALE, SCALE, SCALE);
+      }
+    }
+    ctx.restore();
+  }
+
+  /**
+   * 이교수 텔레그래프(!) — 코럴핑크로 표시하여 수간호사(빨강)와 시각적 구분
+   */
+  function drawProfessorTelegraph(x, y, now) {
+    const ox = Math.round(x);
+    const oy = Math.round(y) - 42;
+    const coral = isLightTheme() ? '#e85a6a' : '#ff7b7b';
+    if (!reducedMotion && Math.floor(now / 120) % 2 === 0) return;
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(ox - 2, oy, 6, 8);
+    ctx.fillRect(ox - 1, oy + 9, 4, 3);
+    ctx.fillStyle = coral;
+    ctx.fillRect(ox - 1, oy + 1, 4, 6);
+    ctx.fillRect(ox, oy + 10, 2, 2);
+  }
+
+  /**
+   * 이교수 초기화 — 상 난이도 startGame에서만 호출
+   * 패트롤 경로: 수간호사(외곽 4모서리)와 다른 내부 8자 경로로 협공 동선 형성
+   * 첫 진입 위치: 플레이어 spawn에서 가장 먼 점 (첫 프레임 즉사 방지)
+   */
+  function initProfessor() {
+    const prof = state.professor;
+    const leftX = TILE * 6;
+    const rightX = TILE * (COLS - 7);
+    const topY = TILE * 5;
+    const bottomY = TILE * (ROWS - 6);
+
+    // 8자(figure-8) 패트롤 — 4모서리 순환의 수간호사와 다른 동선
+    prof.patrolPath = [
+      { x: leftX,  y: topY },
+      { x: rightX, y: bottomY },
+      { x: rightX, y: topY },
+      { x: leftX,  y: bottomY }
+    ];
+
+    // 플레이어 spawn에서 가장 먼 포인트 선택 (farthest-first)
+    const spawnPx = state.player.x + state.player.w / 2;
+    const spawnPy = state.player.y + state.player.h / 2;
+    let farIdx = 0;
+    let farDist = -1;
+    for (let i = 0; i < prof.patrolPath.length; i++) {
+      const pt = prof.patrolPath[i];
+      const d = Math.hypot(pt.x - spawnPx, pt.y - spawnPy);
+      if (d > farDist) { farDist = d; farIdx = i; }
+    }
+    prof.patrolIdx = farIdx;
+    prof.x = prof.patrolPath[farIdx].x;
+    prof.y = prof.patrolPath[farIdx].y;
+    prof.dir = 'down';
+    prof.frame = 0;
+    prof.frameAcc = 0;
+    prof.telegraphUntil = 0;
+    prof.throwArmUntil = 0;
+    prof.active = true;
+    // 첫 청진기 투척까지 3.0s 대기 (게임 시작 직후 스턴 방지)
+    prof.throwTimer = 3.0;
+  }
+
+  /**
+   * 이교수 업데이트 — 패트롤 + 청진기 투척 타이머 (drawNurseChief의 패턴 미러링)
+   * @param {number} dt - 델타타임(s)
+   * @param {number} now - 현재 시각(ms)
+   */
+  function updateProfessor(dt, now) {
+    const prof = state.professor;
+    if (!prof.active || !prof.patrolPath.length) return;
+
+    // 패트롤 이동
+    const target = prof.patrolPath[prof.patrolIdx];
+    const dx = target.x - prof.x;
+    const dy = target.y - prof.y;
+    const dist = Math.hypot(dx, dy);
+    const step = PROFESSOR.patrolSpeed * dt;
+
+    if (dist <= step || dist < 0.5) {
+      prof.x = target.x;
+      prof.y = target.y;
+      prof.patrolIdx = (prof.patrolIdx + 1) % prof.patrolPath.length;
+    } else {
+      prof.x += (dx / dist) * step;
+      prof.y += (dy / dist) * step;
+      if (Math.abs(dx) > Math.abs(dy)) {
+        prof.dir = dx > 0 ? 'right' : 'left';
+      } else {
+        prof.dir = dy > 0 ? 'down' : 'up';
+      }
+    }
+
+    // 걷기 프레임
+    if (!reducedMotion) {
+      prof.frameAcc += dt;
+      if (prof.frameAcc > 0.18) {
+        prof.frameAcc = 0;
+        prof.frame = prof.frame === 1 ? 2 : 1;
+      }
+    } else {
+      prof.frame = 0;
+    }
+
+    // 청진기 투척 타이머 — 0.4s 텔레그래프 후 발사
+    if (prof.telegraphUntil > 0 && now >= prof.telegraphUntil) {
+      prof.telegraphUntil = 0;
+      // 동시 청진기 상한 체크
+      if (state.stethoscopes.length < PROFESSOR.stethoMax) {
+        spawnStethoscopeFromProfessor();
+      }
+      prof.throwArmUntil = now + 180;
+      // 다음 투척 — 시간 경과 보간
+      const intervalSec = lerp(PROFESSOR.throwInterval[0], PROFESSOR.throwInterval[1], curveT());
+      prof.throwTimer = intervalSec;
+    } else if (prof.telegraphUntil === 0) {
+      prof.throwTimer -= dt;
+      if (prof.throwTimer <= 0) {
+        prof.telegraphUntil = now + 400;
+      }
+    }
+  }
+
+  /**
+   * 청진기 투사체 발사 — 발사 시점 플레이어 중심을 향한 단위 벡터 × stethoSpeed
+   */
+  function spawnStethoscopeFromProfessor() {
+    const prof = state.professor;
+    const p = state.player;
+    const px = p.x + p.w / 2;
+    const py = p.y + p.h / 2;
+    const dx = px - prof.x;
+    const dy = py - prof.y;
+    const len = Math.hypot(dx, dy) || 1;
+    const ndx = dx / len;
+    const ndy = dy / len;
+    // 시작 위치 — 이교수 바로 앞 12px 오프셋
+    const sx = prof.x + ndx * 12;
+    const sy = prof.y + ndy * 12;
+    state.stethoscopes.push({
+      x: sx,
+      y: sy,
+      dx: ndx,
+      dy: ndy,
+      born: performance.now()
+    });
+    // 효과음 — 약간 더 무거운 톤 (수간호사 F와 구분)
+    playTone(180, 0.07);
+  }
+
   /**
    * 파티클 스폰 — 수집 쾌감 시각화 (C8)
    * reduced-motion에선 호출 측에서 생략
@@ -1293,10 +1651,13 @@
     const diff = DIFFICULTY[state.difficulty];
     const p = state.player;
     const stunned = now < p.stunUntil;
+    // 청진기 피격 시 2초간 자리에 묶임 — stun과 별개 필드 (즉사 X, 입력만 차단)
+    const frozen = now < p.frozenUntil;
+    const immobile = stunned || frozen;
 
     // 이동
     let vx = 0, vy = 0;
-    if (!stunned) {
+    if (!immobile) {
       if (state.keys.up) { vy -= 1; p.dir = 'up'; }
       if (state.keys.down) { vy += 1; p.dir = 'down'; }
       if (state.keys.left) { vx -= 1; p.dir = 'left'; }
@@ -1352,6 +1713,25 @@
 
     // 수간호사 NPC 업데이트 — 패트롤 이동 + 투척 타이머 처리
     updateNurseChief(dt, now);
+
+    // 이교수 NPC 업데이트 — 상 난이도 전용 (active=false면 함수 내부 가드)
+    updateProfessor(dt, now);
+
+    // 청진기 투사체 이동 — 직선 비행, 벽/화면 밖 도달 시 소멸 (관통 X)
+    {
+      const sStep = PROFESSOR.stethoSpeed * dt;
+      for (let i = state.stethoscopes.length - 1; i >= 0; i--) {
+        const s = state.stethoscopes[i];
+        s.x += s.dx * sStep;
+        s.y += s.dy * sStep;
+        // 화면 밖 또는 벽 충돌 → 소멸
+        if (s.x < TILE / 2 || s.x > CANVAS_W - TILE / 2 ||
+            s.y < TILE / 2 || s.y > CANVAS_H - TILE / 2 ||
+            (state.map && isWallAt(state.map, s.x - 6, s.y - 6, 12, 12))) {
+          state.stethoscopes.splice(i, 1);
+        }
+      }
+    }
 
     // 음표 만료 & 보충
     if (diff.noteTtl !== Infinity) {
@@ -1424,6 +1804,53 @@
         state.gameoverReason = 'hit';
         endGame();
         return;
+      }
+    }
+
+    // 이교수 본체 충돌 — 수간호사와 동일하게 즉사 처리
+    if (state.professor.active) {
+      const prof = state.professor;
+      const PROF_HB = 14;
+      const cx = prof.x - PROF_HB / 2;
+      const cy = prof.y - PROF_HB / 2;
+      if (p.x < cx + PROF_HB && p.x + p.w > cx &&
+          p.y < cy + PROF_HB && p.y + p.h > cy) {
+        state.hits += 1;
+        state.combo = 0;
+        updateComboHud(false);
+
+        playTone(110, 0.25);
+        setTimeout(() => playTone(82, 0.35), 100);
+
+        if (canvasWrap && !reducedMotion) {
+          canvasWrap.classList.remove('is-shake');
+          void canvasWrap.offsetWidth;
+          canvasWrap.classList.add('is-shake', 'is-gameover');
+        }
+
+        state.gameoverReason = 'hit';
+        endGame();
+        return;
+      }
+    }
+
+    // 청진기 투사체 충돌 — 즉사 X, 2초 정지(frozenUntil) + 콤보 리셋 + 청진기 소멸
+    // hits를 증가시키지 않으므로 정확도 통계가 디버프로 인해 깎이지 않는다.
+    for (let i = state.stethoscopes.length - 1; i >= 0; i--) {
+      const s = state.stethoscopes[i];
+      // 충돌 박스 12×12 (스프라이트 14×8보다 약간 넉넉하게)
+      const sx = s.x - 6;
+      const sy = s.y - 6;
+      if (p.x < sx + 12 && p.x + p.w > sx &&
+          p.y < sy + 12 && p.y + p.h > sy) {
+        state.stethoscopes.splice(i, 1);
+        p.frozenUntil = now + PROFESSOR.freezeDuration;
+        // 콤보 끊김 — F 피격과 동일하게 흐름 단절감 부여
+        state.combo = 0;
+        updateComboHud(false);
+        // 효과음 — 둔탁한 2연타 (F의 110/82 저음 2연타와 구분되는 중역대)
+        playTone(440, 0.08);
+        setTimeout(() => playTone(220, 0.15), 100);
       }
     }
 
@@ -1514,11 +1941,46 @@
       }
     }
 
-    // 플레이어
+    // 이교수 NPC — 수간호사 다음 층(겹칠 시 위에 그림)
+    const prof = state.professor;
+    if (prof.active) {
+      const profThrowArm = now < prof.throwArmUntil || prof.telegraphUntil > 0;
+      drawProfessor(prof.x, prof.y, prof.dir, prof.frame, profThrowArm);
+      if (prof.telegraphUntil > 0 && now < prof.telegraphUntil) {
+        drawProfessorTelegraph(prof.x, prof.y, now);
+      }
+    }
+
+    // 청진기 투사체 — 비행 중 자체 회전 (reduced-motion 시 회전 비활성)
+    if (state.stethoscopes.length > 0) {
+      const rot = reducedMotion ? 0 : (now / 100) % (Math.PI * 2);
+      for (const s of state.stethoscopes) {
+        drawStethoscope(s.x, s.y, rot);
+      }
+    }
+
+    // 플레이어 — stun(F 즉사 잔상)/frozen(청진기 정지) 시 깜빡임
     const p = state.player;
     const stunned = now < p.stunUntil;
-    if (!stunned || Math.floor(now / 80) % 2 === 0) {
+    const frozen = now < p.frozenUntil;
+    // reduced-motion: 깜빡임 비활성, 항상 그림
+    const blinkVisible = reducedMotion || (!stunned && !frozen) || Math.floor(now / 80) % 2 === 0;
+    if (blinkVisible) {
       drawNurse(p.x, p.y, p.dir, p.frame);
+      // frozen 중일 때 발 밑 청진기 정지 인디케이터 — 코럴톤 작은 호
+      if (frozen) {
+        const coral = isLightTheme() ? '#e85a6a' : '#ff7b7b';
+        const cx = Math.round(p.x + p.w / 2);
+        const cy = Math.round(p.y + p.h + 4);
+        ctx.save();
+        ctx.fillStyle = coral;
+        // 8×4 작은 청진기 잔상 (도트)
+        ctx.fillRect(cx - 4, cy, 1, 1);
+        ctx.fillRect(cx + 3, cy, 1, 1);
+        ctx.fillRect(cx - 3, cy + 1, 6, 1);
+        ctx.fillRect(cx - 2, cy + 2, 4, 1);
+        ctx.restore();
+      }
     }
 
     // 파티클 — 3~4px 네모, 수명에 따라 알파 감쇠 (C8)
@@ -1739,7 +2201,8 @@
    * 초기 로드 시 / "난이도 다시 선택" 복귀 시 호출
    */
   function renderPreview() {
-    const previewMap = buildMap(state.difficulty || 'easy');
+    const diff = state.difficulty || 'easy';
+    const previewMap = buildMap(DIFFICULTY[diff] ? DIFFICULTY[diff].map : 'easy');
     ctx.fillStyle = isLightTheme() ? '#e8e7ec' : '#09080f';
     ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
     drawMap(previewMap);
@@ -1748,6 +2211,12 @@
     // 수간호사 (좌측 중앙) + F 한 장 — 던지기 직전 구도
     drawNurseChief(TILE * 11 + 2, TILE * 9 + 2, 'right', 0, true);
     drawObstacle(TILE * 15 + 4, TILE * 9 + 4);
+    // 상 난이도 — 이교수도 함께 표시하여 신규 적의 존재를 사전 예고
+    if (diff === 'hard') {
+      drawProfessor(TILE * 6 + 2, TILE * 5 + 2, 'right', 0, true);
+      // 청진기 한 장 — 비행 중 회전 0 (정지 미리보기)
+      drawStethoscope(TILE * 9, TILE * 7, 0);
+    }
   }
 
   // 기본 난이도 easy 활성 표시는 이미 HTML에서 aria-checked="true"
