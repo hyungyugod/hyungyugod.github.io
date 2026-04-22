@@ -877,6 +877,8 @@ html.light .game-overlay--cutscene {
 #overlayEnd .game-overlay__panel--end {
   max-width: 380px;
   max-height: calc(100% - 16px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 16px 18px;
   gap: 10px;
 
