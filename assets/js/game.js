@@ -2056,10 +2056,15 @@
     initDualDpad();
   }
 
+  // 좌/우 양쪽 D-pad가 동일 dir 버튼을 공유하므로, 한쪽을 떼도 다른 쪽이
+  // 여전히 눌려 있다면 `state.keys[dir]`을 유지하기 위한 레퍼런스 카운터.
+  // `clearDpadPressed()`에서 함께 0으로 리셋한다.
+  const dpadPressCount = { up: 0, down: 0, left: 0, right: 0 };
+
   /**
    * 닌텐도 조이콘 스타일 듀얼 D-pad 초기화.
-   * 좌(위/왼쪽/아래) + 우(위/오른쪽/아래) 총 6버튼을 Pointer Events로 바인딩해
-   * `state.keys[dir]` 레일에 직접 반영한다. 동시 입력(대각선) 지원.
+   * 좌/우 양쪽 모두 상/하/좌/우 4방향 크로스 패드(총 8버튼)를 Pointer Events로 바인딩해
+   * `state.keys[dir]` 레일에 직접 반영한다. 동시 입력(대각선) 및 양손 공동 입력 지원.
    */
   function initDualDpad() {
     const root = document.getElementById('gameJoycons');
@@ -2075,15 +2080,18 @@
 
       const release = () => {
         activePointerId = null;
-        state.keys[dir] = false;
+        dpadPressCount[dir] = Math.max(0, dpadPressCount[dir] - 1);
+        if (dpadPressCount[dir] === 0) state.keys[dir] = false;
         btn.classList.remove('is-pressed');
       };
 
       btn.addEventListener('pointerdown', (e) => {
         if (isAnyOverlayOpen()) return;
+        if (activePointerId !== null) return; // 같은 버튼 중복 포인터 가드
         e.preventDefault();
         activePointerId = e.pointerId;
         try { btn.setPointerCapture(e.pointerId); } catch (_) { /* capture 실패 무시 */ }
+        dpadPressCount[dir] += 1;
         state.keys[dir] = true;
         btn.classList.add('is-pressed');
       });
@@ -2101,11 +2109,16 @@
   }
 
   /**
-   * 오버레이 전환 시 조이콘의 `is-pressed` 잔존 상태를 정리.
+   * 오버레이 전환 시 조이콘의 `is-pressed` 잔존 상태와 프레스 카운터를 동시에 리셋.
+   * 카운터를 리셋하지 않으면 오버레이 해제 후 팬텀 입력이 남을 수 있다.
    */
   function clearDpadPressed() {
     const pressed = document.querySelectorAll('#gameJoycons .game-joycon__btn.is-pressed');
     pressed.forEach((b) => b.classList.remove('is-pressed'));
+    dpadPressCount.up = 0;
+    dpadPressCount.down = 0;
+    dpadPressCount.left = 0;
+    dpadPressCount.right = 0;
   }
 
   /**

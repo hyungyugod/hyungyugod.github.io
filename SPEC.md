@@ -1,84 +1,85 @@
 # SPEC.md
 
 ## 개요
-`pages/game.html`의 미니게임에서 세 가지를 개선한다: (1) 모바일에서 키패드(듀얼 조이콘)가 나타나지 않고 캔버스가 뷰포트에 맞게 줄어들지 않는 버그 수정, (2) 게임 시작 직후 뜨는 인트로 컷씬("어느 한적한 병동의 오후") 본문에 해당 스테이지 목표 개수 표시, (3) 상 난이도(hard)에서는 해당 인트로 컷씬 문구를 이교수 청진기 내러티브로 분기.
+게임 페이지의 모바일(가로 터치) 듀얼 D-pad를 현재 "좌측=상/좌/하, 우측=상/우/하"로 나뉜 분할 배치에서, **양쪽 모두 상/하/좌/우 4방향이 모두 있는 풀 D-pad**로 변경한다. 어느 손으로 잡아도 네 방향 모두를 조작할 수 있게 하여 한손 플레이·좌우 스왑을 자유롭게 한다.
 
 ## 변경 유형
-**기능** (혼합 요소 포함하나 주축은 로직·반응형 분기이므로 기능 평가 기준 적용)
+**기능** (주로 JS 입력 로직 수정 + HTML 버튼 추가 + CSS 그리드 재배치. 시각 정체성은 기존과 동일.)
 
 ## 디자인 언어 & 의도
-모바일 플레이어가 핸드폰을 잡자마자 "게임판이 손 안에 들어온" 느낌을 받도록 한다 — 캔버스는 실제 뷰포트에 맞춰 줄어들고, 양옆에 글래스모피즘 조이콘이 뜨며, 세로 모드에서는 부드러운 회전 안내가 뜬다. 또한 인트로 컷씬은 난이도마다 약간씩 다른 "오늘의 병동 풍경"을 전달해, 플레이 전부터 이번 판의 긴장도(목표 점수 + 보스 존재 여부)를 한 문장으로 각인시킨다.
+기존 조이콘의 글래스/코럴핑크 톤과 원형 버튼 언어는 그대로 유지하되, **좌우 대칭 미러드 4-key 크로스 패드**로 확장한다. 어느 쪽을 엄지로 쓰든 동일한 조작 경험을 보장하여 "어느 손이든 편한 쪽을 골라라"는 관대한 모바일 UX를 전달한다.
 
 ## Sprint 범위 계약
-Generator가 SPEC 외 변경을 하려 할 때의 판단 기준:
-- **허용**: 모바일 검출 리팩터에 필수적인 CSS 미디어 쿼리 재배치/추가, 기존 `@media (max-width: 520px)` 블록 내부의 불가피한 값 재조정, `CUTSCENES` 상수 구조 변경에 따른 `triggerCutscene()` 호출부 최소 수정.
-- **금지**: 새 효과(파티클/사운드/애니메이션) 추가, 인트로 외 컷씬(mid1/mid2) 문구 변경, 게임 밸런스(속도·스폰·TARGET_SCORE) 수정, `index.html`·`assets/css/style.css`·`assets/js/main.js`의 수정(이번 변경은 전부 `pages/game.html` + `assets/css/game.css` + `assets/js/game.js`에 국한).
-- **판단 기준**: "이 변경이 없으면 SPEC 3개 기능이 제대로 동작하지 않는가?" YES면 허용, NO면 금지.
-
----
-
-## 이전 코드가 모바일에서 왜 안 됐는지 — 원인 분석
-
-핵심 버그 한 줄 요약: **조이콘과 모바일 전용 레이아웃이 전부 `@media (max-width: 520px)`에 의존하는데, 가로 모드에서 현대 폰의 뷰포트 폭은 대부분 520px을 넘는다.**
-
-세부 원인:
-1. `assets/css/game.css`의 `@media (max-width: 520px) and (orientation: landscape)`에서만 `.game-joycons`가 `display: flex`로 전환되고, 같은 조건에서만 `.game-canvas-wrap`이 `max-width: calc(100vw - 280px)` 규칙으로 축소된다. 그러나 landscape 시 viewport의 짧은 쪽(height)은 375~430 수준이어도 **긴 쪽(width)이 667~932**가 된다 (iPhone 14 Pro landscape 852×393, 갤럭시 S22 landscape 800×360). 즉 `max-width: 520px` 조건이 **거짓**이 되어 데스크톱 레이아웃으로 폴백 → 조이콘 미노출 + 캔버스 원본 크기 유지.
-2. `@media (max-width: 520px) and (orientation: portrait)`에 묶인 `.game-joycons { display: none !important }` 역시 같은 이유로, 일부 폰(iPhone Pro Max 등)에서 portrait 폭 414~430이어도 조건은 일단 맞지만, landscape로 전환하자마자 터지는 첫 번째 문제를 상쇄하지 못한다.
-3. `initOrientationHint()`도 동일한 `matchMedia('(max-width: 520px) and (orientation: portrait)')`를 사용 → 폭 >520px인 폰에서는 portrait여도 회전 안내가 안 뜨고, 그렇다고 joycons가 뜨는 것도 아니라 사용자는 키패드 없이 방치된다.
-4. `initDualDpad()`는 `isTouchDevice()` 통과 시 `root.hidden = false`만 풀지만, CSS `.game-joycons { display: none }` 기본값이 그대로라 실제 표시는 CSS에 달려 있다 — JS가 해제해도 CSS가 막는다.
-5. `.game-canvas-wrap { width: 100%; aspect-ratio: 16/10 }` 기본값 자체는 부모 폭을 따르는데, `.game-shell`의 `max-width` 제한이 데스크톱 기준이라 모바일 landscape에서 캔버스가 화면 세로 높이를 초과해 스크롤/오버플로를 유발한다. 이전 커밋 "모바일 뷰포트"는 `100dvh` 도입으로 오버레이 문제는 잡았으나 **캔버스 자체의 높이 제약**은 `max-width: 520px and landscape`에만 걸려 같은 버그에 묶여 있다.
-
-해결 방향 — **뷰포트 폭 기반이 아닌 디바이스 특성 기반 감지**:
-- JS에서 터치 디바이스 감지(`pointer: coarse` + `ontouchstart`) + 가로/세로 orientation을 읽어 `<body>`에 상태 클래스 부착:
-  - `body.is-touch` — 터치 디바이스
-  - `body.is-touch.is-landscape` — 가로 모드 (조이콘 표시 + 캔버스 dvh 축소)
-  - `body.is-touch.is-portrait` — 세로 모드 (회전 안내 표시, 조이콘 숨김)
-- CSS 미디어 쿼리는 여전히 데스크톱 레이아웃 유지용으로 `(max-width: 520px)` 블록을 보존하되, 조이콘/캔버스 축소/회전 안내의 **트리거를 바디 클래스로 교체**한다. 이로써 폭 >520px인 폰에서도 올바르게 작동.
-
----
+- **허용**: 양쪽 패드에 누락된 키(좌측의 right / 우측의 left) 버튼 추가, 그리드 재배치, 동시 입력 안정성 확보를 위한 `state.keys[dir]` 레퍼런스 카운팅(같은 dir이 양쪽에서 눌릴 때 한쪽을 떼도 다른쪽이 유지되도록), 캔버스 가용 폭 미세조정.
+- **금지**: 새 색/그림자/애니메이션 추가, 탭-이동(`initCanvasTapMove`) 로직 변경, 레이아웃 시스템 자체 교체, 새 버튼(공격/점프 등) 도입.
+- **판단 기준**: "이 변경이 없으면 양쪽 4방향 D-pad가 정상적으로 동작하지 않는가?" → YES면 허용, NO면 금지.
 
 ## 변경 범위
 
-### pages/game.html
-- `#overlayStart` 내부 기존 구조 유지 (`#startGoal`의 "목표 40점 · 45초" 표시는 이미 동작 → 건드리지 말 것).
-- 인트로 컷씬 패널 내 `#cutsceneText` 아래에 `<p class="game-overlay__goal" id="cutsceneGoal" hidden></p>` 한 줄 신규 추가 (JS에서 채움, 기본 hidden).
-- `index.html`·`main.js`는 수정하지 않음.
+### pages/game.html 변경사항
+- `#gameJoycons` 내부 두 `.game-joycon` 블록을 **동일한 4버튼 구조**로 통일한다. 각 블록은 up/down/left/right 4개 버튼을 모두 갖는다.
+- 버튼 DOM (좌/우 동일):
+  ```
+  <div class="game-joycon game-joycon--left" data-side="left">
+    <button class="game-joycon__btn game-joycon__btn--up"    data-dir="up"    type="button" aria-label="위로 이동">▲</button>
+    <button class="game-joycon__btn game-joycon__btn--left"  data-dir="left"  type="button" aria-label="왼쪽으로 이동">◀</button>
+    <button class="game-joycon__btn game-joycon__btn--right" data-dir="right" type="button" aria-label="오른쪽으로 이동">▶</button>
+    <button class="game-joycon__btn game-joycon__btn--down"  data-dir="down"  type="button" aria-label="아래로 이동">▼</button>
+  </div>
+  ```
+- `.game-joycon--right` 블록도 **완전히 동일한 4버튼 구조**를 갖는다.
 
-### assets/css/game.css
-1. **조이콘 노출 규칙 재배치**: 기존 `@media (max-width: 520px) and (orientation: landscape)` 안의 `.game-joycons { display: flex; position: fixed; inset: 0; ... }` 및 `.game-topbar/header/footer/controls { display: none }` 규칙을 `body.is-touch.is-landscape ...` 선택자로 이동. 기본값 `.game-joycons { display: none }` 유지.
-2. **캔버스 축소 규칙 재배치**: `.game-canvas-wrap { aspect-ratio: 16/10; max-height: calc(100dvh - 60px); max-width: calc(100vw - 280px); ... }`를 `body.is-touch.is-landscape .game-canvas-wrap { ... }`로 이동.
-3. **회전 안내**: 기본 `.game-rotate-hint[hidden] { display: none }` 유지. 표시는 JS가 `hidden` 속성과 `.is-visible` 토글로 제어.
-4. **인트로 컷씬 목표 표시 스타일**: `.game-overlay--cutscene .game-overlay__goal { ... }` 1~2줄 신규 추가. 기존 CSS 변수 재사용, 하드코딩 색 금지.
-5. 기존 `@media (max-width: 520px)` 블록은 타이포/패딩 축소 목적 규칙만 남기고, 조이콘/캔버스/회전 안내 관련 규칙은 모두 바디 클래스 셀렉터로 이관.
-6. `@media (prefers-reduced-motion: reduce)` 기존 규칙 유지.
+### assets/css/game.css 변경사항
+- `.game-joycon`의 grid를 **3열×3행 십자형**으로 변경:
+  ```
+  grid-template-columns: repeat(3, auto);
+  grid-template-rows: repeat(3, auto);
+  gap: 8px;
+  ```
+- 버튼 배치(양쪽 공통):
+  - `--up`: col 2 / row 1
+  - `--left`: col 1 / row 2
+  - `--right`: col 3 / row 2
+  - `--down`: col 2 / row 3
+- 기존 `.game-joycon--left` / `.game-joycon--right` 전용 grid 배치 규칙 블록은 삭제하고, 공통 `.game-joycon__btn--up/left/right/down` 규칙 하나로 통합.
+- 시각 스타일(버튼 크기/색/pressed/focus ring)은 변경 없음.
+- 캔버스 가용 폭: 기존 `calc(100vw - 280px)` 류 규칙이 있으면 `calc(100vw - 340px)` 수준으로 소폭 상향.
+- `prefers-reduced-motion`, `:focus-visible` 블록 수정 없음.
 
-### assets/js/game.js
-1. **`syncMobileLayoutClasses()` 신규 함수**:
-   - `isTouchDevice()` 통과 시 `document.body.classList.add('is-touch')`.
-   - `window.matchMedia('(orientation: portrait)')` 구독 → `body`에 `is-portrait`/`is-landscape`를 상호 배타적으로 토글.
-   - 초기 1회 즉시 실행 + `change` 이벤트 + `resize` 이벤트 폴백 구독 (`addEventListener`/`addListener` 폴백 포함).
-2. **`initOrientationHint()` 리팩터**: 표시 조건을 `body.classList.contains('is-touch') && body.classList.contains('is-portrait')`로 변경. 문구 "가로 모드에서 맵을 터치해 이동합니다." 유지.
-3. **`initDualDpad()`·`initTouchControls()`**: 현재처럼 `isTouchDevice()` 통과 시 호출 유지. 조이콘 표시 가시성은 CSS 바디 클래스에 의존.
-4. **인트로 컷씬 난이도 분기**:
-   - `CUTSCENES.intro` 구조를 단일 `text`에서 `textByDiff: { easy, normal, hard }`로 확장.
-     - `easy`/`normal`: 기존 문구 공유("수간호사가 순찰을 돈다. 그 틈을 타, 김간호는 주머니 속 작곡 노트를 슬쩍 꺼낸다… 음표를 모으자." 또는 기존 문구 유지).
-     - `hard`: "학교에서 나온 깐깐한 이교수가 오늘따라 청진기를 휘두른다. 날아오는 청진기를 피하며 음표를 모으자." (의미 유지 선에서 문구 미세 조정 허용).
-   - `triggerCutscene(id, …)`에서 `const cut = CUTSCENES[id]; const text = cut.textByDiff ? (cut.textByDiff[state.difficulty] || cut.textByDiff.easy) : cut.text;`로 분기.
-   - `mid1`/`mid2`는 `text` 단일 필드 유지 → 호환성 보존.
-5. **인트로 컷씬 목표 개수 줄 추가**:
-   - `triggerCutscene()` 내부에서 `id === 'intro'`일 때 `#cutsceneGoal`에 `` `목표 ${TARGET_SCORE[state.difficulty]}점 · ${GAME_DURATION}초` ``를 `textContent`로 주입하고 `hidden = false`.
-   - 그 외 컷씬에서는 `hidden = true`로 되돌림.
-6. `state.keys` 초기화, pointer capture, 조이콘 라벨 등 **그 외 로직 변경 금지**.
+### assets/js/game.js 변경사항
+- `initDualDpad()` 리팩터: 같은 `dir`을 가진 버튼이 양쪽에 **2개** 존재하므로, 한쪽을 떼도 다른쪽이 아직 눌려 있다면 `state.keys[dir]`을 `false`로 만들면 안 된다.
+  - 클로저 상단에 `const pressCount = { up:0, down:0, left:0, right:0 };`
+  - pointerdown 시:
+    ```
+    pressCount[dir] += 1;
+    state.keys[dir] = true;
+    btn.classList.add('is-pressed');
+    ```
+  - release 시:
+    ```
+    pressCount[dir] = Math.max(0, pressCount[dir] - 1);
+    if (pressCount[dir] === 0) state.keys[dir] = false;
+    btn.classList.remove('is-pressed');
+    activePointerId = null;
+    ```
+  - 기존 activePointerId 중복 가드 유지.
+- `clearDpadPressed()` 수정: 카운터도 함께 0으로 리셋. `pressCount`를 모듈 스코프 혹은 공유 스코프에 두거나, 리셋 함수를 `initDualDpad`에서 노출.
 
----
+## 기능 상세
+
+### 기능 1: 양쪽 4방향 D-pad
+- 좌·우 조이콘 모두 상/하/좌/우 4버튼이 있는 십자 크로스 패드.
+- 총 8버튼(좌 4 + 우 4), 각각 `data-dir` 보유.
+
+### 기능 2: 좌/우 동일 dir 중복 입력의 정확한 해제
+- 양쪽 up을 동시에 눌렀다가 한쪽만 뗐을 때, 남은 쪽이 계속 눌려 있는 동안 이동 유지.
+- dir별 정수 카운터, 0이 될 때만 `state.keys[dir] = false`.
+
+### 기능 3: 오버레이 전환 시 안전한 상태 리셋
+- 게임 오버/클리어/일시정지 전환 시 `.is-pressed` 잔존과 pressCount를 동시 초기화.
 
 ## 주의사항
-- **범위 제약**: `pages/game.html`, `assets/css/game.css`, `assets/js/game.js`만 수정. `index.html`·`assets/css/style.css`·`assets/js/main.js` 금지.
-- **기존 `#startGoal`**: 시작 오버레이의 "목표 40점 · 45초"는 이미 동작 → 건드리지 말 것. 이번은 **인트로 컷씬**에 목표를 덧붙이는 것.
-- **XSS 방지**: 컷씬 텍스트는 `textContent`로만 주입. `innerHTML` 금지.
-- **CSS 하드코딩 금지**: 새 스타일은 기존 `--brand-*`, `--text-muted` 등 변수 재사용. BEM 유지.
-- **애니메이션 타이밍**: `transitionend`/`animationend` 유지. `setTimeout(fn, 300)`로 대체 금지 (슬롭 패턴).
-- **`mid1`/`mid2` 호환**: `triggerCutscene` 분기는 `textByDiff` 존재 여부로 안전히 fallback.
-- **`document.body`의 `game-page` 클래스**: 추가만, 제거 금지.
-- **접근성**: `aria-hidden`, `aria-label`, `prefers-reduced-motion` 기존 동작 유지.
-- **이전 "모바일 환경 개선", "모바일 뷰포트" 커밋**: `100dvh`·`position:fixed` 오버레이 패턴은 그대로 둔다. 이번 변경은 "뷰포트 폭 기반 조건"만 "디바이스 특성 기반 조건"으로 교체하는 delta.
+- 키보드 이벤트 경로(`state.keys[dir]` 직접 set)는 pressCount와 무관. 카운터는 터치 버튼 경로 한정.
+- 인라인 이벤트 핸들러 없음. `esc()`/`safeUrl()` 불필요.
+- `touch-action: none` 유지.
+- 변경 영향 파일: `pages/game.html`, `assets/css/game.css`, `assets/js/game.js` (루트 3파일이 아님에 유의).

@@ -704,23 +704,16 @@ html.light .game-overlay--cutscene {
 
 .game-joycon {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  grid-template-rows: repeat(3, 1fr);
+  grid-template-columns: repeat(3, auto);
+  grid-template-rows: repeat(3, auto);
   gap: 8px;
   background: transparent;
   pointer-events: none;
-}
 
-.game-joycon--left {
-  & .game-joycon__btn--up   { grid-column: 2; grid-row: 1; }
-  & .game-joycon__btn--left { grid-column: 1; grid-row: 2; }
-  & .game-joycon__btn--down { grid-column: 2; grid-row: 3; }
-}
-
-.game-joycon--right {
-  & .game-joycon__btn--up    { grid-column: 1; grid-row: 1; }
-  & .game-joycon__btn--right { grid-column: 2; grid-row: 2; }
-  & .game-joycon__btn--down  { grid-column: 1; grid-row: 3; }
+  & .game-joycon__btn--up    { grid-column: 2; grid-row: 1; }
+  & .game-joycon__btn--left  { grid-column: 1; grid-row: 2; }
+  & .game-joycon__btn--right { grid-column: 3; grid-row: 2; }
+  & .game-joycon__btn--down  { grid-column: 2; grid-row: 3; }
 }
 
 .game-joycon__btn {
@@ -1048,7 +1041,7 @@ body.is-touch.is-landscape {
     aspect-ratio: 16 / 10;
     max-height: calc(100vh - 60px);
     max-height: calc(100dvh - 60px);
-    max-width: calc(100vw - 280px);
+    max-width: calc(100vw - 340px);
     width: auto;
     margin-inline: auto;
   }
