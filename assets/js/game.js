@@ -70,9 +70,8 @@
   ];
   const CHARACTER_IDS = CHARACTERS.map(c => c.id);
 
-  // 성공 판정 목표 점수 (절대값) — F 즉사 룰 하에서 반복 플레이로 점진적 달성
-  // 하/상 +10 갱신 — 진입 곡선과 최종 도전치를 모두 강화. 중은 구 상값(30) 유지.
-  const TARGET_SCORE = { easy: 50, normal: 30, hard: 130 };
+  // 성공 판정 목표 점수 — 하 난이도에 석조무사(사실은 박병장) 이스터에그가 추가되어 평균 플레이 시간 대비 재조정.
+  const TARGET_SCORE = { easy: 60, normal: 50, hard: 30 };
 
   // 난이도별 기초/최대 속도 + 추가 스폰 주기 + F 상한
   // baseSpeed → maxSpeed: 시간 경과에 따라 선형 보간
@@ -94,11 +93,34 @@
     freezeDuration: 2000        // ms — 피격 시 정지 디버프 시간
   };
 
-  // 석조무사 — 중(normal) 난이도 전용 조무래기 NPC (수간호사 밑 남학생).
-  // 투사체를 던지지 않고 4지점 사각 순환만 수행한다. 접촉 시 즉사.
+  // 석조무사 — 하/중 난이도 조무래기 NPC (수간호사 밑 남학생).
+  // 투사체를 던지지 않고 4지점 사각 순환만 수행한다. 접촉 시 이스터에그(AIRFORCE) 발동.
   const STONE_GUARD = {
     patrolSpeed: 55,   // px/s — 수간호사(normal baseSpeed/curve 기반)·이교수(70)보다 느리게
     hitbox: 14         // 플레이어 본체 히트박스 크기 (수간호사/이교수와 동일)
+  };
+
+  // 이스터에그 — 공군병장 박병장이 조종하는 비행기
+  // 석조무사에게 플레이어가 접촉한 순간 발동. 수간호사를 공포에 빠뜨려 5초간 도망치게 만든다.
+  // 안내문("마주치면 잡혀갑니다")을 믿고 피하던 플레이어가 충돌하면 진짜 정체(=아군 비행기)가 드러나는 반전 장치.
+  const AIRFORCE = {
+    flyDuration: 2400,     // ms — 비행기가 화면 좌→우 통과 시간
+    planeSpeed: 320,       // px/s — CANVAS_W(640) 기준 약 2초
+    planeY: 40,            // 상단 고정 y (맵 복도 위, 벽 충돌 무시)
+    planeW: 48,
+    planeH: 14,
+    fleeDuration: 5000,    // ms — 수간호사 공포 도망 시간
+    fleeSpeed: 180,        // px/s — 평소 순찰(40~100)보다 빠름
+    toastDuration: 2600,   // ms — 2단 안내 박스 표시 시간 (비행기 2400ms + 여유 200ms)
+    // 2단 박스 텍스트 — 석조무사가 친구 박병장을 불러 실습생을 구한다는 반전 안내
+    title: '나와라 박병장!',
+    subtitle: '석조무사가 학창시절 같은반 친구 박병장을 불러 실습생을 도와줍니다!',
+    // 2단 박스 레이아웃 상수
+    toastBoxW: 440,        // px — 박스 폭 (CANVAS_W 640 대비 안전)
+    toastBoxH: 62,         // px — 1줄 본문 기준 높이 (2줄 분리 시 78로 확장)
+    toastBoxY: 24,         // px — 상단 y (화캉스 y=40보다 위)
+    toastTitleSize: 18,    // px — 제목 bold
+    toastSubtitleSize: 13  // px — 본문 regular
   };
 
   // 콤보 단계별 수집 사운드 — C장조 스케일 (C4→D4→E4→G4→A4→C5→D5→E5→G5→A5)
@@ -956,7 +978,10 @@
       throwTimer: 0,       // 다음 투척까지 남은 초
       telegraphUntil: 0,   // 느낌표(!) 텔레그래프 종료 시각(ms)
       throwArmUntil: 0,    // 팔 올림 프레임 종료 시각(ms)
-      active: false
+      active: false,
+      fleeUntil: 0,        // ms — 이 시각까지 flee 모드(이스터에그). 0이면 정상 순찰
+      fleeDx: 0,           // flee 진행 방향 단위 벡터 x
+      fleeDy: 0            // flee 진행 방향 단위 벡터 y
     },
     // 이교수 NPC — 상 난이도에서만 active=true. 청진기를 투척해 플레이어를 2초간 정지시킨다.
     professor: {
@@ -971,7 +996,7 @@
       throwArmUntil: 0,
       active: false
     },
-    // 석조무사 NPC — 중 난이도에서만 active=true. 순수 이동형(투척 없음), 접촉 시 즉사.
+    // 석조무사 NPC — 하/중 난이도에서 active=true. 순수 이동형(투척 없음), 접촉 시 이스터에그 발동.
     stoneGuard: {
       x: 0, y: 0,
       dir: 'down',
@@ -980,6 +1005,13 @@
       patrolPath: [],
       patrolIdx: 0,
       active: false
+    },
+    // 비행기(이스터에그 연출) — 한 번에 최대 1대. active=false면 렌더/업데이트 스킵.
+    airplane: {
+      x: 0, y: 0,
+      active: false,
+      expiresAt: 0,   // ms
+      toastUntil: 0   // ms — 상단 토스트 만료 시각
     }
   };
 
@@ -1180,6 +1212,12 @@
       state.nurseChief.active = false;
       state.professor.active = false;
       state.stoneGuard.active = false;
+      // 이스터에그 잔존 상태 정리 — 난이도 재선택 시 깔끔히 리셋
+      state.airplane.active = false;
+      state.airplane.toastUntil = 0;
+      state.nurseChief.fleeUntil = 0;
+      state.nurseChief.fleeDx = 0;
+      state.nurseChief.fleeDy = 0;
       state.player.frozenUntil = 0;
       // HUD 리셋
       hudTime.textContent = String(GAME_DURATION);
@@ -1567,12 +1605,19 @@
       state.professor.active = false;
     }
 
-    // 석조무사 NPC 초기화 — 중 난이도 전용. 그 외 난이도는 명시적으로 비활성화.
-    if (state.difficulty === 'normal') {
+    // 석조무사 NPC 초기화 — 하/중 난이도 공통. 그 외 난이도(hard)는 명시적으로 비활성화.
+    if (state.difficulty === 'normal' || state.difficulty === 'easy') {
       initStoneGuard();
     } else {
       state.stoneGuard.active = false;
     }
+
+    // 이스터에그 상태 안전망 — initNurseChief가 재설정하지만 명시적으로 리셋
+    state.nurseChief.fleeUntil = 0;
+    state.nurseChief.fleeDx = 0;
+    state.nurseChief.fleeDy = 0;
+    state.airplane.active = false;
+    state.airplane.toastUntil = 0;
 
     // 비네트/셰이크 잔존 클래스 정리
     if (canvasWrap) {
@@ -1629,6 +1674,13 @@
     state.skill.activeUntil = 0;
     state.skill.flashUntil = 0;
     state.player.invincibleUntil = 0;
+
+    // 이스터에그 잔존 상태 정리 — 다음 라운드로 새지 않도록 보장
+    state.airplane.active = false;
+    state.airplane.toastUntil = 0;
+    state.nurseChief.fleeUntil = 0;
+    state.nurseChief.fleeDx = 0;
+    state.nurseChief.fleeDy = 0;
     if (hudSkillSlot) {
       hudSkillSlot.classList.remove('is-skill-ready', 'is-skill-cooling', 'is-skill-flash');
     }
@@ -1771,8 +1823,8 @@
     const overlay = document.getElementById('overlayCutscene');
     if (!overlay || overlay.classList.contains('is-hidden')) return;
     overlay.classList.add('is-hidden');
-    // intro 컷씬 종료 후 normal 난이도면 석조무사 안내문을 연이어 노출
-    const chainStoneGuard = state.difficulty === 'normal'
+    // intro 컷씬 종료 후 하/중 난이도면 석조무사 안내문을 연이어 노출
+    const chainStoneGuard = (state.difficulty === 'normal' || state.difficulty === 'easy')
       && state.cutscenesShown
       && state.cutscenesShown.has('intro')
       && !state.cutscenesShown.has('introStoneGuard');
@@ -1932,6 +1984,38 @@
   function updateNurseChief(dt, now) {
     const chief = state.nurseChief;
     if (!chief.active || !chief.patrolPath.length) return;
+
+    // --- flee 상태 — 이스터에그 발동 중. 패트롤/투척 모두 중단하고 단순 후퇴 ---
+    if (chief.fleeUntil > now) {
+      const step = AIRFORCE.fleeSpeed * dt;
+      const nx = chief.x + chief.fleeDx * step;
+      const ny = chief.y + chief.fleeDy * step;
+      // 맵 경계 안쪽 클램프 (벽 충돌은 무시 — 수간호사는 NPC라 플레이어처럼 벽에 막히지 않음)
+      chief.x = Math.max(TILE, Math.min(CANVAS_W - TILE, nx));
+      chief.y = Math.max(TILE, Math.min(CANVAS_H - TILE, ny));
+      // 방향 갱신 (flee 벡터 기준)
+      if (Math.abs(chief.fleeDx) > Math.abs(chief.fleeDy)) {
+        chief.dir = chief.fleeDx > 0 ? 'right' : 'left';
+      } else {
+        chief.dir = chief.fleeDy > 0 ? 'down' : 'up';
+      }
+      // 허둥지둥 프레임 — 평소(0.18s)보다 빠른 0.12s로 전환
+      if (!reducedMotion) {
+        chief.frameAcc += dt;
+        if (chief.frameAcc > 0.12) {
+          chief.frameAcc = 0;
+          chief.frame = chief.frame === 1 ? 2 : 1;
+        }
+      } else {
+        chief.frame = 0;
+      }
+      return;  // 투척/텔레그래프/패트롤 로직 전부 스킵
+    }
+    // flee 직후 복귀 — throwTimer를 base 주기로 재시작
+    if (chief.fleeUntil > 0 && now >= chief.fleeUntil) {
+      chief.fleeUntil = 0;
+      chief.throwTimer = DIFFICULTY[state.difficulty].spawnInterval[0];
+    }
 
     // --- 패트롤 이동: 현재 목표점까지 선형 이동, 도달하면 다음 포인트 ---
     const target = chief.patrolPath[chief.patrolIdx];
@@ -2562,6 +2646,117 @@
     }
   }
 
+  // =====================================================
+  // 이스터에그 — 공군병장 박병장 (석조무사 대체 발동)
+  //  - 석조무사에게 접촉 → 즉사 대신 비행기 출동 + 수간호사 5초 도주
+  //  - 플레이어 페널티 없음 (안전지대 보너스로 활용 가능)
+  // =====================================================
+
+  /**
+   * 비행기 스프라이트 — 16×5 픽셀 도트 (SCALE=3으로 48×15 캔버스 크기).
+   * A = 동체/날개 회색, W = 창문 하이라이트.
+   */
+  function airplaneSprite() {
+    return [
+      '.......A........',
+      '.AAA.AAAAWAAA.A.',
+      'AAAAAAAAAAAAAAA.',
+      '.AAA.AAAAWAAA.A.',
+      '.......A........'
+    ];
+  }
+
+  /**
+   * 이스터에그 오케스트레이션 — 석조무사 충돌 시 호출.
+   * 석조무사 퇴장 + 비행기 스폰 + 수간호사 flee 진입 + 효과음/파티클.
+   * @param {number} now - 현재 시각(ms, performance.now)
+   */
+  function triggerAirforceEasterEgg(now) {
+    // 석조무사 임무 완수로 퇴장
+    state.stoneGuard.active = false;
+
+    // 비행기 스폰 (화면 좌측 바깥에서 등장)
+    state.airplane.x = -AIRFORCE.planeW;
+    state.airplane.y = AIRFORCE.planeY;
+    state.airplane.active = true;
+    state.airplane.expiresAt = now + AIRFORCE.flyDuration;
+    state.airplane.toastUntil = now + AIRFORCE.toastDuration;
+
+    // 수간호사 flee 시작
+    startChiefFlee(now);
+
+    // 비행기 엔진음 — 저음 지속 2연타
+    playTone(120, 0.4);
+    setTimeout(() => playTone(90, 0.5), 200);
+
+    // 승리감 파티클 (reduced-motion 시 생략)
+    if (!reducedMotion) {
+      spawnParticles(state.player.x + 7, state.player.y + 7, 10);
+    }
+  }
+
+  /**
+   * 수간호사 flee 상태 진입 — 맵 중앙 반대편으로 5초 후퇴.
+   * 텔레그래프/투척 타이머를 무력화하여 flee 중 F 투척 원천 차단.
+   * @param {number} now - 현재 시각(ms)
+   */
+  function startChiefFlee(now) {
+    const chief = state.nurseChief;
+    // 맵 중앙 반대편 코너로 단순 후퇴 (맵 밖으로 나가는 것 방지)
+    let dx = chief.x >= CANVAS_W / 2 ? 1 : -1;
+    let dy = chief.y >= CANVAS_H / 2 ? 1 : -1;
+    // 대각 도주 시 정규화 (속도 과다 방지)
+    const inv = 1 / Math.SQRT2;
+    dx *= inv;
+    dy *= inv;
+    chief.fleeUntil = now + AIRFORCE.fleeDuration;
+    chief.fleeDx = dx;
+    chief.fleeDy = dy;
+    // 텔레그래프·투척 타이머 무력화 — flee 중엔 F 투척 안 함
+    chief.telegraphUntil = 0;
+    chief.throwArmUntil = 0;
+    chief.throwTimer = 99;
+  }
+
+  /**
+   * 비행기 위치·수명 갱신 — update 루프에서 매 프레임 호출.
+   * @param {number} dt - 델타타임(s)
+   * @param {number} now - 현재 시각(ms)
+   */
+  function updateAirplane(dt, now) {
+    if (!state.airplane.active) return;
+    state.airplane.x += AIRFORCE.planeSpeed * dt;
+    if (now >= state.airplane.expiresAt || state.airplane.x > CANVAS_W) {
+      state.airplane.active = false;
+    }
+  }
+
+  /**
+   * 비행기 캔버스 렌더 — SCALE=3 도트, 테마별 팔레트 런타임 결정(캐시 없음).
+   * @param {number} now - 현재 시각(ms)
+   */
+  function drawAirplane(now) {
+    const plane = state.airplane;
+    if (!plane.active) return;
+    const sprite = airplaneSprite();
+    const SCALE = 3;
+    const palette = {
+      'A': isLightTheme() ? '#444b5c' : '#aab3c7',
+      'W': '#e2e7ef'
+    };
+    const ox = Math.round(plane.x);
+    const oy = Math.round(plane.y);
+    for (let r = 0; r < 5; r++) {
+      const row = sprite[r];
+      for (let c = 0; c < 16; c++) {
+        const ch = row[c];
+        if (ch === '.' || !palette[ch]) continue;
+        ctx.fillStyle = palette[ch];
+        ctx.fillRect(ox + c * SCALE, oy + r * SCALE, SCALE, SCALE);
+      }
+    }
+  }
+
   /**
    * 파티클 스폰 — 수집 쾌감 시각화 (C8)
    * reduced-motion에선 호출 측에서 생략
@@ -2900,8 +3095,11 @@
     // 이교수 NPC 업데이트 — 상 난이도 전용 (active=false면 함수 내부 가드)
     updateProfessor(dtSlow, now);
 
-    // 석조무사 NPC 업데이트 — 중 난이도 전용 (active=false면 함수 내부 가드)
+    // 석조무사 NPC 업데이트 — 하/중 난이도 (active=false면 함수 내부 가드)
     updateStoneGuard(dtSlow, now);
+
+    // 비행기(이스터에그) 업데이트 — active=false면 내부 가드로 즉시 리턴
+    updateAirplane(dtSlow, now);
 
     // 청진기 투사체 이동 — 직선 비행, 벽/화면 밖 도달 시 소멸 (관통 X)
     {
@@ -3065,7 +3263,9 @@
       }
     }
 
-    // 석조무사 본체 충돌 — 수간호사/이교수와 동일하게 즉사 처리 (무적 중 스킵)
+    // 석조무사(=공군병장 박병장) 접촉 — 이스터에그 발동.
+    // 즉사가 아니라 박병장 비행기가 출동하고 수간호사가 5초간 공포 도주.
+    // 무적 중엔 스킵. 발동되면 석조무사는 그 자리에서 임무 완수로 퇴장(active=false).
     if (state.stoneGuard.active && now >= p.invincibleUntil) {
       const sg = state.stoneGuard;
       const HB = STONE_GUARD.hitbox;
@@ -3073,22 +3273,7 @@
       const cy = sg.y - HB / 2;
       if (p.x < cx + HB && p.x + p.w > cx &&
           p.y < cy + HB && p.y + p.h > cy) {
-        state.hits += 1;
-        state.combo = 0;
-        updateComboHud(false);
-
-        playTone(110, 0.25);
-        setTimeout(() => playTone(82, 0.35), 100);
-
-        if (canvasWrap && !reducedMotion) {
-          canvasWrap.classList.remove('is-shake');
-          void canvasWrap.offsetWidth;
-          canvasWrap.classList.add('is-shake', 'is-gameover');
-        }
-
-        state.gameoverReason = 'hit';
-        endGame();
-        return;
+        triggerAirforceEasterEgg(now);
       }
     }
 
@@ -3251,10 +3436,15 @@
       }
     }
 
-    // 석조무사 NPC — 중 난이도 전용 (투척 없음, 순수 이동)
+    // 석조무사 NPC — 하/중 난이도 (투척 없음, 순수 이동)
     const sg = state.stoneGuard;
     if (sg.active) {
       drawStoneGuard(sg.x, sg.y, sg.dir, sg.frame);
+    }
+
+    // 비행기(이스터에그) — 상단 고정 y로 저공비행. 벽/충돌 무시.
+    if (state.airplane.active) {
+      drawAirplane(now);
     }
 
     // 청진기 투사체 — 비행 중 자체 회전 (reduced-motion 시 회전 비활성)
@@ -3322,6 +3512,74 @@
       // 텍스트
       ctx.fillStyle = isLightTheme() ? '#8a5a00' : '#ffd580';
       ctx.fillText(text, cx, cy);
+      ctx.restore();
+    }
+
+    // 박병장 2단 안내 박스 — AIRFORCE.title/subtitle 상수 텍스트(XSS 무관).
+    // 반전 서사: 석조무사가 친구 박병장을 불러 실습생을 구해주는 순간을 명시.
+    // reduced-motion에서는 alpha 페이드를 생략(박스는 그대로 표시).
+    if (state.airplane.active && now < state.airplane.toastUntil) {
+      const remain = state.airplane.toastUntil - now;
+      const alpha = reducedMotion ? 1 : Math.min(1, remain / 300);
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+
+      const cx = CANVAS_W / 2;
+      const boxY = AIRFORCE.toastBoxY;
+      const boxW = AIRFORCE.toastBoxW;
+
+      // subtitle 폭을 측정해 boxW - 32(좌우 padding)를 초과하면 적절한 지점에서 2줄로 분리
+      ctx.font = `${AIRFORCE.toastSubtitleSize}px "Pretendard", system-ui, sans-serif`;
+      const subtitleFull = AIRFORCE.subtitle;
+      const subtitleMaxW = boxW - 32;
+      const subtitleMeasuredW = ctx.measureText(subtitleFull).width;
+      let subtitleLine1 = subtitleFull;
+      let subtitleLine2 = '';
+      if (subtitleMeasuredW > subtitleMaxW) {
+        // 공백 기준 중간 지점에서 분리 — 앞쪽 절반이 maxW 이내가 되는 마지막 공백을 선택
+        const words = subtitleFull.split(' ');
+        let splitIdx = Math.ceil(words.length / 2);
+        for (let i = words.length - 1; i >= 1; i--) {
+          const head = words.slice(0, i).join(' ');
+          if (ctx.measureText(head).width <= subtitleMaxW) {
+            splitIdx = i;
+            break;
+          }
+        }
+        subtitleLine1 = words.slice(0, splitIdx).join(' ');
+        subtitleLine2 = words.slice(splitIdx).join(' ');
+      }
+      const boxH = subtitleLine2 ? 78 : AIRFORCE.toastBoxH;
+
+      // 외곽 그림자 (offset 2px) — 화캉스 토스트와 동일한 깊이감
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+      ctx.fillRect(cx - boxW / 2, boxY + 2, boxW, boxH);
+
+      // 본체 배경 — 밀리터리/공군 톤 네이비(다크) / 쿨그레이(라이트)
+      ctx.fillStyle = isLightTheme() ? '#e8edf5' : '#1a2238';
+      ctx.fillRect(cx - boxW / 2 + 2, boxY, boxW - 4, boxH - 4);
+
+      // 좌측 엣지 악센트 — 브랜드 코럴 4px 세로 라인 (컷씬 패널의 border-left 문법 재현)
+      ctx.fillStyle = isLightTheme() ? '#e85a6a' : '#ff7b7b';
+      ctx.fillRect(cx - boxW / 2 + 2, boxY, 4, boxH - 4);
+
+      // 제목
+      ctx.fillStyle = isLightTheme() ? '#8a1a2a' : '#ffd0d4';
+      ctx.font = `bold ${AIRFORCE.toastTitleSize}px "Pretendard", system-ui, sans-serif`;
+      ctx.fillText(AIRFORCE.title, cx, boxY + 18);
+
+      // 본문 (1줄 또는 2줄)
+      ctx.fillStyle = isLightTheme() ? '#2a2432' : '#e8eaf2';
+      ctx.font = `${AIRFORCE.toastSubtitleSize}px "Pretendard", system-ui, sans-serif`;
+      if (subtitleLine2) {
+        ctx.fillText(subtitleLine1, cx, boxY + 40);
+        ctx.fillText(subtitleLine2, cx, boxY + 58);
+      } else {
+        ctx.fillText(subtitleLine1, cx, boxY + 42);
+      }
+
       ctx.restore();
     }
   }
