@@ -422,6 +422,18 @@ html.light .game-overlay--cutscene {
   background: rgba(245, 244, 248, 0.55);
 }
 
+/* 컷씬 패널 내부 목표 줄 — 본문 아래 "목표 N점 · 45초" 한 줄 표시 */
+.game-overlay--cutscene .game-overlay__goal {
+  font-size: 11.5px;
+  color: var(--text-muted);
+  letter-spacing: 0.3px;
+
+  & strong {
+    color: var(--brand-light);
+    font-weight: 700;
+  }
+}
+
 @keyframes gameCutsceneIn {
   from { transform: translateY(12px); opacity: 0; }
   to   { transform: translateY(0); opacity: 1; }
@@ -994,43 +1006,45 @@ html.light .game-overlay--cutscene {
   }
 }
 
-/* 세로 모드 (모바일 portrait) — 조이콘 숨김, 회전 안내 오버레이가 채움 */
-@media (max-width: 520px) and (orientation: portrait) {
-  .game-joycons {
-    display: none !important;
-  }
+/* 세로 모드 (터치 디바이스) — 조이콘 숨김. 회전 안내 오버레이가 채움.
+   바디 클래스 기반으로 전환 — 뷰포트 폭 >520px인 폰도 커버한다. */
+body.is-touch.is-portrait .game-joycons {
+  display: none;
 }
 
-/* 가로 모드 (모바일 landscape) — 캔버스를 뷰포트에 꽉 채우는 "게임판" 모드 */
-@media (max-width: 520px) and (orientation: landscape) {
-  body.game-page {
+/* 가로 모드 (터치 디바이스) — 캔버스를 뷰포트에 꽉 채우는 "게임판" 모드.
+   `@media (max-width: 520px) and (orientation: landscape)`가 아닌
+   `body.is-touch.is-landscape`로 트리거 — iPhone Pro/갤럭시 S22 등
+   landscape 폭 >520px인 폰에서도 올바르게 적용된다. */
+body.is-touch.is-landscape {
+  &.game-page {
     padding: 4px;
     gap: 4px;
   }
 
-  .game-topbar,
-  .game-header,
-  .game-footer,
-  .game-controls {
+  & .game-topbar,
+  & .game-header,
+  & .game-footer,
+  & .game-controls {
     display: none;
   }
 
-  .game-shell {
+  & .game-shell {
     padding: 0;
     gap: 4px;
     max-width: 100%;
   }
 
-  .game-stage {
+  & .game-stage {
     padding: 6px;
     gap: 6px;
   }
 
-  .game-hud {
+  & .game-hud {
     padding: 2px 2px;
   }
 
-  .game-canvas-wrap {
+  & .game-canvas-wrap {
     aspect-ratio: 16 / 10;
     max-height: calc(100vh - 60px);
     max-height: calc(100dvh - 60px);
@@ -1039,13 +1053,13 @@ html.light .game-overlay--cutscene {
     margin-inline: auto;
   }
 
-  #gameCanvas {
+  & #gameCanvas {
     cursor: pointer;
     touch-action: none;
   }
 
   /* 듀얼 조이콘 — 좌/우 가장자리 고정 오버레이 */
-  .game-joycons {
+  & .game-joycons {
     position: fixed;
     inset: 0;
     display: flex;
@@ -1058,8 +1072,8 @@ html.light .game-overlay--cutscene {
 }
 
 /* 초소형 landscape (height ≤ 360px) — 조이콘 버튼 크기 축소 */
-@media (max-width: 520px) and (orientation: landscape) and (max-height: 360px) {
-  .game-joycon__btn {
+@media (max-height: 360px) {
+  body.is-touch.is-landscape .game-joycon__btn {
     width: 48px;
     height: 48px;
     font-size: 16px;

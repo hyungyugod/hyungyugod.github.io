@@ -1,58 +1,23 @@
 # 자체 점검
 
 ## SPEC 기능 체크
-- [x] **TARGET_SCORE 갱신**: `easy:50, normal:30, hard:40` — SPEC 표 그대로 반영
-- [x] **DIFFICULTY 재배치**: 기존 hard 파라미터 → normal로 이동, 새 hard는 SPEC 강화 표(notes 4, noteTtl 2800, obstacles 6, maxObstacles 14, obsBaseSpeed 200→340, spawnInterval [0.8,0.25], throwBurst 4)로 덮어쓰기
-- [x] **PROFESSOR 상수**: `patrolSpeed:70, throwInterval:[2.5,1.4], stethoSpeed:220, stethoMax:4, freezeDuration:2000`
-- [x] **state.professor 객체**: 수간호사와 동일 구조 + active 토글
-- [x] **state.stethoscopes 배열**: 청진기 투사체 풀
-- [x] **state.player.frozenUntil**: 별도 필드 (stunUntil 보존)
-- [x] **이교수 스프라이트**: SPEC 도트 패턴 16×20 정확 반영, dir별 변형(up/left/right) + 걷기 프레임 + 투척 자세
-- [x] **getProfessorPalette + 캐시 + 테마 토글 무효화** (chiefPaletteCache 패턴 미러링)
-- [x] **drawProfessor / drawStethoscope** — 후자는 ctx.save/translate/rotate/restore + reduced-motion 시 회전 비활성
-- [x] **initProfessor** — 8자(figure-8) 패트롤, farthest-first 시작점, 첫 투척 3.0s 대기
-- [x] **updateProfessor** — 패트롤 + 텔레그래프 0.4s + 투척 (drawNurseChief 패턴 미러링)
-- [x] **spawnStethoscopeFromProfessor** — 발사 시점 플레이어 단위벡터 × 220 px/s, 12px 오프셋
-- [x] **드로잉 텔레그래프(!)** — 코럴핑크(`#ff7b7b` / 라이트 `#e85a6a`)로 수간호사(빨강) 와 구분
-- [x] **update() 입력 차단**: `frozen = now < p.frozenUntil` → `immobile = stunned || frozen` 로 OR 결합
-- [x] **청진기 이동 + 벽/화면 밖 소멸** (관통 X)
-- [x] **청진기 충돌 처리**: `frozenUntil = now + 2000`, 청진기 제거, 콤보 0, `playTone(440,0.08)` + 100ms 후 `playTone(220,0.15)`, **즉사/hits 증가 X**
-- [x] **이교수 본체 충돌 즉사** (수간호사와 동일 처리)
-- [x] **render()**: 이교수+텔레그래프, 청진기 회전 드로잉, frozen 깜빡임(80ms 주기) + 발 밑 코럴 청진기 인디케이터
-- [x] **startGame()**: hard일 때만 `initProfessor()`, 그 외 `state.professor.active = false`. stethoscopes/frozenUntil 리셋
-- [x] **btnBackToDifficulty**: stethoscopes/professor.active/frozenUntil 리셋 추가
-- [x] **initNurseChief hard 분기 속도 80→100**
-- [x] **renderPreview()**: hard 미리보기 시 이교수+청진기 추가 표시
-- [x] **CSS :root + :root.light(html.light)** 양쪽에 prof-* 변수 11개 추가
-- [x] **game.html 시작 오버레이 hint** 한 줄 추가
+- [x] 기능 1: 모바일 조이콘/캔버스 축소 노출 버그 수정 — 트리거를 `@media (max-width: 520px) and (orientation: ...)`에서 `body.is-touch.is-landscape` / `body.is-touch.is-portrait` 바디 클래스로 교체. `syncMobileLayoutClasses()` 신규 함수가 `isTouchDevice()` 통과 시 `<body>`에 `is-touch` + `is-portrait`/`is-landscape`를 상호 배타적으로 부착. `matchMedia('(orientation: portrait)')` 구독 + `resize` 폴백 + `addEventListener`/`addListener` 폴백 포함. 이로써 iPhone Pro Max(landscape 932×430) 등 폭 >520px인 폰에서도 조이콘 + 캔버스 dvh 축소가 올바르게 동작.
+- [x] 기능 2: 인트로 컷씬 본문 아래 목표 개수 줄 추가 — `pages/game.html`에 `<p class="game-overlay__goal" id="cutsceneGoal" hidden>` 추가, `triggerCutscene()`가 `id === 'intro'`일 때 `목표 ${TARGET_SCORE[state.difficulty]}점 · ${GAME_DURATION}초`를 `textContent`로 주입하고 `hidden = false`. mid1/mid2에서는 `hidden = true`로 복원.
+- [x] 기능 3: 상 난이도 인트로 컷씬 문구 분기 — `CUTSCENES.intro`를 `textByDiff: { easy, normal, hard }`로 확장. hard는 "학교에서 나온 깐깐한 이교수가 오늘따라 청진기를 휘두른다. 날아오는 청진기를 피하며 음표를 모으자." `triggerCutscene()` 에서 `cut.textByDiff ? cut.textByDiff[state.difficulty] || cut.textByDiff.easy : cut.text`로 안전 fallback — mid1/mid2(`text` 단일 필드)와 호환.
 
 ## 패턴 준수 확인
-- **BEM 네이밍**: 신규 CSS 클래스 추가 없음 (SPEC: "새 CSS 클래스 금지" 준수). 기존 `.game-overlay__hint` 재사용
-- **CSS 변수 사용**: 이교수 11개 변수 모두 :root 양쪽 정의, JS에선 `getComputedStyle(...).getPropertyValue('--prof-*')`로 읽기. 하드코딩 색상은 fallback과 텔레그래프(코럴) 한정
-- **CSS 네이티브 중첩**: 신규 규칙 없으므로 해당 없음
-- **반응형 520px**: 신규 시각 요소는 캔버스 내부(이교수/청진기/인디케이터)이므로 기존 캔버스 반응형 규칙에 자동 편승. CSS 변수만 추가
-- **reduced-motion 대응**:
-  - 청진기 회전 비활성 (`if (rot && !reducedMotion) ctx.rotate(rot);`)
-  - 텔레그래프 깜빡임 비활성 (drawProfessorTelegraph)
-  - 깜빡임 비활성 (`blinkVisible = reducedMotion || ...`)
-  - frozen 메커닉 자체는 적용 (SPEC: "단 frozen 메커닉 자체는 적용")
-- **esc()/safeUrl()**: 외부 데이터 주입 없음 (Canvas + 정적 hint 텍스트). 해당 없음
-- **가드 클래스**: `if (!prof.active || !prof.patrolPath.length) return;` (updateProfessor)
-- **DOMContentLoaded 등록**: 게임은 IIFE 즉시 실행 구조로 main.js의 DOMContentLoaded 패턴과 별개. 기존 패턴 그대로 유지
-- **-webkit-backdrop-filter**: 신규 backdrop-filter 규칙 추가 없음
-- **파일 간 정합성**:
-  - `--prof-*` 변수 → CSS와 JS의 `readVar('--prof-*')` 키 정확 일치
-  - `state.professor` 필드 → startGame/update/render/back-to-difficulty 모두 일관 참조
-  - `PROFESSOR.freezeDuration` → SPEC `state.player.frozenUntil = now + 2000` 정확 반영
-  - `pages/game.html` hint 추가 위치는 기존 `.game-overlay__hint` 클래스 재사용
+- BEM 네이밍: 준수 — `.game-overlay__goal`(기존 재사용), `.game-overlay--cutscene .game-overlay__goal`(컷씬 한정), 신규 클래스 없음
+- CSS 변수 사용: 준수 — `--text-muted`, `--brand-light` 재사용. 하드코딩 색상 0건
+- CSS 네이티브 중첩: 준수 — `body.is-touch.is-landscape { &.game-page { ... } & .game-topbar { ... } }` 및 `.game-overlay--cutscene .game-overlay__goal { & strong { ... } }`
+- 반응형 520px: 유지 — 기존 `@media (max-width: 520px)` 블록의 타이포/패딩/오버레이 전용 규칙은 전부 보존. 조이콘/캔버스/회전안내만 바디 클래스로 이관
+- reduced-motion: 유지 — 기존 `@media (prefers-reduced-motion: reduce)` 블록 무변경. 신규 애니메이션 추가 없음
+- esc()/safeUrl(): 해당 없음 — 컷씬 본문은 정적 상수 `CUTSCENES`에서만 옴. `textContent` 사용으로 XSS 원천 차단. `innerHTML` 0회
+- 가드 클래스: 준수 — `syncMobileLayoutClasses()`의 `if (!body) return` / `if (!isTouchDevice()) return`, `triggerCutscene()`의 `goalEl` 존재 검사
+- DOMContentLoaded 등록: `game.js`는 IIFE 스코프 최하단 초기화 블록에 `syncMobileLayoutClasses()` 호출 추가(기존 `initOrientationHint()` 바로 위)
+- -webkit-backdrop-filter: 신규 `backdrop-filter` 규칙 없음(기존 유지)
+- 파일 간 정합성: `#cutsceneGoal`(HTML) ↔ `document.getElementById('cutsceneGoal')`(JS) ↔ `.game-overlay--cutscene .game-overlay__goal`(CSS) 일치. `body.is-touch`/`is-portrait`/`is-landscape` 클래스명 JS↔CSS 일치
 
-## 범위 위반 검사
-- **금지 항목 체크**: 제3 NPC X, 청진기 외 신규 투사체 X, 신규 컷씬/효과음 시스템 X, 게임시간/콤보/F 즉사 룰 변경 X, 신규 비주얼 효과 X
-- **허용 항목으로 추가한 것**:
-  - 청진기 충돌 처리 분기 (장애물 충돌 위에 별도 루프)
-  - state 확장 + startGame/back-to-difficulty 리셋
-  - renderPreview hard 분기 갱신 (SPEC 명시 항목)
-  - DIFFICULTY normal/hard 두 분기 모두 갱신 (SPEC 표 그대로)
-  - `drawProfessorTelegraph` — drawTelegraph 미러링이지만 색상만 코럴로 분리 (SPEC: "이교수 텔레그래프(!)는 코럴핑크로 표시 → 두 적 구분")
-
-전략: 최초 구현이므로 Case 미해당 — SPEC 표/도트 패턴/타이밍 수치 정밀 적용.
+## 범위 계약 준수
+- SPEC에 명시된 파일(`pages/game.html`, `assets/css/game.css`, `assets/js/game.js`)만 수정. `index.html`/`assets/css/style.css`/`assets/js/main.js` 무변경
+- 신규 효과/애니메이션/사운드 추가 없음. mid1/mid2 문구 무변경. 게임 밸런스(TARGET_SCORE/GAME_DURATION/속도) 무변경
+- `@media (max-width: 520px)` 블록의 기존 타이포/패딩 규칙은 "조이콘 노출과 무관"하므로 그대로 보존(SPEC "허용"의 정확한 준수)

@@ -4,36 +4,27 @@
 
 | 체크 항목 | 결과 | 비고 |
 |---|---|---|
-| 테마 토글 | PASS | 다크↔라이트 정상 |
-| 카테고리 필터 (4종) | PASS | writing/music/social/all 모두 정상 |
-| 프로필 모달 | FAIL | 메인 페이지 모달 — 본 SPEC(게임 페이지)과 무관, 기존 이슈 |
-| 링크카드 href | PASS | 2개 링크 유효 |
-| 모바일 520px | PASS | 핵심 요소 visible |
+| 테마 토글 | PASS | 루트 index 기준 |
+| 카테고리 필터 (4종) | PASS | 루트 index 기준 |
+| 프로필 모달 | FAIL | **범위 외** — 이번 SPEC은 `pages/game.html`만 수정, 루트 index/modal 무변경. 기존 테스트 환경 타이밍 이슈로 판단(이번 변경과 무관) |
+| 링크카드 href | PASS | |
+| 모바일 520px (index) | PASS | |
 | 콘솔 에러 | PASS | 0건 |
 
-전체: 8/9 통과. **프로필 모달 실패는 메인 페이지 검사 항목으로 본 SPEC(`pages/game.html`, `assets/js/game.js`, `assets/css/game.css`) 변경 범위 밖**. 게임 페이지 자체에 대한 자동화 시나리오는 ui-check 스크립트에 부재. 정적 검증으로 보강.
-
-스크린샷: `tests/screenshots/`
+> 주: `tests/ui-check.js`는 루트 `index.html`을 대상으로 한 스모크 스위트이며, `pages/game.html`의 모바일 분기(`body.is-touch.is-landscape`)는 커버하지 않는다. 이번 SPEC의 핵심 변경(터치 기반 바디 클래스 전환, 인트로 컷씬 분기·목표 줄)은 정적 분석과 코드 리뷰로 검증하였다.
 
 ## SPEC 기능 검증
-
-- [PASS] **TARGET_SCORE = { easy:50, normal:30, hard:40 }** — game.js:47 정확
-- [PASS] **DIFFICULTY 재배치** — game.js:54-56
-  - normal: notes 4, noteTtl 3500, obstacles 5, obsBaseSpeed 170→290, spawnInterval [1.0,0.35], throwBurst 3, maxObstacles 10 (구 hard 값과 정확 일치)
-  - hard: notes 4, noteTtl 2800, obstacles 6, obsBaseSpeed 200→340, spawnInterval [0.8,0.25], throwBurst 4, maxObstacles 14 (SPEC 강화 표 정확 일치)
-- [PASS] **PROFESSOR 상수** (game.js:61-67) — patrolSpeed 70, throwInterval [2.5,1.4], stethoSpeed 220, stethoMax 4, freezeDuration 2000
-- [PASS] **state.professor.active 토글** — startGame()에서 hard일 때만 initProfessor 호출, 그 외 active=false (game.js:893-897)
-- [PASS] **청진기 충돌 비즉사** — frozenUntil = now + 2000, 콤보 0, 청진기 제거, hits 증가 X (game.js:1839-1855)
-- [PASS] **입력 차단 frozen 포함** — `immobile = stunned || frozen` (game.js:1655-1656)
-- [PASS] **발 밑 정지 인디케이터** — 코럴톤 도트 패턴 그림 (game.js:1971-1983)
-- [PASS] **CSS 변수 :root + html.light 양쪽** — 11개 변수 모두 정의 (game.css:28-37, 54-63)
-- [PASS] **시작 오버레이 hint** — game.html:76 "상 난이도: 이교수의 청진기에 맞으면 2초간 움직일 수 없다." 추가
-- [PASS] **back-to-difficulty 리셋** — stethoscopes/professor.active/frozenUntil 모두 리셋 (game.js:790,795,796)
-- [PASS] **이교수 본체 즉사** (game.js:1811-1835)
-- [PASS] **professorPaletteCache 테마 토글 무효화** (game.js:9, 26)
-- [PASS] **renderPreview hard 분기** — 이교수+청진기 표시 (game.js:2215-2219)
-- [PASS] **initNurseChief hard 속도 80→100** (game.js:1151)
-- [PASS] **이교수 텔레그래프 코럴색** — drawProfessorTelegraph (game.js:1462-1473)
+- **[PASS] 기능 1: 모바일 조이콘/캔버스 축소 노출 버그 수정**
+  - `game.js` L2189-2217: `syncMobileLayoutClasses()`가 `isTouchDevice()` 통과 시 `<body>`에 `is-touch` + `is-portrait`/`is-landscape` 상호 배타 토글. `matchMedia('change')` + `addListener` 폴백 + `resize` 폴백 모두 구비.
+  - `game.css` L1019-1072: 조이콘 `display: flex` + 캔버스 `max-width: calc(100vw - 280px)` + `max-height: calc(100dvh - 60px)`을 `body.is-touch.is-landscape` 스코프로 이관. 뷰포트 폭 >520px인 폰(iPhone 14 Pro, 갤럭시 S22 등)에서도 정상 트리거.
+  - 기존 `@media (max-width: 520px)` 블록(L760-1007)은 타이포/패딩/오버레이 dvh 규칙만 보존 — SPEC "허용" 조건에 정확히 일치.
+- **[PASS] 기능 2: 인트로 컷씬 본문 아래 목표 개수 줄 추가**
+  - `pages/game.html` L93: `<p class="game-overlay__goal" id="cutsceneGoal" hidden></p>` 신규 추가.
+  - `game.js` L1058-1067: `id === 'intro'`일 때 `textContent`로 `"목표 N점 · 45초"` 주입 + `hidden = false`. mid1/mid2는 `textContent = ''` + `hidden = true` 복원 → 재진입 안전.
+  - `game.css` L426-435: `.game-overlay--cutscene .game-overlay__goal` 전용 스타일(CSS 변수만 사용, 하드코딩 0건).
+- **[PASS] 기능 3: 상 난이도 인트로 컷씬 문구 분기**
+  - `game.js` L76-94: `CUTSCENES.intro`가 `textByDiff: { easy, normal, hard }` 구조로 확장. hard 문구 SPEC 준수.
+  - `game.js` L1050-1052: `cut.textByDiff ? (cut.textByDiff[state.difficulty] || cut.textByDiff.easy) : cut.text` — mid1/mid2의 단일 `text` 필드와 호환.
 
 ## 검수 결과 요약
 
@@ -41,7 +32,7 @@
 |---|---|
 | P0 치명 | 0건 |
 | P1 중요 | 0건 |
-| P2 권장 | 3건 |
+| P2 권장 | 2건 |
 
 ## P0 — 치명적 이슈
 없음.
@@ -51,48 +42,45 @@
 
 ## P2 — 권장 사항
 
-### 1. 청진기 매 프레임 getComputedStyle 호출 (성능)
-- **파일**: `assets/js/game.js:1422-1424`
-- **문제**: `drawStethoscope` 내부에서 매 호출마다 `getComputedStyle(document.documentElement).getPropertyValue('--prof-stethoscope-bell')` 등을 3회 호출. 동시 청진기 4개 + 60fps = 초당 720회 강제 layout 조회. `getProfessorPalette()`는 이미 캐시되어 있으므로 동일 캐시에 stethoscope 색상 키도 함께 저장하는 것이 일관됨.
-- **현재**: `const bellColor = getComputedStyle(...).getPropertyValue('--prof-stethoscope-bell').trim() || '#d8d4dc';`
-- **수정 제안**: `getProfessorPalette()` 캐시에 `'_bell'`, `'_rim'`, `'_tube'` 같은 보조 키를 추가하거나, 별도 `getStethoscopePalette()` 캐시 함수 도입. chiefPalette/nursePalette와 패턴 일관성 ↑.
+### 1. SPEC과 `initOrientationHint()` 구현의 미세 불일치
+- **파일**: `assets/js/game.js:2224-2242`
+- **SPEC 6-2**: "표시 조건을 `body.classList.contains('is-touch') && body.classList.contains('is-portrait')`로 변경"
+- **현재 코드**: `const shouldShow = isTouchDevice() && mql.matches;` (L2232)
+- **평가**: 기능적으로 동치이며, 인라인 주석(L2231)에 "이벤트 콜백 순서 독립성 확보"로 이탈 사유를 명시했다. `syncMobileLayoutClasses()`와 `initOrientationHint()`가 둘 다 `matchMedia('change')` 이벤트에 등록될 때, 바디 클래스가 아직 갱신되지 않은 상태에서 `initOrientationHint`가 먼저 실행될 위험을 피하려는 의도 → **합리적 판단**. P2로만 기록.
+- **권장**: 그대로 둔다. 수정 불필요.
 
-### 2. drawStethoscope의 tubeColor 변수 미사용
-- **파일**: `assets/js/game.js:1421, 1450`
-- **문제**: `const tubeColor = palette['J'] || '#181418';` 선언 후 `ch === 't'` 분기는 `tubeStrong || tubeColor` 폴백으로만 쓰임. tubeStrong이 항상 CSS에 정의되어 있으므로 사실상 fallback 경로로만 사용된다. 가독성 저하.
-- **수정 제안**: tubeColor 변수 삭제하고 `ctx.fillStyle = tubeStrong;` 단일 사용. 또는 의도가 이중 폴백이면 주석 추가.
-
-### 3. up 방향 professor 스프라이트의 row 10 우측 머리 음영 키 'H' (소문자 h 의도?)
-- **파일**: `assets/js/game.js:1328`
-- **문제**: `base[10] = '..HhhHHHHHHHhH..';` — 행 끝 두 번째 문자가 'h'(소문자, 음영) 다음 'H'(대문자, 본체)로 끝남. 좌측은 'Hhh'(본체→음영×2) 패턴이지만 우측은 'hH'(음영→본체)로 비대칭. 다른 행(6~9)은 모두 좌우 대칭(`HhSSSSSSSShH`). 시각 비대칭 가능성. 의도된 디자인이면 무시 가능.
-- **수정 제안**: 대칭 의도면 `'..HhhHHHHHHhhH..'` (14칸 유지하면서 양 끝 'h' 대칭)로 검토. 다만 SPEC 도트표는 down 자세만 명시했으므로 P2.
+### 2. `resize` 리스너가 두 함수에서 중복 등록
+- **파일**: `assets/js/game.js:2216, 2251`
+- **상황**: `syncMobileLayoutClasses()`와 `initOrientationHint()`가 각각 `window.addEventListener('resize', …)` 등록 → 뷰포트 리사이즈 시 두 콜백이 모두 실행.
+- **영향**: 실질적 부작용 없음(서로 다른 상태를 다룸). 다만 오리엔테이션 변경 시 두 번 재계산.
+- **권장**: 현 설계 유지. 굳이 합치면 가독성 희생. P2 관찰만.
 
 ## 통과 항목
+- **보안**: `triggerCutscene()`이 컷씬 본문·목표 줄을 전부 `textContent`로 주입 → XSS 0. `innerHTML` 신규 사용 0건.
+- **패턴 일관성**: CSS 네이티브 중첩 `&` 유지(SCSS 문법 혼입 없음), BEM 준수(`.game-overlay__goal` 재사용, 신규 클래스 0), CSS 변수만 사용(`--text-muted`, `--brand-light`), 하드코딩 색상 0, `!important` 신규 0, `-webkit-backdrop-filter` 페어링 유지.
+- **JS 패턴**: 가드 클래스(`if (!body) return`, `if (!isTouchDevice()) return`, `if (goalEl)`), 함수 선언식(유틸/init), `addEventListener`/`addListener` 폴백, JSDoc 주석 + 섹션 구분선 유지.
+- **접근성**: `aria-hidden`/`aria-label`/`role="dialog"` 기존 속성 무변경, `prefers-reduced-motion` 블록(L1161-1207) 무변경, Escape/Enter/Space 컷씬 닫기 유지(L1096-1103).
+- **반응형**: `@media (max-width: 520px)` 블록의 오버레이 `position: fixed` + `100dvh` 패턴 보존, 초소형 landscape(`@media (max-height: 360px)`) 조이콘 축소 규칙 보존.
+- **Sprint 범위 계약**: `pages/game.html` / `assets/css/game.css` / `assets/js/game.js` 3개 파일만 수정. `index.html`·`style.css`·`main.js` 무변경(git diff 확인). 신규 효과/애니메이션/사운드 0, mid1/mid2 문구 무변경, 게임 밸런스(TARGET_SCORE/GAME_DURATION/속도) 무변경.
+- **파일 간 정합성**: `#cutsceneGoal`(HTML L93) ↔ `document.getElementById('cutsceneGoal')`(JS L1058) ↔ `.game-overlay--cutscene .game-overlay__goal`(CSS L426) 일치. `body.is-touch` / `is-portrait` / `is-landscape` 클래스명 JS↔CSS 일치.
 
-- **보안**: 외부 데이터 주입 없음 (Canvas 픽셀 + 정적 텍스트). innerHTML 미사용. textContent로만 cutscene/HUD 갱신. eval/document.write 없음.
-- **CSS 패턴**: 신규 클래스 0개 (SPEC "새 CSS 클래스 금지" 준수). 11개 변수 모두 :root/html.light 양쪽 정의. `!important` 미사용. backdrop-filter 신규 추가 없음.
-- **JS 패턴**: 가드 클래스(`if (!prof.active || !prof.patrolPath.length) return;`) 사용. JSDoc 주석 + 섹션 구분선 풍부. console.error 미사용. drawNurseChief/initNurseChief/updateNurseChief 패턴 정확히 미러링.
-- **HTML**: 인라인 스타일/이벤트 핸들러 신규 추가 없음. 신규 hint는 기존 `.game-overlay__hint` 클래스 재사용.
-- **반응형 & 접근성**: reduced-motion 분기 모두 처리 (청진기 회전, 텔레그래프 깜빡임, frozen 깜빡임 모두 비활성. 단 frozen 메커닉 자체는 적용 — SPEC 일치). 신규 캔버스 요소는 기존 캔버스 반응형에 편승.
-- **파일 간 정합성**: `--prof-*` CSS 변수 11개 ↔ JS readVar 키 정확 일치. state.professor 필드 startGame/back-to-difficulty/update/render 모두 일관 참조. PROFESSOR.freezeDuration → frozenUntil 정확 반영.
-- **Sprint 범위 준수**: 제3 NPC 추가 X, 청진기 외 신규 투사체 X, 신규 컷씬/효과음 시스템 변경 X, 게임시간/콤보/F 즉사 룰 변경 X, 신규 CSS 클래스 X. 코드 추가는 모두 SPEC 명시 항목 또는 SPEC 동작 필수 (drawProfessorTelegraph는 SPEC "이교수 텔레그래프(!)는 코럴핑크로 표시" 명시 항목).
+## 참고 — 이번 SPEC의 범위 밖이지만 코드베이스에 남아 있는 사항
+- `game.js:940`: `setTimeout(() => triggerCutscene('intro'), 250)` — evaluation_criteria의 "setTimeout으로 애니메이션 완료 처리" 슬롭 패턴과 형태상 유사. 단, 이는 애니메이션 완료 대기가 아닌 "스폰 초기화 후 노출 딜레이" 용도이며, **이전 커밋(`9d48f53 모바일 환경 개선` 이전)부터 존재**한 코드. 이번 SPEC의 변경 범위가 아니므로 감점에 반영하지 않음. 후속 Sprint에서 `requestAnimationFrame` 2회 또는 명시적 `state.started` 플래그로 대체 권장.
 
 ---
 
-## 채점
+## 채점 (기능 변경 기준)
 
-**항목별 점수** (기능 변경 기준 적용):
+**항목별 점수**:
+- 패턴 일관성: 9/10 → BEM/CSS변수/네이티브중첩/JS init 패턴 모두 준수. P2 수준 이탈(resize 중복, initOrientationHint 문구 미세 편차)만 존재
+- 보안 & 접근성: 9/10 → `textContent` 주입으로 XSS 원천 차단, aria·reduced-motion 전부 보존. 사소 감점은 새 요소의 `aria-live` 미지정(부모 `aria-live="polite"`에 포함되어 동작상 OK)
+- 반응형 & UI 품질: 9/10 → 바디 클래스 트리거로 폭 >520px 폰 정상 커버, dvh 기반 축소 유지, 기존 520px 블록 보존. Playwright 게임 페이지 미커버 한계로 감점 -1
+- 기능 완성도: 10/10 → SPEC 3개 기능 전부 정확 구현 + mid1/mid2 backward-compatible fallback + re-entry 안전 (`hidden = true` 복원)
 
-- 패턴 일관성: 9/10 → drawNurseChief/initNurseChief 패턴을 정확히 미러링. CSS 변수·캐시·테마 무효화 모두 기존 패턴 준수. drawStethoscope의 매 프레임 getComputedStyle만 미세 흠.
-- 보안 & 접근성: 10/10 → 외부 데이터 주입 없음, reduced-motion 4개 경로 모두 처리, hint 추가로 신규 메커닉 사전 고지.
-- 반응형 & UI 품질: 9/10 → 캔버스 내부 픽셀 요소만 추가되어 기존 반응형 규칙에 자연 편승. 시각적 식별(이교수 검정 vs 수간호사 흰옷, 코럴 텔레그래프 vs 빨강 텔레그래프) 명확.
-- 기능 완성도: 10/10 → SPEC 13개 항목 모두 정확 구현. 파라미터 표 수치 100% 일치. 청진기 즉사 X / 본체 즉사 O / frozen 입력 차단 / 인디케이터 / back-to-difficulty 리셋까지 누락 없음.
-
-**가중 점수**: (9×0.4) + (10×0.25) + (9×0.2) + (10×0.15) = 3.6 + 2.5 + 1.8 + 1.5 = **9.4 / 10.0**
+**가중 점수**: 9×0.4 + 9×0.25 + 9×0.2 + 10×0.15 = 3.6 + 2.25 + 1.8 + 1.5 = **9.15 / 10.0**
 
 ## 최종 판정: **합격**
 
-**구체적 개선 지시** (다음 라운드 권장 — 합격이므로 필수 아님):
-1. `assets/js/game.js:1419-1457` `drawStethoscope`의 매 프레임 getComputedStyle 호출을 `getProfessorPalette()` 캐시에 통합. (P2 #1)
-2. `assets/js/game.js:1421, 1450` 미사용 `tubeColor` 변수 정리하거나 폴백 의도 주석화. (P2 #2)
-3. `assets/js/game.js:1328` up 방향 professor 스프라이트 row 10의 좌우 비대칭 패턴 의도 확인. (P2 #3)
+**구체적 개선 지시**: 없음 (선택 사항으로만 기록, 재작업 불요)
+1. (선택) 후속 Sprint에서 `game.js:940`의 `setTimeout(() => triggerCutscene('intro'), 250)`을 `requestAnimationFrame` 2회 또는 시작 오버레이의 `transitionend`로 대체 검토
+2. (선택) `syncMobileLayoutClasses()`와 `initOrientationHint()`의 `matchMedia('(orientation: portrait)')` 구독을 한 곳으로 합쳐 중복 `resize` 리스너 제거 검토

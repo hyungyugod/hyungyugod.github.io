@@ -76,7 +76,12 @@
   const CUTSCENES = {
     intro: {
       title: '어느 한적한 병동의 오후',
-      text: '수간호사가 순찰을 돈다. 그 틈을 타, 김간호는 주머니 속 작곡 노트를 슬쩍 꺼낸다… 음표를 모으자.'
+      // 난이도별 분기 — hard는 이교수 청진기 내러티브로 전환
+      textByDiff: {
+        easy: '수간호사가 순찰을 돈다. 그 틈을 타, 김간호는 주머니 속 작곡 노트를 슬쩍 꺼낸다… 음표를 모으자.',
+        normal: '수간호사가 순찰을 돈다. 그 틈을 타, 김간호는 주머니 속 작곡 노트를 슬쩍 꺼낸다… 음표를 모으자.',
+        hard: '학교에서 나온 깐깐한 이교수가 오늘따라 청진기를 휘두른다. 날아오는 청진기를 피하며 음표를 모으자.'
+      }
     },
     mid1: {
       title: '김간호의 속마음 · 15초',
@@ -1041,8 +1046,26 @@
     state.keys = Object.create(null);
 
     // 동적 텍스트는 textContent로만 주입 (XSS 차단)
-    titleEl.textContent = CUTSCENES[id].title;
-    textEl.textContent = CUTSCENES[id].text;
+    const cut = CUTSCENES[id];
+    const text = cut.textByDiff
+      ? (cut.textByDiff[state.difficulty] || cut.textByDiff.easy)
+      : cut.text;
+    titleEl.textContent = cut.title;
+    textEl.textContent = text;
+
+    // 인트로 컷씬 — "목표 N점 · 45초"를 본문 아래 덧붙인다.
+    // 그 외 컷씬(mid1/mid2)에서는 숨긴다.
+    const goalEl = document.getElementById('cutsceneGoal');
+    if (goalEl) {
+      if (id === 'intro') {
+        goalEl.textContent = '목표 ' + TARGET_SCORE[state.difficulty] + '점 · ' + GAME_DURATION + '초';
+        goalEl.hidden = false;
+      } else {
+        goalEl.textContent = '';
+        goalEl.hidden = true;
+      }
+    }
+
     overlay.classList.remove('is-hidden');
 
     const btn = document.getElementById('btnCutsceneContinue');
@@ -2158,16 +2181,56 @@
   }
 
   /**
+   * 터치 디바이스 감지 + orientation 상태를 `<body>` 클래스로 노출한다.
+   * CSS는 이 바디 클래스를 트리거로 조이콘/캔버스 축소/회전 안내를 제어한다.
+   * iPhone Pro Max(landscape 932px 등)처럼 폭 >520px인 폰도 커버하기 위해
+   * 뷰포트 폭이 아닌 디바이스 특성(pointer: coarse) 기반으로 판정한다.
+   */
+  function syncMobileLayoutClasses() {
+    const body = document.body;
+    if (!body) return;
+    if (!isTouchDevice()) return; // 데스크톱은 바디 클래스 미부착 → 기존 레이아웃 유지
+
+    body.classList.add('is-touch');
+
+    const mql = window.matchMedia('(orientation: portrait)');
+
+    const apply = (isPortrait) => {
+      if (isPortrait) {
+        body.classList.add('is-portrait');
+        body.classList.remove('is-landscape');
+      } else {
+        body.classList.add('is-landscape');
+        body.classList.remove('is-portrait');
+      }
+    };
+
+    apply(mql.matches);
+
+    if (typeof mql.addEventListener === 'function') {
+      mql.addEventListener('change', (e) => apply(e.matches));
+    } else if (typeof mql.addListener === 'function') {
+      mql.addListener((e) => apply(e.matches));
+    }
+    // resize 폴백 — 일부 브라우저는 orientation 변경 시 change 이벤트가 지연됨
+    window.addEventListener('resize', () => apply(mql.matches));
+  }
+
+  /**
    * 모바일 세로 모드에서 "가로로 돌려주세요" 오버레이를 토글한다.
    * orientation lock API는 사용하지 않고 안내만 표시 (브라우저 호환성).
+   * 표시 조건은 바디 클래스(`is-touch` + `is-portrait`) 기반 — 뷰포트 폭 >520px인 폰도 커버.
    */
   function initOrientationHint() {
     const hint = document.getElementById('rotateHint');
     if (!hint) return;
-    const mql = window.matchMedia('(max-width: 520px) and (orientation: portrait)');
+    const body = document.body;
+    const mql = window.matchMedia('(orientation: portrait)');
 
-    const apply = (matches) => {
-      if (matches) {
+    const apply = () => {
+      // 바디 클래스 의존 대신 런타임 재계산 — 이벤트 콜백 순서 독립성 확보
+      const shouldShow = isTouchDevice() && mql.matches;
+      if (shouldShow) {
         hint.hidden = false;
         hint.setAttribute('aria-hidden', 'false');
         hint.classList.add('is-visible');
@@ -2178,13 +2241,14 @@
       }
     };
 
-    apply(mql.matches);
+    apply();
     // 최신 브라우저는 addEventListener 지원, 일부 구형은 addListener만
     if (typeof mql.addEventListener === 'function') {
-      mql.addEventListener('change', (e) => apply(e.matches));
+      mql.addEventListener('change', apply);
     } else if (typeof mql.addListener === 'function') {
-      mql.addListener((e) => apply(e.matches));
+      mql.addListener(apply);
     }
+    window.addEventListener('resize', apply);
   }
 
   // =====================================================
@@ -2193,6 +2257,7 @@
   loadBest();
   updateBestHud();
   updateStartGoal();
+  syncMobileLayoutClasses();
   if (isTouchDevice()) initTouchControls();
   initOrientationHint();
 
