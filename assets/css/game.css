@@ -35,6 +35,14 @@
   --prof-stethoscope: #c8c8d0;
   --prof-stethoscope-tube: #2a2228;
   --prof-stethoscope-bell: #d8d4dc;
+  /* 석조무사 — 수간호사 밑의 남학생 조무래기 (남색 교복 + 짧은 검정 머리 + 날카로운 눈) */
+  --stone-guard-uniform: #2a3550;
+  --stone-guard-uniform-dark: #1a2238;
+  --stone-guard-pants: #1f2533;
+  --stone-guard-skin: #e8c9a6;
+  --stone-guard-hair: #1a1418;
+  --stone-guard-eye: #2a2228;
+  --stone-guard-shoe: #0f0f12;
   /* 정간호 — 근육질 짧은머리 + 곡괭이 */
   --nurse-hair-jung: #2a1a12;
   --nurse-hair-jung-shadow: #180c08;
@@ -79,6 +87,14 @@ html.light {
   --prof-stethoscope: #b0b0b8;
   --prof-stethoscope-tube: #1f1a20;
   --prof-stethoscope-bell: #c8c4cc;
+  /* 라이트 테마 석조무사 — 어두운 톤 유지로 흰 배경에서도 남색 교복 실루엣 식별 */
+  --stone-guard-uniform: #23304a;
+  --stone-guard-uniform-dark: #141c30;
+  --stone-guard-pants: #181e2a;
+  --stone-guard-skin: #dcb894;
+  --stone-guard-hair: #0e0a0e;
+  --stone-guard-eye: #1a141a;
+  --stone-guard-shoe: #080808;
   /* 라이트 테마 캐릭터 팔레트 */
   --nurse-hair-jung: #1f1410;
   --nurse-hair-jung-shadow: #0f0806;

@@ -7,6 +7,8 @@
   const nursePaletteCache = Object.create(null);
   // 이교수 색상 팔레트 캐시 — 테마 전환 시 무효화 (drawProfessor / drawStethoscope에서 사용)
   let professorPaletteCache = null;
+  // 석조무사 색상 팔레트 캐시 — 테마 전환 시 무효화 (drawStoneGuard에서 사용)
+  let stoneGuardPaletteCache = null;
 
   // =====================================================
   // 테마 토글 (main.js initThemeToggle과 동일 로직 재현)
@@ -24,6 +26,8 @@
       for (const k in nursePaletteCache) delete nursePaletteCache[k];
       // 이교수 팔레트 캐시 무효화 — 동일 이유
       professorPaletteCache = null;
+      // 석조무사 팔레트 캐시 무효화 — 동일 이유
+      stoneGuardPaletteCache = null;
       // 선택창의 카드 canvas 재렌더 — 새 테마 팔레트로 정면 스프라이트 갱신
       const cardCanvases = document.querySelectorAll('.game-character-card');
       cardCanvases.forEach((card) => {
@@ -90,6 +94,13 @@
     freezeDuration: 2000        // ms — 피격 시 정지 디버프 시간
   };
 
+  // 석조무사 — 중(normal) 난이도 전용 조무래기 NPC (수간호사 밑 남학생).
+  // 투사체를 던지지 않고 4지점 사각 순환만 수행한다. 접촉 시 즉사.
+  const STONE_GUARD = {
+    patrolSpeed: 55,   // px/s — 수간호사(normal baseSpeed/curve 기반)·이교수(70)보다 느리게
+    hitbox: 14         // 플레이어 본체 히트박스 크기 (수간호사/이교수와 동일)
+  };
+
   // 콤보 단계별 수집 사운드 — C장조 스케일 (C4→D4→E4→G4→A4→C5→D5→E5→G5→A5)
   const SCALE_FREQS = [261.63, 293.66, 329.63, 392.00, 440.00, 523.25, 587.33, 659.25, 783.99, 880.00];
 
@@ -154,6 +165,10 @@
     mid2: {
       title: '수간호사의 눈초리 · 30초',
       text: '"{NAME} 학생, 거기서 뭐 하나?" 수간호사의 F가 더 거세게 날아든다.'
+    },
+    introStoneGuard: {
+      title: '경고 · 석조무사 출현',
+      text: '수간호사의 충실한 부하 석조무사가 출현합니다! 마주치면 잡혀갑니다. 절대 만나지 마세요.'
     }
   };
 
@@ -955,6 +970,16 @@
       telegraphUntil: 0,
       throwArmUntil: 0,
       active: false
+    },
+    // 석조무사 NPC — 중 난이도에서만 active=true. 순수 이동형(투척 없음), 접촉 시 즉사.
+    stoneGuard: {
+      x: 0, y: 0,
+      dir: 'down',
+      frameAcc: 0,
+      frame: 0,
+      patrolPath: [],
+      patrolIdx: 0,
+      active: false
     }
   };
 
@@ -1154,6 +1179,7 @@
       state.gameoverReason = null;
       state.nurseChief.active = false;
       state.professor.active = false;
+      state.stoneGuard.active = false;
       state.player.frozenUntil = 0;
       // HUD 리셋
       hudTime.textContent = String(GAME_DURATION);
@@ -1541,6 +1567,13 @@
       state.professor.active = false;
     }
 
+    // 석조무사 NPC 초기화 — 중 난이도 전용. 그 외 난이도는 명시적으로 비활성화.
+    if (state.difficulty === 'normal') {
+      initStoneGuard();
+    } else {
+      state.stoneGuard.active = false;
+    }
+
     // 비네트/셰이크 잔존 클래스 정리
     if (canvasWrap) {
       canvasWrap.classList.remove('is-shake', 'is-gameover');
@@ -1680,7 +1713,7 @@
   // =====================================================
   /**
    * 컷씬 표시 + 게임 루프 정지
-   * @param {'intro'|'mid1'|'mid2'} id - 컷씬 식별자
+   * @param {'intro'|'mid1'|'mid2'|'introStoneGuard'} id - 컷씬 식별자
    */
   function triggerCutscene(id) {
     if (!CUTSCENES[id] || !state.cutscenesShown || state.cutscenesShown.has(id)) return;
@@ -1738,6 +1771,15 @@
     const overlay = document.getElementById('overlayCutscene');
     if (!overlay || overlay.classList.contains('is-hidden')) return;
     overlay.classList.add('is-hidden');
+    // intro 컷씬 종료 후 normal 난이도면 석조무사 안내문을 연이어 노출
+    const chainStoneGuard = state.difficulty === 'normal'
+      && state.cutscenesShown
+      && state.cutscenesShown.has('intro')
+      && !state.cutscenesShown.has('introStoneGuard');
+    if (chainStoneGuard) {
+      setTimeout(() => triggerCutscene('introStoneGuard'), 150);
+      return;
+    }
     state.running = true;
     const now = performance.now();
     state.lastTs = now; // dt 폭주 방지
@@ -1768,8 +1810,14 @@
   // 스폰 로직
   // =====================================================
   function spawnNote() {
-    // 플레이어 주변 안전지대 회피 (Major #10)
+    // 플레이어 주변 안전지대 회피 (Major #10) + 석조무사 타일 주변 회피 (불공정 즉사 방지)
     const avoid = state.map ? [playerTile()] : [];
+    if (state.stoneGuard.active) {
+      avoid.push({
+        c: Math.floor(state.stoneGuard.x / TILE),
+        r: Math.floor(state.stoneGuard.y / TILE)
+      });
+    }
     const tile = findEmptyTile(state.map, Math.random, avoid);
     state.notes.push({
       x: tile.c * TILE + (TILE - 12) / 2,
@@ -2304,6 +2352,216 @@
     playTone(180, 0.07);
   }
 
+  // =====================================================
+  // 석조무사 NPC — 중 난이도 전용 조무래기
+  //  - 수간호사 밑에서 심부름하는 남학생. 투척 없음. 접촉 즉사.
+  //  - 이교수의 패트롤 로직을 차용하되 청진기/텔레그래프/정지 필드는 전부 제거.
+  // =====================================================
+  /**
+   * 석조무사 스프라이트 — 16×20 픽셀 도트.
+   * 짧은 검정 머리(H) + 피부(K) + 눈(E) + 남색 교복 상의(U, 음영 u, 세로 단추 라인) + 짙은 회색 바지(P) + 검정 구두(B).
+   * 수간호사의 캡/십자, 이교수의 안경/V자 라펠은 의도적으로 배제하여 "남학생 조무래기" 실루엣 확보.
+   * @param {'up'|'down'|'left'|'right'} dir
+   * @param {number} frame - 0(정지) / 1 / 2 (걷기 발 교차)
+   */
+  function stoneGuardSprite(dir, frame) {
+    // 정면 기본형
+    const base = [
+      '................', // 0
+      '.....HHHHHH.....', // 1 머리 윗단
+      '....HHHHHHHH....', // 2 짧은 검정 머리 폭 최대
+      '....HHHHHHHH....', // 3
+      '....HKKKKKKH....', // 4 이마 + 헤어라인
+      '....KKKKKKKK....', // 5 얼굴 상단
+      '....KEKKKKEK....', // 6 날카로운 눈 두 점
+      '....KKKKKKKK....', // 7 코 음영 없음(단순)
+      '....KKKKKKKK....', // 8 입은 생략 (단호한 표정)
+      '....KKKKKKKK....', // 9 턱
+      '...UUUUUUUUUU...', // 10 교복 상의 어깨
+      '..UUUuUUUUuUUU..', // 11 교복 폭 + 중앙 단추 라인 음영
+      '..UUUuUUUUuUUU..', // 12
+      '..UUUuUUUUuUUU..', // 13
+      '..UUUUUUUUUUUU..', // 14 교복 하단(셔츠 밑단)
+      '...UUUUUUUUUU...', // 15
+      '....PPPP.PPPP...', // 16 바지 — 가운데 한 픽셀 빈 공간으로 두 다리 구분
+      '....PPPP.PPPP...', // 17
+      '....BBBB.BBBB...', // 18 검정 구두
+      '....BBBB.BBBB...'  // 19
+    ];
+
+    // 방향별 얼굴 — up은 뒷통수(눈 제거), 좌/우는 눈을 한쪽으로 치우침
+    if (dir === 'up') {
+      base[4] = '....HHHHHHHH....';
+      base[5] = '....HHHHHHHH....';
+      base[6] = '....HHHHHHHH....';
+      base[7] = '....HHHHHHHH....';
+      base[8] = '....HHHHHHHH....';
+      base[9] = '....HKKKKKKH....';
+    } else if (dir === 'left') {
+      base[6] = '....KEKKKKKK....';
+    } else if (dir === 'right') {
+      base[6] = '....KKKKKKEK....';
+    }
+
+    // 걷기 프레임 — 발만 교차
+    if (frame === 1) {
+      base[18] = '....BBB...BBB...';
+      base[19] = '....BBBB.BBB....';
+    } else if (frame === 2) {
+      base[18] = '....BBB.BBBB....';
+      base[19] = '....BBB...BBB...';
+    }
+
+    return base;
+  }
+
+  /**
+   * 석조무사 팔레트 — CSS 변수 7개(U/u/P/K/H/E/B) 읽어 캐시.
+   * 테마 토글 시 stoneGuardPaletteCache=null로 무효화되어 재해석된다.
+   */
+  function getStoneGuardPalette() {
+    if (stoneGuardPaletteCache) return stoneGuardPaletteCache;
+    const rootStyle = getComputedStyle(document.documentElement);
+    const readVar = (name, fallback) => {
+      const v = rootStyle.getPropertyValue(name).trim();
+      return v || fallback;
+    };
+    stoneGuardPaletteCache = {
+      'U': readVar('--stone-guard-uniform', '#2a3550'),
+      'u': readVar('--stone-guard-uniform-dark', '#1a2238'),
+      'P': readVar('--stone-guard-pants', '#1f2533'),
+      'K': readVar('--stone-guard-skin', '#e8c9a6'),
+      'H': readVar('--stone-guard-hair', '#1a1418'),
+      'E': readVar('--stone-guard-eye', '#2a2228'),
+      'B': readVar('--stone-guard-shoe', '#0f0f12')
+    };
+    return stoneGuardPaletteCache;
+  }
+
+  /**
+   * 석조무사 렌더 — drawProfessor의 단순 버전 (텔레그래프/투척팔 없음).
+   */
+  function drawStoneGuard(x, y, dir, frame) {
+    const sprite = stoneGuardSprite(dir, frame);
+    const palette = getStoneGuardPalette();
+    const SCALE = 2;
+    const ox = Math.round(x) - 8;
+    let oy = Math.round(y) - 24;
+    // 걷기 프레임일 때 몸체 1px 보빙 — 이교수와 동일 규칙 (reducedMotion 시 고정)
+    if (frame !== 0 && !reducedMotion) oy -= 1;
+    for (let r = 0; r < 20; r++) {
+      const row = sprite[r];
+      for (let c = 0; c < 16; c++) {
+        const ch = row[c];
+        if (ch === '.' || !palette[ch]) continue;
+        ctx.fillStyle = palette[ch];
+        ctx.fillRect(ox + c * SCALE, oy + r * SCALE, SCALE, SCALE);
+      }
+    }
+  }
+
+  /**
+   * 석조무사 초기화 — 중 난이도 startGame에서만 호출.
+   * 4지점 사각 순환 경로, farthest-first로 플레이어 spawn에서 가장 먼 포인트 선택(첫 프레임 즉사 방지).
+   * 벽 타일이면 인접 빈 셀로 클램프.
+   */
+  function initStoneGuard() {
+    const sg = state.stoneGuard;
+    const leftX = TILE * 4;
+    const rightX = TILE * (COLS - 5);
+    const topY = TILE * 4;
+    const bottomY = TILE * (ROWS - 5);
+
+    // 4지점 사각 순환 (수간호사/이교수와 다른 경로로 협공 동선 형성)
+    const rawPath = [
+      { x: leftX,  y: topY },
+      { x: rightX, y: topY },
+      { x: rightX, y: bottomY },
+      { x: leftX,  y: bottomY }
+    ];
+
+    // 벽 타일이면 인접 빈 셀로 클램프 (SPEC 주의사항)
+    sg.patrolPath = rawPath.map((pt) => {
+      const c = Math.floor(pt.x / TILE);
+      const r = Math.floor(pt.y / TILE);
+      if (state.map && state.map[r] && state.map[r][c] === 0) {
+        return { x: pt.x, y: pt.y };
+      }
+      // BFS 없이 가장 가까운 빈 셀 선형 탐색
+      let best = null;
+      let bestD = Infinity;
+      for (let rr = 1; rr < ROWS - 1; rr++) {
+        for (let cc = 1; cc < COLS - 1; cc++) {
+          if (!state.map || state.map[rr][cc] !== 0) continue;
+          const d = Math.abs(cc - c) + Math.abs(rr - r);
+          if (d < bestD) { bestD = d; best = { c: cc, r: rr }; }
+        }
+      }
+      if (!best) return { x: pt.x, y: pt.y };
+      return { x: best.c * TILE + TILE / 2, y: best.r * TILE + TILE / 2 };
+    });
+
+    // 플레이어 spawn에서 가장 먼 포인트 선택 (farthest-first)
+    const spawnPx = state.player.x + state.player.w / 2;
+    const spawnPy = state.player.y + state.player.h / 2;
+    let farIdx = 0;
+    let farDist = -1;
+    for (let i = 0; i < sg.patrolPath.length; i++) {
+      const pt = sg.patrolPath[i];
+      const d = Math.hypot(pt.x - spawnPx, pt.y - spawnPy);
+      if (d > farDist) { farDist = d; farIdx = i; }
+    }
+    sg.patrolIdx = farIdx;
+    sg.x = sg.patrolPath[farIdx].x;
+    sg.y = sg.patrolPath[farIdx].y;
+    sg.dir = 'down';
+    sg.frame = 0;
+    sg.frameAcc = 0;
+    sg.active = true;
+  }
+
+  /**
+   * 석조무사 업데이트 — 순수 이동형. 투척 타이머/텔레그래프 없음.
+   * @param {number} dt - 델타타임(s)
+   * @param {number} now - 현재 시각(ms)
+   */
+  function updateStoneGuard(dt, now) {
+    const sg = state.stoneGuard;
+    if (!sg.active || !sg.patrolPath.length) return;
+
+    // 패트롤 이동
+    const target = sg.patrolPath[sg.patrolIdx];
+    const dx = target.x - sg.x;
+    const dy = target.y - sg.y;
+    const dist = Math.hypot(dx, dy);
+    const step = STONE_GUARD.patrolSpeed * dt;
+
+    if (dist <= step || dist < 0.5) {
+      sg.x = target.x;
+      sg.y = target.y;
+      sg.patrolIdx = (sg.patrolIdx + 1) % sg.patrolPath.length;
+    } else {
+      sg.x += (dx / dist) * step;
+      sg.y += (dy / dist) * step;
+      if (Math.abs(dx) > Math.abs(dy)) {
+        sg.dir = dx > 0 ? 'right' : 'left';
+      } else {
+        sg.dir = dy > 0 ? 'down' : 'up';
+      }
+    }
+
+    // 걷기 프레임 — reducedMotion 시 정지
+    if (!reducedMotion) {
+      sg.frameAcc += dt;
+      if (sg.frameAcc > 0.22) {
+        sg.frameAcc = 0;
+        sg.frame = sg.frame === 1 ? 2 : 1;
+      }
+    } else {
+      sg.frame = 0;
+    }
+  }
+
   /**
    * 파티클 스폰 — 수집 쾌감 시각화 (C8)
    * reduced-motion에선 호출 측에서 생략
@@ -2642,6 +2900,9 @@
     // 이교수 NPC 업데이트 — 상 난이도 전용 (active=false면 함수 내부 가드)
     updateProfessor(dtSlow, now);
 
+    // 석조무사 NPC 업데이트 — 중 난이도 전용 (active=false면 함수 내부 가드)
+    updateStoneGuard(dtSlow, now);
+
     // 청진기 투사체 이동 — 직선 비행, 벽/화면 밖 도달 시 소멸 (관통 X)
     {
       const sStep = PROFESSOR.stethoSpeed * dtSlow;
@@ -2785,6 +3046,33 @@
       const cy = prof.y - PROF_HB / 2;
       if (p.x < cx + PROF_HB && p.x + p.w > cx &&
           p.y < cy + PROF_HB && p.y + p.h > cy) {
+        state.hits += 1;
+        state.combo = 0;
+        updateComboHud(false);
+
+        playTone(110, 0.25);
+        setTimeout(() => playTone(82, 0.35), 100);
+
+        if (canvasWrap && !reducedMotion) {
+          canvasWrap.classList.remove('is-shake');
+          void canvasWrap.offsetWidth;
+          canvasWrap.classList.add('is-shake', 'is-gameover');
+        }
+
+        state.gameoverReason = 'hit';
+        endGame();
+        return;
+      }
+    }
+
+    // 석조무사 본체 충돌 — 수간호사/이교수와 동일하게 즉사 처리 (무적 중 스킵)
+    if (state.stoneGuard.active && now >= p.invincibleUntil) {
+      const sg = state.stoneGuard;
+      const HB = STONE_GUARD.hitbox;
+      const cx = sg.x - HB / 2;
+      const cy = sg.y - HB / 2;
+      if (p.x < cx + HB && p.x + p.w > cx &&
+          p.y < cy + HB && p.y + p.h > cy) {
         state.hits += 1;
         state.combo = 0;
         updateComboHud(false);
@@ -2961,6 +3249,12 @@
       if (prof.telegraphUntil > 0 && now < prof.telegraphUntil) {
         drawProfessorTelegraph(prof.x, prof.y, now);
       }
+    }
+
+    // 석조무사 NPC — 중 난이도 전용 (투척 없음, 순수 이동)
+    const sg = state.stoneGuard;
+    if (sg.active) {
+      drawStoneGuard(sg.x, sg.y, sg.dir, sg.frame);
     }
 
     // 청진기 투사체 — 비행 중 자체 회전 (reduced-motion 시 회전 비활성)

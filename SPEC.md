@@ -1,283 +1,165 @@
 # SPEC.md
 
 ## 개요
-픽셀 작곡 게임 "김간호는 음악박사"에 캐릭터별 능동 스킬 5종을 추가한다. 지금까지 5명 캐릭터는 외형·이름·속마음 대사만 달랐으나, 이번 업데이트로 각 캐릭터의 서사(곡괭이·책·공부·여행)가 게임 메카닉으로 번역된다. 캐릭터 확정 후 스킬 설명 오버레이를 거쳐 게임이 시작되며, 데스크톱은 Shift, 모바일은 십자키 중앙의 신규 원형 버튼으로 사용한다.
+중(normal) 난이도에 수간호사의 조무래기(부하) NPC인 **석조무사**(남학생)를 신규 투입한다. 투사체를 던지지 않고 맵을 단순 이동하며, 플레이어와 접촉하면 즉시 "붙잡힘" 엔딩으로 종료한다. 상(hard) 난이도의 이교수 구현을 기능 골격의 참고 모델로 쓰되, 청진기/텔레그래프/정지 디버프는 제거하고 **순수 이동형 위협**으로 단순화한다.
 
 ## 변경 유형
-**혼합 (디자인 + 기능)** — 새 로직(스킬 시스템·쿨다운·캐릭터별 효과), 새 DOM(스킬 오버레이·스킬 HUD·중앙 스킬 버튼), 새 스타일(악센트 컬러·쿨다운 원형 게이지·모바일 버튼).
+기능 (소량의 디자인 — 신규 16×20 픽셀 스프라이트 + 팔레트 CSS 변수 추가)
 
 ## 디자인 언어 & 의도
-5명이 모두 "같은 스프라이트 다른 옷"이었던 상태에서, 각자의 서사가 손끝에서 발동되는 순간을 만든다. 스킬 오버레이는 기존 게임 오버레이(glassmorphism + 코럴핑크)와 동일 톤이되, 스킬별 악센트 글로우가 카드 테두리에 번지며 "이 캐릭터만의 색"을 각인한다. 인게임 HUD의 쿨다운 게이지는 HUD 시간 슬롯과 동일 서체·사이즈로, 십자키 중앙 스킬 버튼은 방향 버튼(코럴 `--brand`)과 대비되는 웜 옐로우 악센트로 "주역 버튼" 위계를 만든다.
+석조무사는 수간호사 밑에서 심부름하는 **남학생** 조무래기다. 플레이어(학생)와 같은 또래지만 교복 색/디테일을 달리해 "적 진영"임을 즉시 전달한다 — 어두운 남색/짙은 회색 남학생 교복, 짧은 검정 머리, 단호한 눈매로 수간호사 편임을 시각화한다. 움직임은 느리지만 꾸준하게(수간호사보다 느리고, 이교수보다도 느리게) — 플레이어가 "피할 수 있지만 방심하면 잡히는" 중난이도 특유의 긴장감을 만든다. 사운드/비주얼 연출은 수간호사 F 충돌과 동일 처리를 재사용하여 즉사의 무게감을 통일한다.
 
 ## Sprint 범위 계약
-Generator가 SPEC 외 변경을 하려 할 때의 판단 기준:
-- **허용**: 스킬 시스템 동작에 필수적인 기존 코드 연동 — (a) `startGame()`에서 스킬 상태 초기화, (b) `update()` 루프에 스킬 효과 틱 추가, (c) `endGame()`에서 스킬 타이머 클린업, (d) 오버레이 플로우 전환(`btnCharacterConfirm` → 스킬 오버레이), (e) `isAnyOverlayOpen()` 새 오버레이 포함, (f) `clearDpadPressed()`에 스킬 버튼 포함.
-- **금지**:
-  - 캐릭터 스프라이트/팔레트/`nurseSprite`·`drawCharacterCardAvatar` 수정
-  - 맵 생성(`buildMap`) 수정
-  - 수간호사/이교수 AI 및 패트롤 경로 수정
-  - F 투사체(`spawnObstacle`) 생성 로직 수정
-  - 난이도 테이블(`DIFFICULTY`/`TARGET_SCORE`) 수치 변경
-  - 캐릭터 추가/삭제, 이름·태그 변경
-  - 컷씬(`CUTSCENES`)·화캉스 변기(`TOILET`)·콤보 점수 공식 수정
-  - 테마 토글, localStorage 키, 기존 키 바인딩(`KEY_MAP`) 수정
-- **판단 기준**: "이 변경이 없으면 SPEC 스킬이 발동·해제·렌더되지 못하는가?" → YES면 허용. 외적 재디자인·사이드 이펙트 확장은 금지.
 
----
+### 수정 파일
+- **`assets/js/game.js`** — 주된 수정 대상
+  - `STONE_GUARD` 상수 블록 추가 (PROFESSOR 옆)
+  - `state.stoneGuard` 상태 객체 추가 (state.professor 옆)
+  - `initStoneGuard()` / `updateStoneGuard(dt, now)` / `drawStoneGuard(x, y, dir, frame)` / `stoneGuardSprite(dir, frame)` / `getStoneGuardPalette()` 함수 추가
+  - `startGame`에서 `state.difficulty === 'normal'`일 때만 `initStoneGuard()`, 그 외엔 `state.stoneGuard.active = false`
+  - replay 리셋 블록에 `state.stoneGuard.active = false` 추가
+  - 메인 루프에서 `updateStoneGuard(dtSlow, now)` 호출
+  - 렌더 루프에서 `drawStoneGuard(...)` 호출 (이교수 드로잉 블록 인근)
+  - 플레이어-석조무사 AABB 충돌 처리 (수간호사 본체 충돌 로직 복사 패턴)
+  - 음표 스폰 안전거리 필터에 `stoneGuardTile` 추가
+
+- **`assets/css/game.css`** — 팔레트 CSS 변수만 추가 (신규 선택자/레이아웃 없음)
+  - `:root` 및 `html.light`에 `--stone-guard-*` 변수 세트 추가
+
+### 허용되는 부수 변경
+- 음표 스폰 안전 필터에 석조무사 타일 추가 (미추가 시 석조무사 바로 위 스폰으로 불공정 즉사 발생)
+- `gameoverReason === 'hit'` 엔딩 텍스트에 석조무사 원인 분기(선택) — 불가하면 기존 "수간호사에게 걸렸어요!" 재사용 허용
+
+### 금지 사항
+- easy/hard 밸런스 변경 금지 (`DIFFICULTY.easy/hard`, `TARGET_SCORE`, `PROFESSOR` 불변)
+- 기존 수간호사(`nurseChief`) / 이교수(`professor`) / 임간호 "벼락치기" 로직 변경 금지
+- 새 파일 생성 금지
+- 청진기·투사체·텔레그래프·정지(frozen) 등 원거리 메커닉 추가 금지
+- DIFFICULTY.normal의 기존 필드 수정 금지 (석조무사 정보는 별도 `STONE_GUARD` 전역 상수로만 표현)
+- CSS 테마 대규모 변경 금지 — 신규 변수 추가만
+- `index.html`(게임 외 메인), `assets/js/main.js` 수정 금지 — 게임 전용 변경
+
+### 판단 기준
+"이 변경이 없으면 석조무사 기능이 제대로 동작하지 않는가?" → YES면 허용, NO면 금지.
 
 ## 변경 범위
 
-### pages/game.html 변경사항
-
-1. **스킬 설명 오버레이 추가** — `overlayCharacter`와 `overlayCutscene` 사이에 삽입:
-```html
-<div class="game-overlay is-hidden" id="overlaySkill">
-  <div class="game-overlay__panel game-overlay__panel--skill" role="dialog" aria-labelledby="skillTitle" aria-describedby="skillDesc">
-    <h2 class="game-overlay__title" id="skillTitle">특수 스킬</h2>
-    <div class="game-skill-card" id="skillCard">
-      <!-- JS가 채움: 아바타 canvas + 이름 + 스킬명 + 설명 + 쿨다운 + 키 안내 -->
-    </div>
-    <p class="game-overlay__hint" id="skillKeyHint">
-      <span class="game-controls__key">Shift</span> · 모바일: 십자키 중앙 버튼
-    </p>
-    <div class="game-cta">
-      <button class="game-btn game-btn--ghost" type="button" id="btnSkillBack">← 캐릭터 다시</button>
-      <button class="game-btn" type="button" id="btnSkillStart">시작</button>
-    </div>
-  </div>
-</div>
+### `assets/css/game.css` 변경사항
+`:root` 블록에 추가 (남학생 교복 팔레트):
+```
+--stone-guard-uniform: #2a3550;     /* 남색 교복 상의 */
+--stone-guard-uniform-dark: #1a2238; /* 교복 음영 */
+--stone-guard-pants: #1f2533;       /* 짙은 회색 바지 */
+--stone-guard-skin: #e8c9a6;        /* 피부 */
+--stone-guard-hair: #1a1418;        /* 짧은 검정 머리 */
+--stone-guard-eye: #2a2228;         /* 눈 */
+--stone-guard-shoe: #0f0f12;        /* 검정 구두 */
+```
+`html.light` 블록에 추가:
+```
+--stone-guard-uniform: #23304a;
+--stone-guard-uniform-dark: #141c30;
+--stone-guard-pants: #181e2a;
+--stone-guard-skin: #dcb894;
+--stone-guard-hair: #0e0a0e;
+--stone-guard-eye: #1a141a;
+--stone-guard-shoe: #080808;
 ```
 
-2. **인게임 HUD 스킬 슬롯 추가** — 기존 `.game-hud` 내부 Best 슬롯 다음:
-```html
-<div class="game-hud__slot game-hud__slot--skill" id="hudSkillSlot">
-  <span class="game-hud__label">Skill</span>
-  <span class="game-hud__skill" id="hudSkill" aria-live="polite">
-    <span class="game-hud__skill-ring" aria-hidden="true"></span>
-    <span class="game-hud__skill-label" id="hudSkillLabel">—</span>
-  </span>
-</div>
+### `assets/js/game.js` 변경사항
+
+1) 팔레트 캐시: `let stoneGuardPaletteCache = null;` 추가 + 테마 토글 핸들러에서 무효화.
+
+2) 상수 블록 (PROFESSOR 아래):
 ```
-
-3. **모바일 중앙 스킬 버튼 추가** — `.game-keypad__dpad` 내부, `data-dir` 4버튼 뒤:
-```html
-<button class="game-keypad__btn game-keypad__skill"
-        type="button"
-        id="keypadSkill"
-        aria-label="스킬 사용">
-  <span class="game-keypad__skill-label" aria-hidden="true">SK</span>
-</button>
-```
-grid 중앙(`grid-column: 2; grid-row: 2;`)에 위치.
-
-4. **컨트롤 힌트 업데이트** — 기존 `.game-controls` 끝에 추가:
-```html
-<span>스킬 <span class="game-controls__key">Shift</span></span>
-```
-
-### assets/css/game.css 변경사항
-
-> **주의**: 스킬 관련 스타일은 `game.css`에 추가한다 (게임 전용 파일). `style.css`는 건드리지 않음. 만약 game.css가 없다면 기존 게임 CSS 위치에 추가.
-
-1. **스킬 악센트 컬러** — `.game-overlay__panel--skill` 및 `.game-keypad__skill`에 `data-char` 속성으로 스코프 변수:
-   - kim: `#d4a49c` (브랜드 라이트 — 기본)
-   - jung: `#b8a87a` (산·흙 웜 골드)
-   - geon: `#9ab5c4` (책·잉크 쿨 블루그레이)
-   - im: `#c9a8d4` (공부·집중 소프트 라벤더)
-   - lee: `#e8c588` (여행·햇살 웜 옐로우)
-   - 공통 글로우: `--skill-accent-glow: color-mix(in srgb, var(--skill-accent) 30%, transparent)` (폴백 `var(--brand-20)`)
-
-2. **`.game-overlay__panel--skill`** — 기존 `.game-overlay__panel--character` 레이아웃과 동일 폭·패딩:
-```css
-.game-overlay__panel--skill {
-  max-width: 520px;
-  text-align: center;
-  & .game-skill-card { /* glassmorphism + border */ }
-  & .game-skill-card__avatar { /* 64px, drawCharacterCardAvatar 재사용 */ }
-  & .game-skill-card__skill-name { color: var(--skill-accent); text-shadow: 0 0 12px var(--skill-accent-glow); }
-  & .game-skill-card__desc { color: var(--text-muted); }
-}
-```
-카드 진입 `translateY(8px)` → `0` 페이드인, reduced-motion에서 즉시.
-
-3. **`.game-hud__slot--skill`** — 원형 쿨다운 게이지 (`conic-gradient(var(--brand) calc(var(--skill-prog) * 360deg), var(--brand-08) 0)`), 28×28px. 상태 클래스: `.is-skill-ready`(풀차+브레싱), `.is-skill-cooling`(회색+부분), `.is-skill-flash`(0.4s 플래시).
-
-4. **`.game-keypad__skill`** — 중앙 원형 버튼:
-```css
-.game-keypad__skill {
-  grid-column: 2; grid-row: 2;
-  width: 72px; height: 72px; border-radius: 50%;
-  border: 1px solid var(--skill-accent, var(--brand-40));
-  background: var(--bg-card);
-  color: var(--skill-accent, var(--brand-light));
-  font-weight: 800;
-  &.is-skill-cooling { opacity: 0.45; color: var(--text-dim); }
-  &.is-skill-ready { box-shadow: 0 0 18px var(--skill-accent-glow); }
-}
-@media (max-width: 380px) {
-  .game-keypad__skill { width: 60px; height: 60px; font-size: 15px; }
-}
-```
-터치 타겟 72/60px (둘 다 48px 이상).
-
-5. **반응형** — `@media (max-width: 520px)`에 패널 폭/패딩 축소.
-
-6. **접근성** — `prefers-reduced-motion: reduce`에서 브레싱/플래시/카드 진입 transition 비활성.
-
-### assets/js/game.js 변경사항
-
-1. **스킬 상수**:
-```js
-const SKILLS = {
-  kim:  { name: '응급 회피',    desc: '잠깐 무적 상태가 되어 F를 흘려보낸다.',            durationMs: 1000, cooldownMs: 18000, abbr: '회피' },
-  jung: { name: '곡괭이 돌진',  desc: '바라보는 방향으로 3타일 돌진하며 F 1개를 분쇄한다.', durationMs: 260,  cooldownMs: 22000, abbr: '돌진' },
-  geon: { name: '북클럽 소집',  desc: '주변 6타일 안의 음표를 한번에 끌어와 수집한다.',      durationMs: 0,    cooldownMs: 20000, abbr: '소집' },
-  im:   { name: '벼락치기',    desc: '2초간 F와 수간호사의 속도를 40% 느려지게 한다.',      durationMs: 2000, cooldownMs: 25000, abbr: '집중' },
-  lee:  { name: '워프',        desc: '가장 먼 빈 타일로 순간 이동하고 0.5초 착지 무적.',     durationMs: 500,  cooldownMs: 22000, abbr: '워프' }
+const STONE_GUARD = {
+  patrolSpeed: 55,
+  hitbox: 14
 };
-const IM_SLOW_FACTOR = 0.6;
-const JUNG_DASH_TILES = 3;
-const JUNG_DASH_PX = JUNG_DASH_TILES * TILE;
-const JUNG_BREAK_RADIUS = 18;
-const GEON_MAGNET_RADIUS = 6 * TILE;
 ```
 
-2. **state 확장**:
-```js
-skill: { readyAt: 0, activeUntil: 0, lastUsedAt: 0, flashUntil: 0 }
+3) state 추가:
 ```
-`state.player`에 `invincibleUntil: 0` 추가.
+stoneGuard: { x:0, y:0, dir:'down', frameAcc:0, frame:0, patrolPath:[], patrolIdx:0, active:false }
+```
 
-3. **DOM 참조 추가**: `overlaySkill`, `skillCard`, `btnSkillBack`, `btnSkillStart`, `hudSkill`, `hudSkillLabel`, `hudSkillSlot`, `keypadSkillBtn`.
+4) `initStoneGuard()` — initProfessor 패턴 미러링(투척 필드 제외). 4지점 사각 순환 경로, farthest-first로 플레이어 spawn 가장 먼 포인트 선택, 벽 타일이면 인접 빈 셀로 클램프.
 
-4. **`renderSkillOverlay()`** — `skillCard`를 removeChild로 비우고 DOM API로 재구성 (innerHTML 금지). canvas + `drawCharacterCardAvatar(canvas, state.characterId)` 재사용. panel에 `data-char="${state.characterId}"` 설정.
+5) `updateStoneGuard(dt, now)` — updateProfessor에서 투척 타이머/텔레그래프 블록 전체 제거. 패트롤 이동 + dir 업데이트 + 걷기 프레임(frameAcc > 0.22) + reducedMotion 분기.
 
-5. **플로우 전환** — `btnCharacterConfirm` 핸들러 수정:
-```js
-btnCharacterConfirm.addEventListener('click', () => {
-  saveCharacter();
-  applyNurseNameToDom();
-  if (overlayCharacter) overlayCharacter.classList.add('is-hidden');
-  if (overlaySkill) {
-    renderSkillOverlay();
-    overlaySkill.classList.remove('is-hidden');
-    if (btnSkillStart) btnSkillStart.focus({ preventScroll: true });
-  } else {
-    startGame();
+6) `stoneGuardSprite(dir, frame)` — 16×20 픽셀. 코드: U(교복) u(교복 음영) P(바지) K(피부) H(머리) E(눈) B(구두). 짧은 검정 머리 + 네모난 얼굴 + 날카로운 눈 + 남색 교복 상의(가슴에 세로 단추 1~2개 음영 라인) + 짙은 회색 바지 + 검정 구두. 수간호사 캡/십자 없음, 이교수 안경/자켓 V자 라펠 없음. 방향별 up/left/right 분기, frame 1/2 발 교차.
+
+7) `getStoneGuardPalette()` — CSS 변수 7개(U/u/P/K/H/E/B) 읽어 캐시.
+
+8) `drawStoneGuard(x, y, dir, frame)` — drawProfessor의 단순 버전.
+
+9) startGame 분기:
+```
+if (state.difficulty === 'normal') { initStoneGuard(); }
+else { state.stoneGuard.active = false; }
+```
+
+10) replay 리셋: `state.stoneGuard.active = false;`.
+
+11) 메인 루프: `updateStoneGuard(dtSlow, now);`.
+
+12) 렌더: `if (state.stoneGuard.active) drawStoneGuard(...);`.
+
+13) 플레이어 충돌 (이교수 본체 충돌 다음 삽입):
+```
+if (state.stoneGuard.active && now >= p.invincibleUntil) {
+  const sg = state.stoneGuard;
+  const HB = STONE_GUARD.hitbox;
+  const cx = sg.x - HB/2, cy = sg.y - HB/2;
+  if (p.x < cx+HB && p.x+p.w > cx && p.y < cy+HB && p.y+p.h > cy) {
+    state.hits += 1; state.combo = 0; updateComboHud(false);
+    playTone(110, 0.25); setTimeout(() => playTone(82, 0.35), 100);
+    if (canvasWrap && !reducedMotion) {
+      canvasWrap.classList.remove('is-shake');
+      void canvasWrap.offsetWidth;
+      canvasWrap.classList.add('is-shake', 'is-gameover');
+    }
+    state.gameoverReason = 'hit';
+    endGame();
+    return;
   }
-});
-```
-`btnSkillStart` → startGame / `btnSkillBack` → 캐릭터 오버레이 복귀 / Esc → Back.
-
-6. **`isAnyOverlayOpen()` 확장** — `overlaySkill` 포함.
-
-7. **`startGame()` 초기화 추가**:
-```js
-state.skill.readyAt = performance.now();
-state.skill.activeUntil = 0;
-state.skill.lastUsedAt = 0;
-state.skill.flashUntil = 0;
-state.player.invincibleUntil = 0;
-updateSkillHud(performance.now());
-```
-
-8. **키 바인딩** — keydown 핸들러:
-```js
-if ((e.code === 'ShiftLeft' || e.code === 'ShiftRight') && !e.repeat) {
-  if (isAnyOverlayOpen() || !state.running) return;
-  e.preventDefault();
-  tryActivateSkill();
 }
 ```
 
-9. **모바일 스킬 버튼 바인딩** — `initKeypad()` 끝에 pointerdown으로 `tryActivateSkill()` 호출.
+14) 음표 스폰 안전거리에 석조무사 타일 추가.
 
-10. **`tryActivateSkill()`**:
-```js
-function tryActivateSkill() {
-  const now = performance.now();
-  if (now < state.skill.readyAt) return;
-  const def = SKILLS[state.characterId] || SKILLS.kim;
-  const fired = executeSkill(state.characterId, now);
-  if (!fired) return;
-  state.skill.lastUsedAt = now;
-  state.skill.readyAt = now + def.cooldownMs;
-  state.skill.activeUntil = now + def.durationMs;
-  state.skill.flashUntil = now + 400;
-  playTone(660, 0.08);
-  setTimeout(() => playTone(880, 0.1), 70);
-  if (!reducedMotion) spawnParticles(state.player.x + 7, state.player.y + 7, 12);
-  updateSkillHud(now);
-}
-```
+### 스토리/컷씬 텍스트
+- normal intro 텍스트 현행 유지. 수정 금지(범위 최소화).
+- renderPreview도 현행 유지.
 
-11. **`executeSkill(id, now)`** — 실패 시 false 반환:
-- **kim**: `invincibleUntil = now + 1000` → true
-- **jung**: player.dir 벡터, `JUNG_DASH_PX`를 TILE/2 간격으로 쪼개 `isWallAt` 체크하며 전진. 경로 중 F 가장 가까운 1개가 `< JUNG_BREAK_RADIUS`면 제거 + 파티클. `invincibleUntil = now + 260` → true
-- **geon**: 플레이어 중심 거리 ≤ `GEON_MAGNET_RADIUS`인 음표 수집 — 기존 음표 수집 공식(combo++, gain, hudScore, updateComboHud) 재실행. 사운드는 마지막 1회만, 파티클 각 위치 4개. 수집 0개면 false (발동 실패).
-- **im**: `activeUntil = now + 2000` → true
-- **lee**: 맵 전 칸 중 `m[r][c]===0`이고 수간호사/이교수로부터 `SPAWN_SAFE_DIST` 이상인 칸들 중 플레이어로부터 맨해튼 거리 최대 칸. `player.x/y = 타일좌상단 + 3`. `invincibleUntil = now + 500`. 파티클 출발·도착 2연. → true
+## 기능 상세
 
-12. **임간호 슬로우 적용** — `update()` 내:
-```js
-const imSlow = (state.characterId === 'im' && performance.now() < state.skill.activeUntil) ? IM_SLOW_FACTOR : 1;
-```
-F 이동 `dt * imSlow`, 청진기 `dt * imSlow`, `updateNurseChief(dt * imSlow, now)`, `updateProfessor(dt * imSlow, now)`. **플레이어 속도는 원본 dt 유지**.
+### 기능 1: 난이도 게이팅
+normal에서만 스폰. easy/hard는 비활성. startGame 분기 + active 플래그 일괄 가드.
 
-13. **무적 판정** — F/수간호사/이교수/청진기 충돌 블록 진입 직후:
-```js
-if (performance.now() < state.player.invincibleUntil) return; // 블록 스킵
-```
+### 기능 2: 순찰 이동 (투척 없음)
+4지점 사각 순환 55 px/s. 플레이어 추적 없음. 이교수 이동 로직 재사용, 투척 타이머/텔레그래프 없음.
 
-14. **`updateSkillHud(now)`**:
-- `hudSkillLabel.textContent = def.abbr`
-- `prog = 1 - Math.max(0, Math.min(1, (state.skill.readyAt - now) / def.cooldownMs))`
-- `hudSkill.style.setProperty('--skill-prog', String(prog))`
-- 상태 클래스 토글 (`is-skill-ready/cooling/flash`) — HUD와 keypadSkillBtn 동시.
-- 매 프레임 호출 (update 말미).
+### 기능 3: 접촉 즉사
+14×14 AABB 겹치면 즉시 endGame(`gameoverReason = 'hit'`). 수간호사 F 즉사와 동일 연출. invincibleUntil 존중. 기존 "수간호사에게 걸렸어요!" 엔딩 재사용.
 
-15. **`endGame()` 정리** — skill 필드 초기화 + HUD 클래스 제거.
+### 기능 4: 픽셀 아트 식별성
+남색 교복 + 짧은 검정 머리 + 날카로운 눈 + 검정 구두. 수간호사·이교수·플레이어 학생과 즉시 구분되도록 남색 교복 톤을 유지. 테마 전환 시 팔레트 캐시 무효화.
 
-16. **`clearDpadPressed()`에 keypadSkillBtn is-pressed 제거 추가**.
+## 수용 기준
+1. easy/hard 시작 시 석조무사 미렌더 + `state.stoneGuard.active === false`.
+2. normal 시작 시 석조무사 1명 등장, 패트롤 경로 이동.
+3. normal에서 접촉 시 즉시 endGame + 종료 오버레이 + 셰이크/비네트.
+4. 투사체 미생성 (`state.stethoscopes`/`state.obstacles`에 추가 금지).
+5. 수간호사/이교수/벼락치기/청진기 정지 기존 로직 불변.
+6. 테마 전환 시 석조무사 색상 재해석.
+7. replay 및 "난이도 다시 선택" 흐름에서 상태 올바르게 초기화.
+8. 음표가 석조무사 타일 주변 SPAWN_SAFE_DIST(4) 내 생성 안 됨.
+9. prefers-reduced-motion 시 걷기 프레임 고정 + 셰이크 생략.
 
-17. **테마 토글 시** — `overlaySkill`이 열려 있으면 `renderSkillOverlay()` 재호출하여 아바타 재렌더.
-
-18. **조이콘 매핑** — 기존 매핑이 확인되면 남는 버튼 하나 할당, 없으면 생략.
-
----
-
-## 밸런스 (게임 45초 기준)
-
-| 캐릭터 | CD | 평균 사용 | 강도 | 리스크 |
-|---|---|---|---|---|
-| kim | 18s | 2~3회 | 중 | 점수 이득 없음 |
-| jung | 22s | 2회 | 상 | F 1개 확정 분쇄 but 짧은 거리 |
-| geon | 20s | 2회 | 상 | 음표 0개면 실패(쿨다운 미소모) |
-| im | 25s | 1~2회 | 상 | 광역 디버프 → CD 최장 |
-| lee | 22s | 2회 | 중상 | 불확정 워프 |
-
-기존 F 즉사 룰·TARGET_SCORE 불변이므로 난이도 곡선 유지.
-
----
-
-## 수락 기준
-
-1. 5개 캐릭터 각각 의도한 스킬이 작동한다.
-2. 쿨다운 동작: 연타 방지, 18~25s 이후 재사용 가능.
-3. 오버레이 플로우: 난이도 → 캐릭터 → **스킬 설명** → 게임. 뒤로가기 왕복 가능.
-4. 모바일 중앙 버튼으로 스킬 사용 가능 (터치 타겟 48px+).
-5. 데스크톱 Shift/좌우 모두 스킬 사용 가능.
-6. HUD 쿨다운 게이지 시각 반영.
-7. **기존 게임플레이 전부 동일**: 이동/F 회피/음표 수집/콤보/변기/컷씬/엔딩/테마 토글.
-8. `prefers-reduced-motion`에서 애니메이션 비활성.
-9. XSS 없음: `innerHTML`에 동적 주입 금지, 모두 `textContent`/createElement.
-
----
-
-## 주의
-
-- **범위 위반 방지**: 스프라이트·맵·AI·F 스폰·콤보 공식·난이도 수치 수정 금지.
-- **시그니처 보존**: `updateNurseChief`/`updateProfessor` 본체 불변, 호출부에서 `dt * imSlow`만 스케일.
-- **팬텀 입력**: `clearDpadPressed`에 스킬 버튼 포함.
-- **보안**: `skillCard` 렌더는 `createElement` + `textContent`만 사용.
-- **파일 경로**: `pages/game.html`, `assets/css/game.css` (없으면 기존 게임 CSS 위치), `assets/js/game.js`.
+## 주의사항
+- 초기 4지점 중 벽 타일이면 가장 가까운 빈 셀로 클램프.
+- endGame 문구는 기존 재사용(범위 최소화).
+- reducedMotion 분기 이교수와 동일 패턴.
+- 외부 데이터 렌더 없음 — esc/safeUrl 불필요.
+- STORAGE_KEY 스키마 불변.
