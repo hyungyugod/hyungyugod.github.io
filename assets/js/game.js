@@ -839,6 +839,7 @@
     state.obstacles = [];
     state.particles = [];
     state.keys = Object.create(null);
+    clearDpadPressed();
     state.gameoverReason = null;
     state.player.x = TILE * 2 + 3;
     state.player.y = TILE * 2 + 3;
@@ -896,6 +897,7 @@
     state.running = false;
     if (state.rafId) cancelAnimationFrame(state.rafId);
     state.rafId = null;
+    clearDpadPressed();
 
     // HUD 콤보 초기 톤 정리 (다음 게임 대비)
     if (hudCombo) {
@@ -1566,6 +1568,59 @@
     // 캔버스 위에서의 기본 스크롤/줌 제스처 차단
     canvas.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
     initCanvasTapMove();
+    initDualDpad();
+  }
+
+  /**
+   * 닌텐도 조이콘 스타일 듀얼 D-pad 초기화.
+   * 좌(위/왼쪽/아래) + 우(위/오른쪽/아래) 총 6버튼을 Pointer Events로 바인딩해
+   * `state.keys[dir]` 레일에 직접 반영한다. 동시 입력(대각선) 지원.
+   */
+  function initDualDpad() {
+    const root = document.getElementById('gameJoycons');
+    if (!root) return;
+    root.hidden = false;
+    root.setAttribute('aria-hidden', 'false');
+
+    const btns = root.querySelectorAll('.game-joycon__btn');
+    btns.forEach((btn) => {
+      const dir = btn.dataset.dir;
+      if (!dir) return;
+      let activePointerId = null;
+
+      const release = () => {
+        activePointerId = null;
+        state.keys[dir] = false;
+        btn.classList.remove('is-pressed');
+      };
+
+      btn.addEventListener('pointerdown', (e) => {
+        if (isAnyOverlayOpen()) return;
+        e.preventDefault();
+        activePointerId = e.pointerId;
+        try { btn.setPointerCapture(e.pointerId); } catch (_) { /* capture 실패 무시 */ }
+        state.keys[dir] = true;
+        btn.classList.add('is-pressed');
+      });
+
+      const onEnd = (e) => {
+        if (activePointerId === null) return;
+        if (e.pointerId !== activePointerId) return;
+        release();
+      };
+      btn.addEventListener('pointerup', onEnd);
+      btn.addEventListener('pointercancel', onEnd);
+      btn.addEventListener('pointerleave', onEnd);
+      btn.addEventListener('contextmenu', (e) => e.preventDefault());
+    });
+  }
+
+  /**
+   * 오버레이 전환 시 조이콘의 `is-pressed` 잔존 상태를 정리.
+   */
+  function clearDpadPressed() {
+    const pressed = document.querySelectorAll('#gameJoycons .game-joycon__btn.is-pressed');
+    pressed.forEach((b) => b.classList.remove('is-pressed'));
   }
 
   /**

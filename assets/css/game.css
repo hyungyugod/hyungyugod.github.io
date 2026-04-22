@@ -655,33 +655,48 @@ html.light .game-overlay--cutscene {
   letter-spacing: 0.5px;
 }
 
-/* 가상 D-Pad (모바일 터치 컨트롤) */
-.game-touchpad {
-  width: 100%;
-  display: flex;
-  justify-content: center;
-  padding: 4px 0 0;
-}
-
-.game-touchpad[hidden] {
+/* =====================================================
+   듀얼 조이콘 D-Pad (모바일 가로 모드 전용)
+   좌/우 가장자리 고정 오버레이. 기본은 숨김이며,
+   `@media (max-width: 520px) and (orientation: landscape)`에서만 노출.
+   ===================================================== */
+.game-joycons {
   display: none;
+
+  &[hidden] {
+    display: none;
+  }
 }
 
-.game-touchpad__dpad {
-  position: relative;
-  width: 168px;
-  height: 168px;
+.game-joycon {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: 1fr 1fr;
   grid-template-rows: repeat(3, 1fr);
-  gap: 6px;
+  gap: 8px;
+  background: transparent;
+  pointer-events: none;
 }
 
-.game-touchpad__btn {
+.game-joycon--left {
+  & .game-joycon__btn--up   { grid-column: 2; grid-row: 1; }
+  & .game-joycon__btn--left { grid-column: 1; grid-row: 2; }
+  & .game-joycon__btn--down { grid-column: 2; grid-row: 3; }
+}
+
+.game-joycon--right {
+  & .game-joycon__btn--up    { grid-column: 1; grid-row: 1; }
+  & .game-joycon__btn--right { grid-column: 2; grid-row: 2; }
+  & .game-joycon__btn--down  { grid-column: 1; grid-row: 3; }
+}
+
+.game-joycon__btn {
+  pointer-events: auto;
+  width: 56px;
+  height: 56px;
   border: 1px solid var(--border);
   background: var(--bg-card);
   color: var(--text-muted);
-  border-radius: var(--radius-sm);
+  border-radius: 50%;
   font-size: 18px;
   font-weight: 700;
   cursor: pointer;
@@ -697,7 +712,8 @@ html.light .game-overlay--cutscene {
     background: var(--brand-12);
     border-color: var(--brand-40);
     color: var(--brand-light);
-    transform: scale(0.94);
+    transform: scale(0.92);
+    box-shadow: 0 0 18px var(--brand-14);
   }
 
   &:focus-visible {
@@ -705,11 +721,6 @@ html.light .game-overlay--cutscene {
     outline-offset: 2px;
   }
 }
-
-.game-touchpad__btn--up    { grid-column: 2; grid-row: 1; }
-.game-touchpad__btn--left  { grid-column: 1; grid-row: 2; }
-.game-touchpad__btn--right { grid-column: 3; grid-row: 2; }
-.game-touchpad__btn--down  { grid-column: 2; grid-row: 3; }
 
 /* 반응형 (520px 이하) */
 @media (max-width: 520px) {
@@ -956,23 +967,14 @@ html.light .game-overlay--cutscene {
     }
   }
 
-  .game-touchpad {
-    padding: 0;
-  }
-
-  .game-touchpad__dpad {
-    width: 140px;
-    height: 140px;
-  }
-
   .game-controls {
     display: none;
   }
 }
 
-/* 세로 모드 (모바일 portrait) — D-pad 숨김, 회전 안내 오버레이가 채움 */
+/* 세로 모드 (모바일 portrait) — 조이콘 숨김, 회전 안내 오버레이가 채움 */
 @media (max-width: 520px) and (orientation: portrait) {
-  .game-touchpad {
+  .game-joycons {
     display: none !important;
   }
 }
@@ -989,10 +991,6 @@ html.light .game-overlay--cutscene {
   .game-footer,
   .game-controls {
     display: none;
-  }
-
-  .game-touchpad {
-    display: none !important;
   }
 
   .game-shell {
@@ -1014,7 +1012,7 @@ html.light .game-overlay--cutscene {
     aspect-ratio: 16 / 10;
     max-height: calc(100vh - 60px);
     max-height: calc(100dvh - 60px);
-    max-width: 100%;
+    max-width: calc(100vw - 280px);
     width: auto;
     margin-inline: auto;
   }
@@ -1022,6 +1020,27 @@ html.light .game-overlay--cutscene {
   #gameCanvas {
     cursor: pointer;
     touch-action: none;
+  }
+
+  /* 듀얼 조이콘 — 좌/우 가장자리 고정 오버레이 */
+  .game-joycons {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 10px;
+    pointer-events: none;
+    z-index: 30;
+  }
+}
+
+/* 초소형 landscape (height ≤ 360px) — 조이콘 버튼 크기 축소 */
+@media (max-width: 520px) and (orientation: landscape) and (max-height: 360px) {
+  .game-joycon__btn {
+    width: 48px;
+    height: 48px;
+    font-size: 16px;
   }
 }
 
@@ -1133,6 +1152,16 @@ html.light .game-rotate-hint {
 
   .game-rotate-hint__icon {
     animation: none;
+  }
+
+  .game-joycon__btn {
+    transition: none;
+  }
+
+  .game-joycon__btn:active,
+  .game-joycon__btn.is-pressed {
+    transform: none;
+    box-shadow: none;
   }
 
   * {
