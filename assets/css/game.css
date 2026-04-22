@@ -35,6 +35,24 @@
   --prof-stethoscope: #c8c8d0;
   --prof-stethoscope-tube: #2a2228;
   --prof-stethoscope-bell: #d8d4dc;
+  /* 정간호 — 근육질 짧은머리 + 곡괭이 */
+  --nurse-hair-jung: #2a1a12;
+  --nurse-hair-jung-shadow: #180c08;
+  --nurse-pick-handle: #7a4f2a;
+  --nurse-pick-head: #9aa0a8;
+  /* 건간호 — 단정 머리 + 안경 + 책 */
+  --nurse-hair-geon: #30221c;
+  --nurse-hair-geon-shadow: #1a0f0a;
+  --nurse-glass-frame: #1f1a1f;
+  --nurse-book: #8a5a32;
+  /* 임간호 — 긴머리 + 고양이 귀 머리띠 */
+  --nurse-hair-im: #3a2618;
+  --nurse-hair-im-shadow: #22150c;
+  --nurse-earband-im: #ff9db0;
+  /* 이간호 — 단발 웨이브 + 강아지 귀 머리띠 */
+  --nurse-hair-lee: #5a3a22;
+  --nurse-hair-lee-shadow: #3a2414;
+  --nurse-earband-lee: #b07a58;
 }
 
 html.light {
@@ -61,6 +79,21 @@ html.light {
   --prof-stethoscope: #b0b0b8;
   --prof-stethoscope-tube: #1f1a20;
   --prof-stethoscope-bell: #c8c4cc;
+  /* 라이트 테마 캐릭터 팔레트 */
+  --nurse-hair-jung: #1f1410;
+  --nurse-hair-jung-shadow: #0f0806;
+  --nurse-pick-handle: #6a431f;
+  --nurse-pick-head: #85898f;
+  --nurse-hair-geon: #26180f;
+  --nurse-hair-geon-shadow: #120a06;
+  --nurse-glass-frame: #2a242a;
+  --nurse-book: #7a4a24;
+  --nurse-hair-im: #2e1c10;
+  --nurse-hair-im-shadow: #180c06;
+  --nurse-earband-im: #e87a92;
+  --nurse-hair-lee: #4a2c18;
+  --nurse-hair-lee-shadow: #2c180a;
+  --nurse-earband-lee: #986648;
 }
 
 body.game-page {
@@ -454,6 +487,102 @@ html.light .game-overlay--cutscene {
     background: var(--game-danger-08);
     border-color: var(--game-danger-20);
   }
+}
+
+/* =====================================================
+   캐릭터 선택 오버레이 — 5인 간호사 카드 그리드
+   SPEC: 오늘의 당직은 누구? (glassmorphism + 픽셀 아바타)
+   ===================================================== */
+.game-overlay__panel--character {
+  max-width: 480px;
+}
+
+.game-character-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 10px;
+
+  @media (max-width: 520px) {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+}
+
+.game-character-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-height: 120px;
+  padding: 10px 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-card);
+  color: var(--text-muted);
+  font-family: var(--font);
+  cursor: pointer;
+  backdrop-filter: blur(14px) saturate(1.1);
+  -webkit-backdrop-filter: blur(14px) saturate(1.1);
+  transition: background 0.25s, border-color 0.25s, color 0.25s, box-shadow 0.25s, transform 0.25s var(--spring-bounce);
+
+  &:hover {
+    border-color: var(--brand-40);
+    color: var(--text);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+  }
+
+  &[aria-checked="true"] {
+    border-color: var(--brand-60);
+    background: var(--brand-12);
+    color: var(--brand-light);
+    box-shadow: 0 0 18px var(--brand-14);
+
+    & .game-character-card__avatar {
+      background: var(--brand-08);
+      border-color: var(--brand-40);
+    }
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--brand-40);
+    outline-offset: 2px;
+  }
+
+  & .game-character-card__name {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+  }
+
+  & .game-character-card__tag {
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 0.2px;
+  }
+}
+
+/* 픽셀 아바타 컨테이너 — 48×60 상자, 내부 canvas에 인게임 정면 스프라이트 렌더 */
+.game-character-card__avatar {
+  position: relative;
+  width: 48px;
+  height: 60px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg-dark);
+  overflow: hidden;
+  image-rendering: pixelated;
+  transition: background 0.25s, border-color 0.25s;
+}
+
+/* 카드 아바타 내부 canvas — nurseSprite('down', 0, charId) 픽셀아트 */
+.game-character-card__avatar-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
 }
 
 .game-difficulty {
@@ -879,6 +1008,26 @@ html.light .game-overlay--cutscene {
     font-size: 32px;
   }
 
+  /* 캐릭터 선택 오버레이 — 모바일 컴팩트 */
+  .game-overlay__panel--character {
+    max-width: 340px;
+    padding: 14px 12px;
+    gap: 10px;
+  }
+
+  .game-character-card {
+    min-height: 110px;
+    padding: 8px 4px 6px;
+
+    & .game-character-card__name {
+      font-size: 11px;
+    }
+
+    & .game-character-card__tag {
+      font-size: 9px;
+    }
+  }
+
   .game-difficulty {
     gap: 4px;
   }
@@ -904,7 +1053,8 @@ html.light .game-overlay--cutscene {
   /* 시작 오버레이만 뷰포트 전체로 확장 — `.game-canvas-wrap`의 aspect-ratio 16/10 제약에서
      벗어나 iPhone SE(375×667) 등 작은 기기에서 시작/난이도 버튼이 잘리지 않게 한다.
      #overlayEnd, #overlayCutscene은 기존 absolute(캔버스 내부) 배치를 유지. */
-  #overlayStart {
+  #overlayStart,
+  #overlayCharacter {
     position: fixed;
     inset: 0;
     width: 100vw;
@@ -914,7 +1064,8 @@ html.light .game-overlay--cutscene {
     padding: 16px;
   }
 
-  #overlayStart .game-overlay__panel--start {
+  #overlayStart .game-overlay__panel--start,
+  #overlayCharacter .game-overlay__panel--character {
     max-height: calc(100dvh - 32px);
     overflow-y: auto;
   }
@@ -1062,6 +1213,14 @@ html.light .game-overlay--cutscene {
   .game-keypad__btn.is-pressed {
     transform: none;
     box-shadow: none;
+  }
+
+  .game-character-card {
+    transition: none;
+  }
+
+  .game-character-card:hover {
+    transform: none;
   }
 
   * {

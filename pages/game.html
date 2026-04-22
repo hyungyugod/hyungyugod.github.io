@@ -33,7 +33,7 @@
   <main class="game-shell">
     <header class="game-header">
       <h1 class="game-header__title">김간호는 음악박사</h1>
-      <p class="game-header__subtitle">수간호사의 F를 피해, 45초 안에 김간호의 작곡 노트를 채워주세요.</p>
+      <p class="game-header__subtitle">수간호사의 F를 피해, 45초 안에 <span class="js-nurse-name">김간호</span>의 작곡 노트를 채워주세요.</p>
     </header>
 
     <section class="game-stage" aria-label="게임 화면">
@@ -62,9 +62,9 @@
         <!-- 시작 오버레이 -->
         <div class="game-overlay" id="overlayStart">
           <div class="game-overlay__panel game-overlay__panel--start" role="dialog" aria-labelledby="startTitle">
-            <h2 class="game-overlay__title" id="startTitle">김간호의 몰래 작곡 프로젝트</h2>
+            <h2 class="game-overlay__title" id="startTitle"><span class="js-nurse-name">김간호</span>의 몰래 작곡 프로젝트</h2>
             <p class="game-overlay__desc">
-              간호 실습생 <strong>김간호</strong>는 오늘도 병동 한구석에서 곡을 쓰고 싶다.
+              간호 실습생 <strong class="js-nurse-name">김간호</strong>는 오늘도 병동 한구석에서 곡을 쓰고 싶다.
               하지만 백발 안경의 <strong>수간호사</strong>가 눈을 번뜩이며 빨간 <span class="game-f-letter">F</span>를 던진다.
               45초 안에 음표를 모아 노래를 완성하자.
               <br /><strong>F에 닿으면 즉시 실패</strong> — 단 한 장도 허용되지 않는다.
@@ -85,10 +85,23 @@
           </div>
         </div>
 
+        <!-- 캐릭터 선택 오버레이 -->
+        <div class="game-overlay is-hidden" id="overlayCharacter">
+          <div class="game-overlay__panel game-overlay__panel--character" role="dialog" aria-labelledby="characterTitle">
+            <h2 class="game-overlay__title" id="characterTitle">당신의 실습생은 누구?</h2>
+            <p class="game-overlay__desc">함께 몰래 작곡에 나설 실습생을 골라주세요. 능력치는 모두 동일합니다.</p>
+            <div class="game-character-grid" role="radiogroup" aria-label="캐릭터 선택" id="characterGrid"></div>
+            <div class="game-cta">
+              <button class="game-btn game-btn--ghost" type="button" id="btnCharacterBack">← 난이도 다시</button>
+              <button class="game-btn" type="button" id="btnCharacterConfirm">이 친구로 시작</button>
+            </div>
+          </div>
+        </div>
+
         <!-- 컷씬 오버레이 -->
         <div class="game-overlay game-overlay--cutscene is-hidden" id="overlayCutscene" aria-live="polite">
           <div class="game-overlay__panel game-overlay__panel--cutscene" role="dialog" aria-labelledby="cutsceneTitle">
-            <h2 class="game-overlay__title" id="cutsceneTitle">김간호의 속마음</h2>
+            <h2 class="game-overlay__title" id="cutsceneTitle"><span class="js-nurse-name">김간호</span>의 속마음</h2>
             <p class="game-overlay__desc" id="cutsceneText">—</p>
             <p class="game-overlay__goal" id="cutsceneGoal" hidden></p>
             <div class="game-cta">

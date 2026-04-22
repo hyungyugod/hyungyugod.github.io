@@ -3,8 +3,8 @@
 
   // 수간호사 색상 팔레트 캐시 — 테마 전환 시 무효화 (아래 drawNurseChief에서 사용)
   let chiefPaletteCache = null;
-  // 김간호(플레이어) 번(Bun) 머리 팔레트 캐시 — 테마 전환 시 무효화 (drawNurse에서 사용)
-  let nursePaletteCache = null;
+  // 플레이어 간호사 팔레트 캐시 — 테마 전환/캐릭터 전환 시 무효화 (charId별 맵)
+  const nursePaletteCache = Object.create(null);
   // 이교수 색상 팔레트 캐시 — 테마 전환 시 무효화 (drawProfessor / drawStethoscope에서 사용)
   let professorPaletteCache = null;
 
@@ -20,10 +20,17 @@
       } catch (e) { /* 저장 실패 무시 */ }
       // 수간호사 팔레트 캐시 무효화 — 테마 전환 시 CSS 변수 재해석 필요
       chiefPaletteCache = null;
-      // 김간호 번 팔레트 캐시 무효화 — 동일 이유
-      nursePaletteCache = null;
+      // 플레이어 간호사 팔레트 캐시 전체 무효화 — 동일 이유 (charId별 맵 클리어)
+      for (const k in nursePaletteCache) delete nursePaletteCache[k];
       // 이교수 팔레트 캐시 무효화 — 동일 이유
       professorPaletteCache = null;
+      // 선택창의 카드 canvas 재렌더 — 새 테마 팔레트로 정면 스프라이트 갱신
+      const cardCanvases = document.querySelectorAll('.game-character-card');
+      cardCanvases.forEach((card) => {
+        const cv = card.querySelector('.game-character-card__avatar-canvas');
+        const id = card.dataset.char;
+        if (cv && id) drawCharacterCardAvatar(cv, id);
+      });
     });
   }
 
@@ -41,6 +48,18 @@
   const CANVAS_H = ROWS * TILE; // 400
   const GAME_DURATION = 45; // 초 (30→45로 연장)
   const STORAGE_KEY = 'pixelNurseBest';
+  const CHARACTER_STORAGE_KEY = 'pixelNurseChar';
+
+  // 선택 가능한 5명 캐릭터 — 능력치는 전원 동일, 외형·이름만 차별화.
+  // `id`는 화이트리스트이자 스프라이트 분기 키로 사용된다.
+  const CHARACTERS = [
+    { id: 'kim',  name: '김간호', tag: '번머리 실습생' },
+    { id: 'jung', name: '정간호', tag: '곡괭이 근육' },
+    { id: 'geon', name: '건간호', tag: '안경과 책' },
+    { id: 'im',   name: '임간호', tag: '긴머리 냥' },
+    { id: 'lee',  name: '이간호', tag: '단발 댕댕' }
+  ];
+  const CHARACTER_IDS = CHARACTERS.map(c => c.id);
 
   // 성공 판정 목표 점수 (절대값) — F 즉사 룰 하에서 반복 플레이로 점진적 달성
   // 하/상 +10 갱신 — 진입 곡선과 최종 도전치를 모두 강화. 중은 구 상값(30) 유지.
@@ -69,6 +88,16 @@
   // 콤보 단계별 수집 사운드 — C장조 스케일 (C4→D4→E4→G4→A4→C5→D5→E5→G5→A5)
   const SCALE_FREQS = [261.63, 293.66, 329.63, 392.00, 440.00, 523.25, 587.33, 659.25, 783.99, 880.00];
 
+  // 화캉스 보너스 변기 아이템 — 저확률 희소 이벤트
+  // DIFFICULTY 스키마와 독립된 전역 상수 (난이도별 차등 없음)
+  const TOILET = {
+    spawnInterval: 12,   // sec — 주기 판정 간격
+    spawnChance: 0.15,   // 0~1 — 주기마다 굴림
+    ttl: 8000,           // ms — 미수집 자동 소멸
+    bonusMultiplier: 2,  // 음표 N개어치 (콤보도 N 증가)
+    toastDuration: 900   // ms — "화캉스 보너스!" 토스트 표시
+  };
+
   // 콤보 안전지대 최소 맨해튼 거리 (타일)
   const SPAWN_SAFE_DIST = 4;
 
@@ -78,18 +107,25 @@
       title: '어느 한적한 병동의 오후',
       // 난이도별 분기 — hard는 이교수 청진기 내러티브로 전환
       textByDiff: {
-        easy: '수간호사가 순찰을 돈다. 그 틈을 타, 김간호는 주머니 속 작곡 노트를 슬쩍 꺼낸다… 음표를 모으자.',
-        normal: '수간호사가 순찰을 돈다. 그 틈을 타, 김간호는 주머니 속 작곡 노트를 슬쩍 꺼낸다… 음표를 모으자.',
+        easy: '수간호사가 순찰을 돈다. 그 틈을 타, {NAME}는 주머니 속 작곡 노트를 슬쩍 꺼낸다… 음표를 모으자.',
+        normal: '수간호사가 순찰을 돈다. 그 틈을 타, {NAME}는 주머니 속 작곡 노트를 슬쩍 꺼낸다… 음표를 모으자.',
         hard: '학교에서 나온 깐깐한 이교수가 오늘따라 청진기를 휘두른다. 날아오는 청진기를 피하며 음표를 모으자. 수간호사는 언제나 그렇듯 순찰을 돈다.'
       }
     },
     mid1: {
-      title: '김간호의 속마음 · 15초',
-      text: '"후렴구에 들어갈 코드를 아직 못 찾았어… 조금만 더!"'
+      title: '{NAME}의 속마음 · 15초',
+      // 캐릭터별 속마음 분기 — state.characterId에 따라 선택
+      textByChar: {
+        kim:  '"후렴구에 들어갈 코드를 아직 못 찾았어… 조금만 더!"',
+        jung: '"빨리 만들고 산 가야 하는데… 오늘 날씨 완벽한데!"',
+        lee:  '"빨리 만들고 대만 가야 하는데… 비행기 시간이 촉박해."',
+        geon: '"빨리 만들고 북클럽 가야 하는데… 이번 주 책 아직 반도 못 읽었어."',
+        im:   '"빨리 만들고 토리 보러 가야 하는데… 우리 애기 밥시간이야."'
+      }
     },
     mid2: {
       title: '수간호사의 눈초리 · 30초',
-      text: '"김간호 학생, 거기서 뭐 하나?" 수간호사의 F가 더 거세게 날아든다.'
+      text: '"{NAME} 학생, 거기서 뭐 하나?" 수간호사의 F가 더 거세게 날아든다.'
     }
   };
 
@@ -308,11 +344,20 @@
   // 픽셀 간호사 (16x20) — 치비/SD 비율 (2.2등신)
   // '.'=투명, 'S'=피부, 'H'=머리카락/번, 'b'=번 내부 음영, 'W'=흰옷, 'C'=코럴십자
   // 'E'=눈 동공, 'L'=눈 하이라이트(흰자), 'R'=볼터치, 'M'=입, 'P'=하의, 'B'=신발
-  // (캡→번 변경으로 'D' 키 제거됨)
+  // 추가 키(charId 분기용):
+  //   'K1'/'K2' — 곡괭이(자루/헤드), 'G'=안경테, 'g'=렌즈, 'O'=책 표지, 'T'=고양이귀, 'D'=강아지귀, 'h'=머리 음영
+  // 매트릭스는 문자(char) 단위지만, 상기 2글자 키는 아래 분기에서 별도 행을 통째로 교체하는 방식으로만 사용한다.
   // 방향(dir): 'down','up','left','right', 프레임(frame): 0 idle, 1/2 step
   const NURSE_W = 16;
   const NURSE_H = 20;
-  function nurseSprite(dir, frame) {
+  /**
+   * 플레이어 스프라이트 매트릭스 생성 (16×20)
+   * @param {string} dir - 'down'|'up'|'left'|'right'
+   * @param {number} frame - 0 idle, 1/2 walk
+   * @param {string} [charId] - 선택된 캐릭터 ID (기본 'kim')
+   */
+  function nurseSprite(dir, frame, charId) {
+    const id = CHARACTER_IDS.indexOf(charId) >= 0 ? charId : 'kim';
     // 16x20 — 번(행 1-3) + 헤어라인/이마(행 4-5) + 얼굴(행 6-10) + 몸통/다리(행 11-19)
     const base = [
       '................', // 0
@@ -371,22 +416,131 @@
       base[19] = '....BB...BBB....';
     }
 
+    // --- 캐릭터별 머리·소품 오버레이 ---
+    // 'kim'은 기본 번머리(이미 base에 반영)이므로 추가 변형 없음.
+    // 그 외 캐릭터는 헤더 영역(행 1~5) 전체를 자기 실루엣으로 덮어쓴다.
+    // up(뒷모습)에서도 정수리 실루엣이 드러나야 자연스럽다.
+    if (id === 'jung') {
+      // 근육질 짧은머리 — 각진 넓은 머리 + 상의 어깨 2px 확장 + 오른손 곡괭이(세로)
+      // 'J'=짧은머리 본체, 'j'=음영. 어깨 행(11)을 넓혀 근육질 인상.
+      base[1] = '................';
+      base[2] = '....JJJJJJJJ....';
+      base[3] = '...JJJJJJJJJJ...';
+      base[4] = '..JJJJJJJJJJJJ..';
+      base[5] = '..jjSSSSSSSSjj..';
+      if (dir === 'up') {
+        base[6] = '..JJJJJJJJJJJJ..';
+        base[7] = '..JJJJJJJJJJJJ..';
+        base[8] = '..JJJJJJJJJJJJ..';
+        base[9] = '..JJJJJJJJJJJJ..';
+        base[10] = '...JJJJJJJJJJ...';
+      }
+      // 어깨 확장 (좌우 1px씩)
+      base[11] = '...WWWWWWWWWW...';
+      base[14] = '...WWWWWWWWWW...';
+      // 곡괭이 — 오른쪽 옆구리, 세로 자루(K1) + 헤드(K2) 2픽셀
+      // 행 11~17 오른쪽에 자루, 행 10에 헤드
+      base[10] = base[10].substring(0, 14) + 'KK';      // 헤드 우상단
+      base[11] = base[11].substring(0, 14) + 'kK';
+      base[12] = base[12].substring(0, 14) + '.K';
+      base[13] = base[13].substring(0, 14) + '.K';
+      base[14] = base[14].substring(0, 14) + '.K';
+      base[15] = base[15].substring(0, 14) + '.K';
+    } else if (id === 'geon') {
+      // 단정 머리 + 안경 + 책 — 뿔테 안경(G/g), 오른손 책(O/p)
+      base[1] = '................';
+      base[2] = '.....GGGGGGGG...';
+      base[3] = '....GGGGGGGGGG..';
+      base[4] = '..GGGGGGGGGGGG..';
+      base[5] = '..GGSSSSSSSSGG..';
+      if (dir === 'up') {
+        base[6] = '..GGGGGGGGGGGG..';
+        base[7] = '..GGGGGGGGGGGG..';
+        base[8] = '..GGGGGGGGGGGG..';
+        base[9] = '..GGGGGGGGGGGG..';
+        base[10] = '...GGGGGGGGGG...';
+      } else {
+        // 눈 자리에 안경 (E→F 테, L→f 렌즈) — left/right에서 한쪽만 덮이도록 별도 처리
+        if (dir === 'down') {
+          base[6] = '..SSFFSSSSFFSS..'; // 안경테
+          base[7] = '..SSFfSSSSfFSS..'; // 렌즈
+        } else if (dir === 'left') {
+          base[6] = '..SSSSSSSSFFSS..';
+          base[7] = '..SSSSSSSSfFSS..';
+        } else if (dir === 'right') {
+          base[6] = '..SSFFSSSSSSSS..';
+          base[7] = '..SSFfSSSSSSSS..';
+        }
+      }
+      // 오른손 책 — 갈색 표지(O) + 속지(p). 몸통 오른쪽 옆.
+      base[12] = base[12].substring(0, 14) + 'OO';
+      base[13] = base[13].substring(0, 14) + 'Op';
+      base[14] = base[14].substring(0, 14) + 'OO';
+    } else if (id === 'im') {
+      // 긴머리 + 고양이귀 머리띠 — 머리가 어깨 아래까지 내려온다. 정수리 삼각 귀 2칸.
+      // 'I'=긴머리, 'i'=음영, 'T'=고양이귀
+      base[1] = '....T......T....';
+      base[2] = '...TT.IIII.TT...';
+      base[3] = '....IIIIIIII....';
+      base[4] = '..IIIIIIIIIIII..';
+      base[5] = '..IISSSSSSSSII..';
+      if (dir === 'up') {
+        base[6] = '..IIIIIIIIIIII..';
+        base[7] = '..IIIIIIIIIIII..';
+        base[8] = '..IIIIIIIIIIII..';
+        base[9] = '..IIIIIIIIIIII..';
+        base[10] = '..IIIIIIIIIIII..';
+      }
+      // 어깨 아래 긴머리 — 상의 양옆에 2줄 머리 (행 11~14)
+      base[11] = 'II..WWWWWWWW..II'.replace('II..', 'iI..').replace('..II', '..Ii');
+      base[12] = 'iI.WWWWCCWWWW.Ii';
+      base[13] = 'iI.WWWCCCCWWW.Ii';
+      base[14] = 'iI..WWWWWWWW..Ii';
+    } else if (id === 'lee') {
+      // 단발 웨이브 + 강아지 귀 — 턱선 길이 단발. 'L'=단발본체, 'l'=웨이브 음영, 'D'=강아지귀
+      base[1] = '................';
+      base[2] = '.....QQQQQQQQ...';
+      base[3] = '....QQQQQQQQQQ..';
+      base[4] = '..QQQQQQQQQQQQ..';
+      base[5] = '..QQSSSSSSSSQQ..';
+      if (dir === 'up') {
+        base[6] = '..QQQQQQQQQQQQ..';
+        base[7] = '..QQQQQQQQQQQQ..';
+        base[8] = '..QQQQQQQQQQQQ..';
+        base[9] = '..QQQQQQQQQQQQ..';
+        base[10] = '...QQQQQQQQQQ...';
+      } else {
+        // 좌우 웨이브 음영 — 행 6~8 가장자리
+        // 기존 face 행에 q 음영을 가장자리에 얹는다.
+        const overlayEdge = (row) => 'qq' + row.substring(2, 14) + 'qq';
+        base[6] = overlayEdge(base[6]);
+        base[7] = overlayEdge(base[7]);
+        base[8] = overlayEdge(base[8]);
+      }
+      // 강아지 귀 — 정수리 양쪽 아래로 처진 2×2 블록 (행 2~3)
+      // base[2]/base[3]의 좌·우 끝에 D 덮어쓰기
+      base[2] = '...DD' + base[2].substring(5, 11) + 'DD...';
+      base[3] = '...DD' + base[3].substring(5, 11) + 'DD...';
+    }
+
     return base;
   }
 
-  // 김간호 팔레트 빌더 — H/b만 CSS 변수에서 읽어 테마 반응형.
-  // 나머지 키(S/W/C/P/B/E/L/R/M)는 하드코딩 유지 (테마와 무관한 고유 피부/옷/눈 색).
-  function getNursePalette() {
-    if (nursePaletteCache) return nursePaletteCache;
+  /**
+   * 플레이어 팔레트 빌더 — charId별 캐싱.
+   * 공통 키(S/W/C/P/B/E/L/R/M)는 전 캐릭터 공유.
+   * 캐릭터 전용 키(H/b/J/j/G/f/F/I/i/T/L/l/D/K/k/O/p)는 id에 따라 CSS 변수 매핑.
+   */
+  function getNursePalette(charId) {
+    const id = CHARACTER_IDS.indexOf(charId) >= 0 ? charId : 'kim';
+    if (nursePaletteCache[id]) return nursePaletteCache[id];
     const rootStyle = getComputedStyle(document.documentElement);
     const readVar = (name, fallback) => {
       const v = rootStyle.getPropertyValue(name).trim();
       return v || fallback;
     };
-    nursePaletteCache = {
+    const common = {
       'S': '#fbe0d0',                                 // 피부
-      'H': readVar('--nurse-bun', '#3a2a20'),         // 머리카락/번 본체 (흑갈)
-      'b': readVar('--nurse-bun-shadow', '#5a4230'),  // 번 내부 음영
       'W': '#ffffff',                                 // 흰옷
       'C': '#c4847a',                                 // 코럴 십자
       'P': readVar('--nurse-pants', '#9ec9e8'),       // 하의
@@ -396,12 +550,63 @@
       'R': '#f5a8a0',                                 // 볼터치
       'M': '#c4847a'                                  // 입
     };
-    return nursePaletteCache;
+    let charMap;
+    if (id === 'jung') {
+      charMap = {
+        'J': readVar('--nurse-hair-jung', '#2a1a12'),
+        'j': readVar('--nurse-hair-jung-shadow', '#180c08'),
+        'K': readVar('--nurse-pick-head', '#9aa0a8'),   // 헤드(금속)
+        'k': readVar('--nurse-pick-handle', '#7a4f2a')  // 자루(갈색)
+      };
+    } else if (id === 'geon') {
+      charMap = {
+        'G': readVar('--nurse-hair-geon', '#30221c'),
+        'g': readVar('--nurse-hair-geon-shadow', '#1a0f0a'),
+        'F': readVar('--nurse-glass-frame', '#1f1a1f'),  // 안경테
+        'f': '#e8f0f8',                                  // 렌즈(반사)
+        'O': readVar('--nurse-book', '#8a5a32'),         // 책 표지
+        'p': '#f6ebd9'                                   // 책 속지
+      };
+    } else if (id === 'im') {
+      charMap = {
+        'I': readVar('--nurse-hair-im', '#3a2618'),
+        'i': readVar('--nurse-hair-im-shadow', '#22150c'),
+        'T': readVar('--nurse-earband-im', '#ff9db0')
+      };
+    } else if (id === 'lee') {
+      // 공통 'L'(흰자)와 키 충돌을 피해 단발은 'Q'/'q', 강아지귀는 'D'로 분리.
+      charMap = {
+        'Q': readVar('--nurse-hair-lee', '#5a3a22'),
+        'q': readVar('--nurse-hair-lee-shadow', '#3a2414'),
+        'D': readVar('--nurse-earband-lee', '#b07a58')
+      };
+    } else {
+      // kim — 기본 번머리
+      charMap = {
+        'H': readVar('--nurse-bun', '#3a2a20'),
+        'b': readVar('--nurse-bun-shadow', '#5a4230')
+      };
+    }
+    const merged = Object.assign({}, common, charMap);
+    // lee 예외: 'L' 키가 두 번 쓰이므로 charMap의 값이 common('L'=흰자 #ffffff)을 덮음.
+    //         머리색이 우선되는 것이 의도된 동작(단발 실루엣 렌더). 흰자는 'L'이 눈 행에서만 쓰이지만
+    //         lee의 머리 오버레이도 그 행을 다시 쓰지 않으므로 문제없음.
+    nursePaletteCache[id] = merged;
+    return merged;
   }
 
-  function drawNurse(x, y, dir, frame) {
-    const sprite = nurseSprite(dir, frame);
-    const palette = getNursePalette();
+  /**
+   * 플레이어 간호사 렌더 — 선택된 charId에 따라 스프라이트/팔레트 분기.
+   * @param {number} x - 히트박스 중심 x
+   * @param {number} y - 히트박스 중심 y
+   * @param {string} dir
+   * @param {number} frame
+   * @param {string} [charId] - 미지정 시 state.characterId 사용
+   */
+  function drawNurse(x, y, dir, frame, charId) {
+    const id = charId || state.characterId || 'kim';
+    const sprite = nurseSprite(dir, frame, id);
+    const palette = getNursePalette(id);
     const SCALE = 2;
     // 히트박스(14x14) 기준 중앙 정렬. 머리가 커졌으므로 oy를 -24로 내림.
     const ox = Math.round(x) - 8;
@@ -439,6 +644,37 @@
     ctx.fillRect(ox + 6, oy + 1, 4, 1);
     ctx.fillRect(ox + 9, oy + 1, 1, 3);
     ctx.fillRect(ox + 7, oy + 4, 2, 1);
+  }
+
+  /**
+   * 변기(화캉스 보너스) 12×12 픽셀 드로잉.
+   * 상단 물탱크 + 하단 시트 + 물방울 포인트. 라이트/다크 공통 가독성.
+   */
+  function drawToilet(x, y, bob) {
+    const ox = Math.round(x);
+    const oy = Math.round(y + bob);
+    // 외곽 섀도 (가독성)
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
+    ctx.fillRect(ox + 1, oy + 1, 12, 12);
+    // 물탱크 (상단 4×8 흰색)
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(ox + 2, oy + 1, 8, 4);
+    // 물탱크 뚜껑 (상단 1px 연회색)
+    ctx.fillStyle = '#cfd3da';
+    ctx.fillRect(ox + 2, oy + 1, 8, 1);
+    // 시트 (하단 타원형 흰색)
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(ox + 1, oy + 6, 10, 4);
+    ctx.fillRect(ox + 2, oy + 10, 8, 1);
+    // 시트 테두리 (연회색)
+    ctx.fillStyle = '#cfd3da';
+    ctx.fillRect(ox + 1, oy + 6, 10, 1);
+    // 물 하이라이트 (옅은 파랑)
+    ctx.fillStyle = '#a9d6ef';
+    ctx.fillRect(ox + 4, oy + 8, 4, 1);
+    // 중앙 구멍 (검정 2×2)
+    ctx.fillStyle = '#1a1a22';
+    ctx.fillRect(ox + 5, oy + 8, 2, 2);
   }
 
   function drawObstacle(x, y) {
@@ -613,11 +849,16 @@
   const state = {
     running: false,
     difficulty: 'easy',
+    // 선택된 플레이어 캐릭터 ID — CHARACTER_IDS 중 하나. 기본 'kim'(기존 김간호).
+    characterId: 'kim',
     map: null,
     player: { x: 0, y: 0, w: 14, h: 14, dir: 'down', frameAcc: 0, frame: 0, stunUntil: 0, frozenUntil: 0 },
     notes: [],         // {x, y, born, bobSeed}
     obstacles: [],     // {x, y, dx, dy}
     stethoscopes: [],  // {x, y, dx, dy, born} — 이교수 청진기 투사체
+    toilets: [],       // {x, y, born, bobSeed} — 화캉스 보너스 변기 (최대 1개)
+    nextToiletAt: 0,   // 다음 변기 스폰 판정 시각(ms)
+    toiletToastUntil: 0, // "화캉스 보너스!" 토스트 만료 시각(ms), 0=비표시
     particles: [],     // {x, y, vx, vy, life, maxLife}
     keys: Object.create(null),
     score: 0,
@@ -680,6 +921,46 @@
   }
 
   // =====================================================
+  // 캐릭터 선택 — 영속 저장 / 이름 치환 유틸
+  // =====================================================
+  /**
+   * localStorage에서 선택된 캐릭터 ID를 복원한다. 5개 화이트리스트 외 값은 무시.
+   * Safari private mode 등 저장소 접근 실패 시 기본 'kim' 유지.
+   */
+  function loadCharacter() {
+    try {
+      const raw = localStorage.getItem(CHARACTER_STORAGE_KEY);
+      if (raw && CHARACTER_IDS.indexOf(raw) >= 0) {
+        state.characterId = raw;
+      }
+    } catch (e) { /* 무시 */ }
+  }
+
+  function saveCharacter() {
+    try {
+      localStorage.setItem(CHARACTER_STORAGE_KEY, state.characterId);
+    } catch (e) { /* 무시 */ }
+  }
+
+  /**
+   * 현재 선택된 캐릭터 이름을 반환한다. 유효 ID가 아니면 기본 '김간호'.
+   */
+  function currentNurseName() {
+    const found = CHARACTERS.find(c => c.id === state.characterId);
+    return found ? found.name : '김간호';
+  }
+
+  /**
+   * 정적 DOM의 .js-nurse-name 엘리먼트에 현재 캐릭터 이름을 주입한다.
+   * textContent만 사용 (XSS 차단).
+   */
+  function applyNurseNameToDom() {
+    const name = currentNurseName();
+    const nodes = document.querySelectorAll('.js-nurse-name');
+    nodes.forEach((n) => { n.textContent = name; });
+  }
+
+  // =====================================================
   // DOM 참조 & UI
   // =====================================================
   const hudTime = document.getElementById('hudTime');
@@ -702,6 +983,11 @@
   const statMaxCombo = document.getElementById('statMaxCombo');
   const statHits = document.getElementById('statHits');
   const statAccuracy = document.getElementById('statAccuracy');
+  // 캐릭터 선택 오버레이 관련 DOM
+  const overlayCharacter = document.getElementById('overlayCharacter');
+  const characterGrid = document.getElementById('characterGrid');
+  const btnCharacterBack = document.getElementById('btnCharacterBack');
+  const btnCharacterConfirm = document.getElementById('btnCharacterConfirm');
 
   function updateBestHud() {
     if (hudBest) hudBest.textContent = String(state.best[state.difficulty] || 0);
@@ -762,7 +1048,8 @@
   btnStart.addEventListener('click', () => {
     // iOS 오디오 언락 — 첫 유저 제스처에서 무음 톤
     playTone(0, 0.001);
-    startGame();
+    // 기존 직행(startGame) 대신 캐릭터 선택 오버레이로 전환
+    openCharacterOverlay();
   });
   // 리플레이 — 시작 오버레이를 다시 거치지 않고 즉시 재시작 (Critical #1)
   btnReplay.addEventListener('click', () => {
@@ -793,6 +1080,9 @@
       state.notes = [];
       state.obstacles = [];
       state.stethoscopes = [];
+      state.toilets = [];
+      state.nextToiletAt = performance.now() + TOILET.spawnInterval * 1000;
+      state.toiletToastUntil = 0;
       state.particles = [];
       state.keys = Object.create(null);
       state.gameoverReason = null;
@@ -823,6 +1113,160 @@
     });
   }
 
+  // =====================================================
+  // 캐릭터 선택 오버레이 — 5인 카드 그리드 + 키보드 내비게이션
+  // =====================================================
+  /**
+   * 카드 아바타 canvas에 인게임 정면 스프라이트 렌더 (SCALE=3, 16×20 → 48×60).
+   * nurseSprite/getNursePalette를 재사용하여 인게임과 픽셀 단위 동일한 외형 보장.
+   * @param {HTMLCanvasElement} canvas - 대상 canvas
+   * @param {string} charId - 캐릭터 id (kim/jung/geon/im/lee)
+   */
+  function drawCharacterCardAvatar(canvas, charId) {
+    const SCALE = 3;
+    canvas.width = 16 * SCALE;
+    canvas.height = 20 * SCALE;
+    const cctx = canvas.getContext('2d');
+    if (!cctx) return;
+    cctx.imageSmoothingEnabled = false;
+    cctx.clearRect(0, 0, canvas.width, canvas.height);
+    const sprite = nurseSprite('down', 0, charId);
+    const palette = getNursePalette(charId);
+    for (let r = 0; r < 20; r++) {
+      const row = sprite[r];
+      for (let c = 0; c < 16; c++) {
+        const ch = row[c];
+        if (ch === '.' || !palette[ch]) continue;
+        cctx.fillStyle = palette[ch];
+        cctx.fillRect(c * SCALE, r * SCALE, SCALE, SCALE);
+      }
+    }
+  }
+
+  /**
+   * 5명 캐릭터 카드를 DOM API로 렌더 (innerHTML 금지, XSS 안전).
+   * 각 카드는 role="radio" + aria-checked 라디오그룹 패턴.
+   */
+  function initCharacterGrid() {
+    if (!characterGrid) return;
+    // 기존 자식 제거 (재호출 대비)
+    while (characterGrid.firstChild) characterGrid.removeChild(characterGrid.firstChild);
+
+    CHARACTERS.forEach((ch) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'game-character-card';
+      btn.setAttribute('role', 'radio');
+      btn.setAttribute('aria-checked', ch.id === state.characterId ? 'true' : 'false');
+      btn.dataset.char = ch.id;
+
+      const avatar = document.createElement('span');
+      avatar.className = 'game-character-card__avatar is-' + ch.id;
+      avatar.setAttribute('aria-hidden', 'true');
+      // 인게임 정면 스프라이트(`nurseSprite('down', 0, charId)`)를 canvas에 SCALE=3로 렌더
+      const canvas = document.createElement('canvas');
+      canvas.className = 'game-character-card__avatar-canvas';
+      canvas.setAttribute('aria-hidden', 'true');
+      avatar.appendChild(canvas);
+      drawCharacterCardAvatar(canvas, ch.id);
+
+      const name = document.createElement('span');
+      name.className = 'game-character-card__name';
+      name.textContent = ch.name;
+
+      const tag = document.createElement('span');
+      tag.className = 'game-character-card__tag';
+      tag.textContent = ch.tag;
+
+      btn.appendChild(avatar);
+      btn.appendChild(name);
+      btn.appendChild(tag);
+
+      btn.addEventListener('click', () => selectCharacterCard(ch.id));
+      btn.addEventListener('keydown', handleCharacterCardKey);
+
+      characterGrid.appendChild(btn);
+    });
+  }
+
+  /**
+   * 카드 선택 — aria-checked 상태 갱신 + state.characterId 임시 변경 (확정은 btnCharacterConfirm에서).
+   */
+  function selectCharacterCard(id) {
+    if (CHARACTER_IDS.indexOf(id) < 0) return;
+    state.characterId = id;
+    const cards = characterGrid ? characterGrid.querySelectorAll('.game-character-card') : [];
+    cards.forEach((c) => {
+      c.setAttribute('aria-checked', c.dataset.char === id ? 'true' : 'false');
+    });
+  }
+
+  /**
+   * ArrowKey / Enter / Space 라디오그룹 접근성 내비게이션
+   */
+  function handleCharacterCardKey(e) {
+    const key = e.key;
+    if (key === 'Enter' || key === ' ') {
+      e.preventDefault();
+      const id = e.currentTarget.dataset.char;
+      selectCharacterCard(id);
+      return;
+    }
+    if (key !== 'ArrowLeft' && key !== 'ArrowRight' && key !== 'ArrowUp' && key !== 'ArrowDown') return;
+    e.preventDefault();
+    const cards = Array.from(characterGrid.querySelectorAll('.game-character-card'));
+    const idx = cards.indexOf(e.currentTarget);
+    if (idx < 0) return;
+    let next = idx;
+    if (key === 'ArrowLeft' || key === 'ArrowUp') next = (idx - 1 + cards.length) % cards.length;
+    else next = (idx + 1) % cards.length;
+    const nextCard = cards[next];
+    if (nextCard) {
+      selectCharacterCard(nextCard.dataset.char);
+      nextCard.focus({ preventScroll: true });
+    }
+  }
+
+  /**
+   * 시작 오버레이 → 캐릭터 선택 오버레이 전환.
+   * 현재 선택된 카드에 포커스를 우선 배치, 없으면 첫 카드.
+   */
+  function openCharacterOverlay() {
+    if (!overlayCharacter) {
+      // 폴백: 오버레이 DOM이 없으면 기존 방식대로 즉시 시작
+      startGame();
+      return;
+    }
+    if (overlayStart) overlayStart.classList.add('is-hidden');
+    overlayCharacter.classList.remove('is-hidden');
+    // 포커스 — 현재 선택된 카드 우선
+    const activeCard = characterGrid
+      ? characterGrid.querySelector(`.game-character-card[data-char="${state.characterId}"]`)
+      : null;
+    const firstCard = characterGrid ? characterGrid.querySelector('.game-character-card') : null;
+    const target = activeCard || firstCard;
+    if (target) target.focus({ preventScroll: true });
+  }
+
+  if (btnCharacterConfirm) {
+    btnCharacterConfirm.addEventListener('click', () => {
+      saveCharacter();
+      applyNurseNameToDom();
+      if (overlayCharacter) overlayCharacter.classList.add('is-hidden');
+      startGame();
+    });
+  }
+
+  if (btnCharacterBack) {
+    btnCharacterBack.addEventListener('click', () => {
+      if (overlayCharacter) overlayCharacter.classList.add('is-hidden');
+      if (overlayStart) overlayStart.classList.remove('is-hidden');
+      // 난이도 버튼으로 포커스 복귀
+      const activeDiff = document.querySelector('.game-difficulty__btn[aria-checked="true"]');
+      if (activeDiff) activeDiff.focus({ preventScroll: true });
+    });
+  }
+
   // 키보드 입력
   const KEY_MAP = {
     'ArrowUp': 'up', 'KeyW': 'up',
@@ -838,6 +1282,7 @@
     const cutOverlay = document.getElementById('overlayCutscene');
     return (overlayStart && !overlayStart.classList.contains('is-hidden')) ||
            (overlayEnd && !overlayEnd.classList.contains('is-hidden')) ||
+           (overlayCharacter && !overlayCharacter.classList.contains('is-hidden')) ||
            (cutOverlay && !cutOverlay.classList.contains('is-hidden'));
   }
 
@@ -876,6 +1321,9 @@
     state.notes = [];
     state.obstacles = [];
     state.stethoscopes = [];
+    state.toilets = [];
+    state.nextToiletAt = performance.now() + TOILET.spawnInterval * 1000;
+    state.toiletToastUntil = 0;
     state.particles = [];
     state.keys = Object.create(null);
     clearDpadPressed();
@@ -978,18 +1426,19 @@
 
       const hitEnd = state.gameoverReason === 'hit';
 
+      const nurseName = currentNurseName();
       if (hitEnd && !success) {
         // F 즉사 종료 (목표 미달) — 수간호사에게 걸린 서사
         endTitle.textContent = '수간호사에게 걸렸어요!';
-        endStory.textContent = 'F 한 장에 노래가 멈췄다. 김간호는 오늘만큼은 작곡을 포기하고 EMR을 받아쓴다.';
+        endStory.textContent = `F 한 장에 노래가 멈췄다. ${nurseName}는 오늘만큼은 작곡을 포기하고 EMR을 받아쓴다.`;
         endStory.classList.add('game-overlay__ending--fail');
         playTone(165, 0.3);
       } else if (success) {
         endTitle.textContent = '노래를 무사히 만들었어요!';
         if (newRecord) {
-          endStory.textContent = `음표 ${score}개로 신곡 완성. 수간호사도 모르는 김간호의 첫 트랙이 태어났다.`;
+          endStory.textContent = `음표 ${score}개로 신곡 완성. 수간호사도 모르는 ${nurseName}의 첫 트랙이 태어났다.`;
         } else {
-          endStory.textContent = `${score}개. 좋은 후렴이지만, 김간호는 더 높은 코드를 원한다.`;
+          endStory.textContent = `${score}개. 좋은 후렴이지만, ${nurseName}는 더 높은 코드를 원한다.`;
         }
         playTone(988, 0.22);
         // 성공 엔딩 — HG가 실습 기간에 만든 실제 트랙 링크 노출 (CTA 2×2 재구성)
@@ -1047,10 +1496,19 @@
 
     // 동적 텍스트는 textContent로만 주입 (XSS 차단)
     const cut = CUTSCENES[id];
-    const text = cut.textByDiff
-      ? (cut.textByDiff[state.difficulty] || cut.textByDiff.easy)
-      : cut.text;
-    titleEl.textContent = cut.title;
+    // 텍스트 소스 우선순위: 캐릭터별(textByChar) → 난이도별(textByDiff) → 단일(text)
+    let rawText;
+    if (cut.textByChar) {
+      rawText = cut.textByChar[state.characterId] || cut.textByChar.kim || cut.text || '';
+    } else if (cut.textByDiff) {
+      rawText = cut.textByDiff[state.difficulty] || cut.textByDiff.easy;
+    } else {
+      rawText = cut.text || '';
+    }
+    // {NAME} 플레이스홀더를 현재 선택된 캐릭터 이름으로 치환 (textContent라 XSS 안전)
+    const name = currentNurseName();
+    const text = rawText.replace(/\{NAME\}/g, name);
+    titleEl.textContent = cut.title.replace(/\{NAME\}/g, name);
     textEl.textContent = text;
 
     // 인트로 컷씬 — "목표 N점 · 45초"를 본문 아래 덧붙인다.
@@ -1110,6 +1568,22 @@
     const avoid = state.map ? [playerTile()] : [];
     const tile = findEmptyTile(state.map, Math.random, avoid);
     state.notes.push({
+      x: tile.c * TILE + (TILE - 12) / 2,
+      y: tile.r * TILE + (TILE - 12) / 2,
+      born: performance.now(),
+      bobSeed: Math.random() * Math.PI * 2
+    });
+  }
+
+  /**
+   * 변기(화캉스 보너스) 스폰 — 맵에 최대 1개. 12초 주기 15% 확률 판정.
+   * 기존 findEmptyTile 재사용, 플레이어 현재 타일 회피.
+   */
+  function spawnToilet() {
+    if (state.toilets.length >= 1) return;
+    const avoid = state.map ? [playerTile()] : [];
+    const tile = findEmptyTile(state.map, Math.random, avoid);
+    state.toilets.push({
       x: tile.c * TILE + (TILE - 12) / 2,
       y: tile.r * TILE + (TILE - 12) / 2,
       born: performance.now(),
@@ -1762,6 +2236,13 @@
     }
     while (state.notes.length < diff.notes) spawnNote();
 
+    // 변기(화캉스 보너스) — TTL 만료 정리 + 주기 스폰 판정
+    state.toilets = state.toilets.filter(t => (now - t.born) < TOILET.ttl);
+    if (now >= state.nextToiletAt) {
+      state.nextToiletAt = now + TOILET.spawnInterval * 1000;
+      if (Math.random() < TOILET.spawnChance) spawnToilet();
+    }
+
     // 수집 판정 — 콤보 시스템 + 점수 보너스 + 스케일 사운드 + 파티클 (C7, C8)
     // 같은 프레임 다중 수집 시 spawnNote는 다음 프레임의 while 보충 루프가 처리 (Critical #4 중복 제거)
     for (let i = state.notes.length - 1; i >= 0; i--) {
@@ -1797,6 +2278,43 @@
           else if (state.combo >= 3) pCount = 10;
           spawnParticles(n.x + 6, n.y + 6, pCount);
         }
+      }
+    }
+
+    // 변기(화캉스 보너스) 수집 판정 — 음표 2개어치 (콤보 +2, 각 단계 gain 합산)
+    for (let i = state.toilets.length - 1; i >= 0; i--) {
+      const t = state.toilets[i];
+      if (p.x < t.x + 12 && p.x + p.w > t.x &&
+          p.y < t.y + 12 && p.y + p.h > t.y) {
+        state.toilets.splice(i, 1);
+
+        // 음표 1개분 gain 로직을 bonusMultiplier(=2)회 적용
+        let totalGain = 0;
+        for (let k = 0; k < TOILET.bonusMultiplier; k++) {
+          state.combo += 1;
+          if (state.combo > state.maxCombo) state.maxCombo = state.combo;
+          state.collected += 1;
+          let gain = 1;
+          if (state.combo >= 7) gain += 3;
+          else if (state.combo >= 5) gain += 2;
+          else if (state.combo >= 3) gain += 1;
+          totalGain += gain;
+        }
+        state.score += totalGain;
+        hudScore.textContent = String(state.score);
+        updateComboHud(true);
+
+        // 사운드 2연타 — 살짝 높은 음
+        const freqIdx = Math.min(state.combo - 1, SCALE_FREQS.length - 1);
+        const freqIdx2 = Math.min(freqIdx + 1, SCALE_FREQS.length - 1);
+        playTone(SCALE_FREQS[freqIdx], 0.09);
+        setTimeout(() => playTone(SCALE_FREQS[freqIdx2], 0.09), 70);
+
+        // 파티클
+        if (!reducedMotion) spawnParticles(t.x + 6, t.y + 6, 16);
+
+        // 토스트
+        state.toiletToastUntil = now + TOILET.toastDuration;
       }
     }
 
@@ -1950,6 +2468,14 @@
       drawNote(n.x, n.y, bob);
     }
 
+    // 변기(화캉스 보너스) — TTL 말기 1초 깜빡임
+    for (const t of state.toilets) {
+      const left = TOILET.ttl - (now - t.born);
+      if (left < 1000 && !reducedMotion && Math.floor(now / 120) % 2 === 0) continue;
+      const bob = reducedMotion ? 0 : Math.sin((now / 220) + t.bobSeed) * 1.2;
+      drawToilet(t.x, t.y, bob);
+    }
+
     // 장애물
     for (const o of state.obstacles) drawObstacle(o.x, o.y);
 
@@ -1989,7 +2515,7 @@
     // reduced-motion: 깜빡임 비활성, 항상 그림
     const blinkVisible = reducedMotion || (!stunned && !frozen) || Math.floor(now / 80) % 2 === 0;
     if (blinkVisible) {
-      drawNurse(p.x, p.y, p.dir, p.frame);
+      drawNurse(p.x, p.y, p.dir, p.frame, state.characterId);
       // frozen 중일 때 발 밑 청진기 정지 인디케이터 — 코럴톤 작은 호
       if (frozen) {
         const coral = isLightTheme() ? '#e85a6a' : '#ff7b7b';
@@ -2016,6 +2542,30 @@
         ctx.fillRect(Math.round(pt.x) - 1, Math.round(pt.y) - 1, 3, 3);
       }
       ctx.globalAlpha = 1;
+    }
+
+    // 화캉스 보너스 토스트 — HUD보다 위 레이어. 정적 상수 텍스트이므로 XSS 무관.
+    if (now < state.toiletToastUntil) {
+      const remain = state.toiletToastUntil - now;
+      const alpha = Math.min(1, remain / 300); // 마지막 300ms 페이드아웃
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      const text = '화캉스 보너스!';
+      ctx.font = 'bold 18px "Pretendard", system-ui, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      const cx = CANVAS_W / 2;
+      const cy = 40;
+      // 외곽 그림자
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+      ctx.fillRect(cx - 110, cy - 18, 220, 36);
+      // 본체 배경
+      ctx.fillStyle = isLightTheme() ? '#fff5d6' : '#3a2a10';
+      ctx.fillRect(cx - 108, cy - 16, 216, 32);
+      // 텍스트
+      ctx.fillStyle = isLightTheme() ? '#8a5a00' : '#ffd580';
+      ctx.fillText(text, cx, cy);
+      ctx.restore();
     }
   }
 
@@ -2197,6 +2747,9 @@
   // 초기화
   // =====================================================
   loadBest();
+  // 기본값은 항상 김간호 — 이전 선택을 복원하지 않는다.
+  initCharacterGrid();
+  applyNurseNameToDom();
   updateBestHud();
   updateStartGoal();
   if (isTouchDevice()) initTouchControls();
@@ -2211,8 +2764,8 @@
     ctx.fillStyle = isLightTheme() ? '#e8e7ec' : '#09080f';
     ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
     drawMap(previewMap);
-    // 김간호 (우측 중앙)
-    drawNurse(TILE * 20 + 2, TILE * 9 + 2, 'left', 0);
+    // 플레이어(선택된 캐릭터) — 우측 중앙
+    drawNurse(TILE * 20 + 2, TILE * 9 + 2, 'left', 0, state.characterId);
     // 수간호사 (좌측 중앙) + F 한 장 — 던지기 직전 구도
     drawNurseChief(TILE * 11 + 2, TILE * 9 + 2, 'right', 0, true);
     drawObstacle(TILE * 15 + 4, TILE * 9 + 4);
