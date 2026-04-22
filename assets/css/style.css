@@ -111,6 +111,18 @@ body {
   outline-offset: 2px;
 }
 
+/* ---- Touch hardening for interactive chrome ---- */
+button,
+.platform-showcase__cta,
+.music-showcase__link-btn {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-user-drag: none;
+  touch-action: manipulation;
+}
+
 
 /* ---- Theme Toggle Button ---- */
 .theme-toggle {
@@ -809,8 +821,8 @@ html.light .social-card:hover {
     &::-webkit-scrollbar { display: none; }
 
     & .category-nav__btn {
-      padding: 10px 16px;
-      font-size: 12px;
+      padding: 14px 18px;
+      font-size: 13px;
       scroll-snap-align: center;
       flex-shrink: 0;
     }
@@ -1841,7 +1853,7 @@ html.light .game-showcase:hover {
     & .platform-showcase__title { font-size: 17px; }
     & .platform-showcase__tagline { font-size: 12px; }
     & .platform-showcase__content { gap: 8px; margin-bottom: 12px; }
-    & .platform-showcase__cta { padding: 8px 14px; font-size: 12px; }
+    & .platform-showcase__cta { padding: 14px 20px; font-size: 13px; }
   }
 
   .game-showcase {
@@ -1871,12 +1883,22 @@ html.light .game-showcase:hover {
   .theme-toggle {
     top: 16px;
     right: 16px;
-    width: 38px;
-    height: 38px;
+    width: 44px;
+    height: 44px;
+
+    & .theme-toggle__icon { font-size: 17px; }
   }
 
   .modal-backdrop {
     & .modal-box { max-width: 92vw; }
+
+    & .modal-close {
+      width: 44px;
+      height: 44px;
+      top: 12px;
+      right: 12px;
+      font-size: 18px;
+    }
   }
 
   .social-grid {

@@ -1,196 +1,221 @@
-# 박병장 출동 안내문(2단 토스트) — 석조무사 접촉 시 내러티브 강화
+# 모바일 버튼 터치 타겟 확장
 
 ## 개요
-현재 석조무사 접촉 시 "공군병장 박병장 출동!" 1줄 토스트만 1.2초 뜨고 곧장 비행기/도망 연출이 실행된다. 이를 **2단 구성(제목 + 본문)의 내러티브 안내 박스**로 확장하여, 석조무사가 학창시절 친구인 박병장을 호출해 실습생을 구해주는 "반전의 순간"을 플레이어가 확실히 읽을 수 있도록 한다. 게임 흐름은 절대 멈추지 않는다 — 안내는 캔버스 상단 오버레이로 페이드인/아웃되며 비행기가 날아오는 동안 함께 보여진다.
+모바일(≤520px)에서 주요 인터랙션 버튼들이 WCAG 2.5.5 권장 최소 터치 타겟 44×44 px에 미달하거나 간신히 충족하는 상태다. 손가락 탭 실패와 오터치를 줄이기 위해 각 버튼을 모바일 전용 미디어쿼리 안에서만 넉넉히 키운다. 데스크탑 경험·색상·그림자·보더는 일체 건드리지 않는다.
 
 ## 변경 유형
-**기능** (텍스트/연출 추가가 있지만 로직 상수 확장과 렌더 분기 추가가 핵심이므로 기능 평가 기준 적용)
+**디자인** (확정)
 
 ## 디자인 언어 & 의도
-석조무사를 "수간호사의 부하 악역"으로 안내했다가 접촉 순간 "사실은 박병장을 불러주는 친구"였다는 반전을 **텍스트로 명시**하여, 플레이어가 위험한 실수라고 생각한 순간이 오히려 구원으로 뒤집히는 서사적 카타르시스를 전달한다. 안내는 게임을 멈추지 않고 비행기 퍼포먼스(2.4초)와 **시간적으로 동기화**되며, 기존 글래스모피즘 토스트의 문법(반투명 배경 박스 + 페이드 알파)을 유지해 UI 정체성을 깨뜨리지 않는다.
+모바일 접근성과 누르기 쉬움을 위한 "여유의 확장"이다. 데스크탑은 건드리지 않고 ≤520px 브레이크포인트에서만 패딩·크기·폰트를 키워, 한 손 조작 중에도 버튼이 손가락 아래로 확실히 들어오게 한다. 글래스모피즘·코럴핑크 팔레트·라운드 형태 등 사이트 정체성은 그대로 두고, 오직 "만질 수 있는 표면적"만 넓힌다.
 
 ## Sprint 범위 계약
-Generator가 SPEC 외 변경을 하려 할 때의 판단 기준:
-- **허용**: (1) `AIRFORCE` 상수에 title/subtitle/폰트/박스 크기 관련 필드 추가, (2) 기존 토스트 렌더 블록(3510~3526)을 2단 박스로 재작성, (3) `AIRFORCE.toastDuration` 값 조정, (4) `prefers-reduced-motion`에서의 페이드 생략 분기
-- **금지**: 
-  - 기존 `triggerAirforceEasterEgg` / `startChiefFlee` / `updateAirplane` / `drawAirplane` 함수의 로직/타이밍 변경
-  - `CUTSCENES.introStoneGuard`의 텍스트 변경 (여전히 게임 시작 직후 "경고 · 석조무사 출현" 안내로 그대로 유지)
-  - `CUTSCENES` 사전 또는 `triggerCutscene` 기반 오버레이로 안내 전환 (게임을 멈추지 않기 위함)
-  - 비행기 속도/좌표/도망 로직/파티클/엔진 사운드 변경
-  - 석조무사 스프라이트/패트롤/hitbox 관련 변경
-- **판단 기준**: "이 변경이 2단 안내 토스트 렌더와 동기화에 직접적으로 필요한가?" → YES면 허용, NO면 금지
 
-## UX 선택 결정
+Generator가 SPEC 외 변경을 시도할 때의 판단 기준:
 
-**후보 비교**:
-- (A) 기존 CUTSCENES 오버레이 재사용 (Enter/Space로 닫기, 게임 일시정지): **탈락**. 접촉 즉시 비행기가 이미 스폰되어 좌→우로 움직이기 시작하는데 오버레이가 게임을 멈추면 "비행기 등장 → 수간호사 도망" 연출의 템포가 깨진다. 또 introStoneGuard 컷씬과 형식이 겹쳐 별개 이벤트라는 느낌이 약해진다.
-- (B) 캔버스 상단 2단 박스 토스트 (2~3초 자동 소멸, 게임 계속 진행): **선택**. 기존 토스트 문법을 그대로 계승하면서 제목+본문 2줄로 확장. 비행기 flyDuration(2400ms)과 동기화하면 비행기가 화면을 통과하는 동안 안내가 떠 있고, 마지막 300ms에 함께 페이드아웃.
-- (C) 캔버스 중앙 큰 박스: **탈락**. 플레이어 캐릭터와 음표를 가려 조작성이 떨어진다.
+- **허용 (최소 연동 변경)**:
+  - `@media (max-width: 520px)` 블록 **안에서만** 대상 버튼의 `width`, `height`, `min-width`, `min-height`, `padding`, `font-size`, `gap`, `border-radius`, 자식 아이콘(`i`, `svg`) 크기, `top`/`right`(고정 위치 버튼의 위치 보정) 조정
+  - 기존 `@media (max-width: 520px)` 블록 내에서 이미 해당 셀렉터가 존재하면 그 블록 안에 값을 **수정**하고, 존재하지 않으면 같은 기존 미디어쿼리 블록 내부에 새 룰 추가
+- **금지**:
+  - 데스크탑 기본 규칙(미디어쿼리 밖의 `.theme-toggle`, `.category-nav__btn`, `.platform-showcase__cta`, `.music-showcase__link-btn`, `.modal-close` 선언부) 수정
+  - `@media (min-width: 900px)` 내부 선언 수정 (데스크탑 레이아웃 손상 금지)
+  - 색상/배경/보더 색/그림자/블러/트랜지션/애니메이션 등 **비크기 속성** 변경
+  - `--bg-card`, `--border`, `--brand*` 등 CSS 변수 값 변경
+  - `button, .platform-showcase__cta, .music-showcase__link-btn { user-select, touch-action … }` (style.css 114~124줄 "Touch hardening for interactive chrome" 블록) 수정
+  - 대상 5종 외 버튼·링크·카드 요소 변경
+  - 새 CSS 변수 추가 (수치 직접 기입)
+  - HTML 구조 변경, 클래스 추가/제거
+  - JS 변경
+  - 새 미디어쿼리 브레이크포인트(예: 480px, 600px 등) 추가
+- **판단 기준**: "이 변경이 없으면 SPEC의 모바일 버튼 확장이 제대로 동작하지 않는가?" → YES면 허용, NO면 금지
 
-**결정: 안 (B)**. 게임 흐름을 끊지 않고 비행기/도망 연출과 시각적으로 동기화.
+## 조사 결과: 현재 값
 
-## 새 안내문 상수화
-
-`AIRFORCE` 상수에 다음 필드 추가 (기존 필드는 유지):
-```
-title: '나와라 박병장!',
-subtitle: '석조무사가 학창시절 같은반 친구 박병장을 불러 실습생을 도와줍니다!',
-```
-기존 `toastText: '공군병장 박병장 출동!'` 필드는 **삭제한다** (새 2단 박스가 완전히 대체하며, 현재 이 필드는 `drawAirplane` 이후 토스트 렌더 블록 1곳에서만 사용됨 — game.js:3524).
-
-`toastDuration`: `1200` → `2600` (ms). 비행기 flyDuration 2400ms보다 200ms 길게 설정해 비행기가 막 사라지는 순간 안내도 함께 자연스럽게 페이드아웃. 300ms fade-out은 기존 공식(`alpha = Math.min(1, remain / 300)`)을 재사용.
-
-## 현재 코드의 관련 위치
-
-| 항목 | 파일 | 라인 |
+### 기존 반응형 브레이크포인트 전수 조사
+| 라인 | 브레이크포인트 | 목적 |
 |---|---|---|
-| `AIRFORCE` 상수 정의 | assets/js/game.js | 106~116 |
-| `state.airplane` 초기 스키마 | assets/js/game.js | 1001~1007 |
-| `triggerAirforceEasterEgg` | assets/js/game.js | 2666~2688 |
-| 석조무사 접촉 → 이스터에그 트리거 | assets/js/game.js | 3261~3270 |
-| 비행기 렌더 호출 | assets/js/game.js | 3437~3440 |
-| **기존 1줄 토스트 렌더 블록 (교체 대상)** | assets/js/game.js | 3510~3526 |
-| `CUTSCENES.introStoneGuard` (건드리지 말 것) | assets/js/game.js | 183~186 |
-| `reducedMotion` 플래그 | assets/js/game.js | 189 |
-| `isLightTheme` 사용 패턴 (참조용) | assets/js/game.js | 3502, 3505 |
+| 808 | `@media (max-width: 520px)` | 카테고리 나브 모바일 (scroll-snap 스크롤) |
+| 842 | `@media (prefers-reduced-motion: reduce)` | 카테고리 나브 접근성 |
+| 1803 | `@media (max-width: 520px)` | 메인 레이아웃 모바일 (profile, link-card, platform-showcase, game-showcase, featured-item, theme-toggle, modal, social-grid) |
+| 2168 | `@media (prefers-reduced-motion: reduce)` | 전역 접근성 |
+| 2240 | `@media (min-width: 900px)` | 데스크탑 풀 레이아웃 (music-showcase 포함 이 안에서만 노출) |
+| 2857 | `@media (max-width: 520px)` | streaks 모바일 |
+| 2871 | `@media (prefers-reduced-motion: reduce)` | streaks 접근성 |
+| 2936 | `@media(max-width:900px)` | cover-band 전용 |
+| 2940 | `@media(max-width:720px)` | cover-band 전용 |
+
+**결론: 모바일 표준 브레이크포인트는 `@media (max-width: 520px)`. 이번 작업은 이 기존 브레이크포인트를 그대로 재사용한다. 신규 브레이크포인트 추가 금지.**
+
+### 버튼별 현재값 vs 목표값
+
+#### 1. `.theme-toggle` (우상단 고정 테마 전환 원형 버튼)
+| 속성 | 데스크탑 현재값 (line 128~) | 모바일 현재값 (line 1883~) | 모바일 목표값 | 터치 타겟 |
+|---|---|---|---|---|
+| width | 42px | **38px** | **44px** | 44×44 ✓ |
+| height | 42px | **38px** | **44px** | |
+| top | 24px | 16px | 16px (유지) | — |
+| right | 24px | 16px | 16px (유지) | — |
+| 아이콘 font-size | 16px | (상속 16px) | 17px | — |
+
+처리: line 1883~1888의 기존 `.theme-toggle` 모바일 블록 안의 값을 **수정** (38 → 44). 아이콘 크기는 `& .theme-toggle__icon { font-size: 17px; }` 한 줄 추가. 현재 모바일이 오히려 데스크탑(42px)보다 작아서 손가락 탭 난이도가 높다 — 역전 해소.
+
+#### 2. `.category-nav__btn` (카테고리 필터 탭)
+| 속성 | 데스크탑 현재값 (line 753~) | 모바일 현재값 (line 823~) | 모바일 목표값 | 터치 타겟 |
+|---|---|---|---|---|
+| padding | 12px 22px | **10px 16px** | **14px 18px** | 높이 약 44px+ ✓ |
+| font-size | 14px | **12px** | **13px** | (가독성 개선) |
+| gap | 8px | (상속 8px) | 8px (유지) | — |
+| icon width/height | 18px | **16px** | 16px (유지, 라벨 비율) | — |
+| border-radius | 999px (pill) | (상속) | 유지 | — |
+
+높이 검산: 폰트 13px × line-height ≈ 18px + padding 14×2 = **46px** → 44px 충족.
+처리: line 823~833의 기존 `.category-nav__btn` 모바일 블록 안의 padding과 font-size만 **수정**. 아이콘 크기는 유지(라벨 대비 비율 깨짐 방지). 인디케이터 top/height는 padding 변경에 맞춰 재확인:
+- 현재 `top: 5px; height: calc(100% - 10px);` 유지 가능 (pill 형태라 상대값)
+- 필요 시 `top: 6px; height: calc(100% - 12px);` 로만 미세 조정 (데스크탑 값과 동일 복귀 — 모바일 블록의 `top: 5px` 오버라이드를 제거하거나 6px로 수정)
+
+#### 3. `.platform-showcase__cta` (Velog/Brunch/GitHub "더 보기" CTA)
+| 속성 | 기본 현재값 (line 1234~) | 데스크탑 현재값 (line 2309~, `@media min-width:900px`) | 모바일 현재값 (line 1856) | 모바일 목표값 | 터치 타겟 |
+|---|---|---|---|---|---|
+| padding | 10px 18px | 12px 24px | **8px 14px** | **14px 20px** | 높이 약 46px+ ✓ |
+| font-size | 13px | 14px | **12px** | **13px** | — |
+| gap | 8px | (상속) | (상속 8px) | 8px (유지) | — |
+| border-radius | 8px | (상속) | (상속) | 유지 | — |
+| 내부 `i` 아이콘 | 11px | (상속) | (상속) | 유지 | — |
+
+높이 검산: 폰트 13px × 1.4 ≈ 18px + padding 14×2 = **46px** → 44px 충족.
+처리: line 1856의 `& .platform-showcase__cta { padding: 8px 14px; font-size: 12px; }` 를 **수정** (`padding: 14px 20px; font-size: 13px;`). 현재 모바일 패딩은 거의 데스크탑의 절반인데 오히려 화면이 좁은 모바일에서 더 작다는 역전 상태 — 해소.
+
+#### 4. `.music-showcase__link-btn` (Melon / SoundCloud 버튼)
+| 속성 | 현재값 (line 2458~, `@media min-width:900px` 내부) | 모바일 대응 |
+|---|---|---|
+| padding | 10px 20px | **없음** — 모바일에선 부모 `.music-showcase`가 `display: none`이라 화면에 노출되지 않음 |
+| font-size | 13px | — |
+| 노출 조건 | ≥900px에서만 렌더 | 모바일은 그 아래 `.links--section`의 `.link-card`(Melon, SoundCloud)가 대체 렌더됨 |
+
+**결론: 모바일 ≤520px에서는 `.music-showcase__link-btn`이 실제로 렌더되지 않으므로 터치 타겟 문제가 발생하지 않는다. 모바일 스타일 추가 불필요.** 단, SPEC 체크리스트에 "본 요소는 모바일 비가시이므로 의도적으로 스타일 미추가"임을 기록하여 Generator가 실수로 건드리지 않도록 명시.
+
+#### 5. `.modal-close` (프로필 모달 닫기 X 버튼)
+| 속성 | 데스크탑 현재값 (line 1978~) | 모바일 현재값 | 모바일 목표값 | 터치 타겟 |
+|---|---|---|---|---|
+| width | 32px | **(없음, 32px 상속)** | **44px** | 44×44 ✓ |
+| height | 32px | **(없음, 32px 상속)** | **44px** | |
+| top | 16px | — | 12px | — |
+| right | 16px | — | 12px | — |
+| font-size (X 아이콘) | 15px | — | 18px | — |
+
+처리: 현재 `@media (max-width: 520px)` 내부 line 1890~1892의 `.modal-backdrop` 블록에 `& .modal-box { max-width: 92vw; }` 만 있음. 이 블록 안에 `& .modal-close { ... }` **새 룰 추가**. 위치를 16→12로 살짝 당겨 44px로 커져도 이미지 영역을 가리지 않게 한다.
 
 ## 변경 범위
 
-### pages/game.html 변경사항
-- **변경 없음**. DOM/HTML 구조 수정 불필요 (캔버스 렌더 영역에만 존재).
+### index.html 변경사항
+**없음.** HTML 구조·클래스·ID·aria 속성 일체 변경하지 않는다.
 
-### assets/css/game.css 변경사항
-- **변경 없음**. 캔버스 2D 렌더로 처리 — CSS 오버레이가 아니라 canvas context로 직접 그린다. 기존 토스트와 동일한 패턴을 유지한다.
+### assets/css/style.css 변경사항
 
-### assets/js/game.js 변경사항
+모든 변경은 기존 `@media (max-width: 520px)` 블록(line 1803~1908) **안에서만** 수행. 새 미디어쿼리 블록을 만들지 않는다.
 
-#### A. `AIRFORCE` 상수 (106~116행) 확장
-기존 필드 유지 + 아래 필드 추가/변경:
-- 추가: `title: '나와라 박병장!'`
-- 추가: `subtitle: '석조무사가 학창시절 같은반 친구 박병장을 불러 실습생을 도와줍니다!'`
-- 삭제: `toastText: '공군병장 박병장 출동!'` (새 2단 박스가 이를 대체)
-- 변경: `toastDuration: 1200` → `toastDuration: 2600`
-- 추가(권장): 박스 레이아웃 상수 (세부 튜닝용). 직접 숫자 하드코딩 대신 상수화:
-  ```
-  toastBoxW: 440,       // px — 박스 폭 (CANVAS_W 640 대비 안전)
-  toastBoxH: 62,        // px — 2줄 높이
-  toastBoxY: 24,        // px — 상단에서 y (화캉스 y=40과 분리, 충돌 회피)
-  toastTitleSize: 18,   // px
-  toastSubtitleSize: 13 // px
-  ```
+1. **`.theme-toggle` 모바일 블록 수정 (기존 line 1883~1888 내)**
+   - `width: 38px;` → `width: 44px;`
+   - `height: 38px;` → `height: 44px;`
+   - `top: 16px;`, `right: 16px;` 유지
+   - 블록 안에 `& .theme-toggle__icon { font-size: 17px; }` 한 줄 추가
 
-#### B. 3510~3526행 토스트 렌더 블록 교체
-기존 1줄 토스트를 **2단 박스(제목 큰 글씨 + 본문 작은 글씨)** 로 교체. 의사코드:
+2. **`.category-nav__btn` 모바일 블록 수정 (기존 line 808~839의 `@media (max-width: 520px)` 내부 line 823~828)**
+   - `padding: 10px 16px;` → `padding: 14px 18px;`
+   - `font-size: 12px;` → `font-size: 13px;`
+   - `scroll-snap-align: center; flex-shrink: 0;` 유지
+   - `.category-nav__icon { width: 16px; height: 16px; }` 유지 (라벨 대비 비율 유지 목적)
+   - `.category-nav__indicator { top: 5px; height: calc(100% - 10px); }`는 padding 변경으로 인해 pill 높이가 커지지만 상대 계산이므로 그대로 동작 — **수정하지 않음**
 
-```
-if (state.airplane.active && now < state.airplane.toastUntil) {
-  const remain = state.airplane.toastUntil - now;
-  // reduced-motion: alpha 페이드 생략 (상수 1.0). 일반: 마지막 300ms 페이드아웃.
-  const alpha = reducedMotion ? 1 : Math.min(1, remain / 300);
-  ctx.save();
-  ctx.globalAlpha = alpha;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
+3. **`.platform-showcase__cta` 모바일 규칙 수정 (기존 line 1856)**
+   - `& .platform-showcase__cta { padding: 8px 14px; font-size: 12px; }`
+   - → `& .platform-showcase__cta { padding: 14px 20px; font-size: 13px; }`
+   - `.game-showcase__cta`는 **건드리지 않는다** (SPEC 대상 아님)
 
-  const cx = CANVAS_W / 2;
-  const boxY = AIRFORCE.toastBoxY;
-  const boxW = AIRFORCE.toastBoxW;
-  const boxH = AIRFORCE.toastBoxH;
+4. **`.music-showcase__link-btn` — 변경 없음**
+   - 이유: 모바일 ≤520px에서 부모가 `display: none`이라 렌더되지 않음. 명시적 비변경.
 
-  // 그림자 (offset 2px)
-  ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-  ctx.fillRect(cx - boxW / 2, boxY + 2, boxW, boxH);
+5. **`.modal-close` 모바일 규칙 신규 추가 (기존 line 1890~1892 `.modal-backdrop` 블록 내부)**
+   - 기존:
+     ```
+     .modal-backdrop {
+       & .modal-box { max-width: 92vw; }
+     }
+     ```
+   - 추가 후:
+     ```
+     .modal-backdrop {
+       & .modal-box { max-width: 92vw; }
+       & .modal-close {
+         width: 44px;
+         height: 44px;
+         top: 12px;
+         right: 12px;
+         font-size: 18px;
+       }
+     }
+     ```
 
-  // 본체 배경 — 테마별 (화캉스 토스트의 웜옐로우 대신 밀리터리/공군 톤 네이비)
-  ctx.fillStyle = isLightTheme() ? '#e8edf5' : '#1a2238';
-  ctx.fillRect(cx - boxW / 2 + 2, boxY, boxW - 4, boxH - 4);
+#### 새 필요 CSS 변수
+**없음.** 수치를 모바일 블록 내부에 직접 기입한다 (기존 모바일 블록도 변수 없이 리터럴 수치 사용 중 — 패턴 일관).
 
-  // 좌측 엣지 악센트 — 브랜드 코럴 4px 세로 라인 (글래스모피즘 포트폴리오 정체성 유지)
-  ctx.fillStyle = isLightTheme() ? '#e85a6a' : '#ff7b7b';
-  ctx.fillRect(cx - boxW / 2 + 2, boxY, 4, boxH - 4);
+#### 반응형 대응
+- 기존 `@media (max-width: 520px)` 재사용. 신규 브레이크포인트 금지.
+- 신규 브레이크포인트 추가·기존 브레이크포인트 변경 모두 금지.
 
-  // 제목
-  ctx.fillStyle = isLightTheme() ? '#8a1a2a' : '#ffd0d4';
-  ctx.font = `bold ${AIRFORCE.toastTitleSize}px "Pretendard", system-ui, sans-serif`;
-  ctx.fillText(AIRFORCE.title, cx, boxY + 18);
-
-  // 본문
-  ctx.fillStyle = isLightTheme() ? '#2a2432' : '#e8eaf2';
-  ctx.font = `${AIRFORCE.toastSubtitleSize}px "Pretendard", system-ui, sans-serif`;
-  ctx.fillText(AIRFORCE.subtitle, cx, boxY + 42);
-
-  ctx.restore();
-}
-```
-
-**중요 세부**:
-1. 텍스트 폭 안전 검증: `AIRFORCE.subtitle`은 "석조무사가 학창시절 같은반 친구 박병장을 불러 실습생을 도와줍니다!" (약 34자). 13px 본문 + 1자당 약 11~12px로 약 400px → boxW=440 이내 1줄에 충분히 들어감. Generator는 구현 후 `ctx.measureText(AIRFORCE.subtitle).width`를 mental check해서 boxW-32 초과 시 subtitle을 2줄로 분리(예: "석조무사가 학창시절 같은반 친구 박병장을 불러" / "실습생을 도와줍니다!")하고 boxH를 78로 확장.
-2. 박스 위치 `toastBoxY: 24`는 비행기 y=40(planeY)보다 위. 비행기가 안내 박스 아래쪽을 지나가도록 의도적 배치 (내러티브: 박병장이 날아가면서 실습생을 구한다 → 안내를 "위에서 내려다보는 공지"처럼 배치).
-3. 화캉스 보너스 토스트(y=40)는 "일시적 보너스"이고 이 안내는 "서사 이벤트"이므로 둘이 겹치면 서사 안내가 위에 오도록 y를 더 위로.
-4. `reducedMotion` 분기는 alpha만 생략 (박스는 계속 보이되 페이드인/아웃 없이 즉시 표시/소거).
-
-#### C. 기타 삭제/정리
-- `AIRFORCE.toastText` 참조는 오직 3524행 한 군데이므로 안전하게 제거 가능.
-- `state.airplane.toastUntil` 필드는 **그대로 유지**. 새 안내도 같은 필드를 사용해 만료 관리.
-- `triggerAirforceEasterEgg` 내부의 `state.airplane.toastUntil = now + AIRFORCE.toastDuration` (2675행) 라인 그대로 유지 — 단지 AIRFORCE.toastDuration 값만 2600으로 커진다.
+### assets/js/main.js 변경사항
+**없음.** JS 로직 변경 없음.
 
 ## 기능 상세
 
-### 기능 1: 박병장 2단 안내 토스트
-- 설명: 석조무사 접촉 순간 캔버스 상단 y=24 위치에 제목+본문 2줄 박스가 2.6초간 표시됨
-- 사용자 동작: 없음 — 자동 표시/자동 페이드아웃 (게임은 계속 조작 가능)
-- 구현 위치: `render()` 함수 내부 3510~3526행 (기존 토스트 블록 교체)
-- 세부 요소:
-  - 제목 "나와라 박병장!" — 18px bold, 코럴 톤(브랜드 컬러 계열)
-  - 본문 "석조무사가 학창시절 같은반 친구 박병장을 불러 실습생을 도와줍니다!" — 13px regular
-  - 좌측 4px 코럴 세로 라인 (기존 컷씬 패널의 `border-left: 4px solid var(--brand)` 문법을 캔버스에서 재현)
-  - 박스 배경: 다크=`#1a2238`(밀리터리 네이비), 라이트=`#e8edf5`
-  - alpha 페이드: 마지막 300ms 선형 감쇠 (reduced-motion에서는 생략)
+### 기능 1: theme-toggle 44px 확대
+- 설명: 우상단 고정 테마 토글 버튼을 모바일에서 38×38 → 44×44로 확장
+- 사용자 동작: 손가락으로 더 쉽게 탭 가능
+- 구현 위치: `assets/css/style.css` line 1883~ 기존 `.theme-toggle` 모바일 블록
+- 세부 요소: width/height 44px, 아이콘 font-size 17px
 
-### 기능 2: 기존 비행기/도망 연출과의 동기화
-- 설명: 안내 박스 표시 시간(2.6s)은 비행기 통과 시간(2.4s) + 여유 200ms
-- 사용자 동작: 없음
-- 구현 위치: `AIRFORCE.toastDuration` 값만 2600으로 조정
-- 세부 요소:
-  - 비행기 flyDuration 2400ms + 수간호사 fleeDuration 5000ms는 **일체 건드리지 않는다**
-  - 토스트만 2600ms로 늘어나 "비행기가 지나간 직후 안내가 페이드아웃" 자연스러운 엔딩
+### 기능 2: 카테고리 필터 탭 확대
+- 설명: 카테고리 네비 탭의 세로 패딩을 10px → 14px로, 폰트를 12→13px로
+- 사용자 동작: scroll-snap 스와이프 중에도 탭 선택이 쉬움
+- 구현 위치: `assets/css/style.css` line 808~ 기존 `.category-nav` 모바일 블록 내 `.category-nav__btn`
+- 세부 요소: padding 14px 18px, font-size 13px, 아이콘 크기 유지
 
-### 기능 3: `CUTSCENES.introStoneGuard` 보존
-- 설명: 게임 시작 후 첫 석조무사 등장 시 뜨는 "경고 · 석조무사 출현 / 마주치면 잡혀갑니다" 안내는 **원문 그대로 유지**
-- 사용자 동작: Enter/Space로 닫기 (기존 컷씬 동작 유지)
-- 구현 위치: `CUTSCENES.introStoneGuard` (game.js 183~186) — **변경 금지**
-- 세부 요소:
-  - 이것이 있어야 "위협으로 안내했지만 사실은 친구였다"는 반전이 성립한다
-  - 이 컷씬이 사라지거나 텍스트가 바뀌면 SPEC 위반
+### 기능 3: 플랫폼 쇼케이스 CTA 확대
+- 설명: Velog/Brunch/GitHub "모든 X 보기" CTA 버튼을 패딩 8→14, 14→20, 폰트 12→13으로 확대
+- 사용자 동작: 블로그 외부 링크로 이동하는 주 진입점이므로 실수 탭 감소
+- 구현 위치: `assets/css/style.css` line 1856 (`.platform-showcase` 모바일 블록 내)
+- 세부 요소: padding 14px 20px, font-size 13px
+
+### 기능 4: 모달 닫기 버튼 44px 확대
+- 설명: 프로필 모달의 X 닫기 버튼을 모바일에서 32×32 → 44×44로 확장
+- 사용자 동작: 모달 오버레이 오탭 없이 닫기 가능
+- 구현 위치: `assets/css/style.css` line 1890~ `.modal-backdrop` 모바일 블록 내 신규 룰
+- 세부 요소: width/height 44px, top/right 12px, font-size 18px
+
+### 비적용 명시: music-showcase__link-btn
+- 설명: ≤520px에서 부모 `.music-showcase`가 `display: none`이라 노출되지 않음
+- 대응: 모바일 스타일 추가 없음. Generator가 이 요소를 건드리지 않도록 본 SPEC에 명시.
+
+## 수락 기준 (체크리스트)
+
+Evaluator가 확인할 항목:
+
+- [ ] **터치 타겟 44px+**: `.theme-toggle`, `.category-nav__btn`, `.platform-showcase__cta`, `.modal-close` 네 요소가 모바일에서 최소 44×44 px 히트 영역을 가진다
+- [ ] **라벨·아이콘 비율 유지**: 카테고리 탭의 아이콘(16px) 과 라벨(13px) 의 시각 균형이 깨지지 않는다
+- [ ] **오버플로우·줄바꿈 없음**: 패딩·폰트 확대로 인해 카테고리 나브 가로 스크롤이 과하게 늘어나거나, CTA 버튼 텍스트가 2줄로 꺾이지 않는다 (특히 "GitHub 프로필 보기" 한 줄 유지 확인)
+- [ ] **데스크탑 시각 무변화**: ≥521px에서 5개 버튼 모두 현재와 동일하게 보인다 (데스크탑 DevTools 521px/900px/1200px 비교 시 변화 없음)
+- [ ] **색상·그림자·보더 동일**: 비크기 속성이 하나도 바뀌지 않았다
+- [ ] **Touch hardening 블록 무수정**: style.css line 114~124 "Touch hardening for interactive chrome" 블록이 그대로다
+- [ ] **신규 미디어쿼리 없음**: 새 `@media` 블록이 추가되지 않았고, 기존 `@media (max-width: 520px)` 블록 안에서만 변경됨
+- [ ] **HTML/JS 변경 없음**: index.html, main.js 가 변경되지 않았다
+- [ ] **`.music-showcase__link-btn` 미터치**: 모바일에서 비가시이므로 의도적으로 건드리지 않았다
+- [ ] **prefers-reduced-motion 무영향**: 크기만 바뀌었고 애니메이션/트랜지션은 건드리지 않아 접근성 블록 추가 작업 불필요
 
 ## 주의사항
 
-### 기존 기능과 충돌 가능성
-- **화캉스 보너스 토스트(y=40)와 동시 출현 가능성**: 석조무사 접촉과 변기 수집이 동시에 일어나는 경우 두 토스트가 겹칠 수 있다. 박병장 박스 y=24, 화캉스 y=40 → 수직 위치 분리로 시각 겹침 회피. 박스 높이 62px이므로 y=24부터 y=86까지 점유 → 화캉스(y=40, 32px height: y=24~56)와 겹치지만, 박병장이 위 레이어에 그려지므로(렌더 순서상 나중) 가독성 우선됨. Generator는 박병장 박스가 렌더 순서상 화캉스 토스트 **뒤에** 그려지도록 유지 (기존 블록 순서가 그렇다).
-- **드로 순서 유지**: 박병장 토스트 렌더 블록은 반드시 `if (now < state.toiletToastUntil) {...}` 블록 **다음**에 위치해야 한다 (최상위 레이어).
-
-### 삭제/수정해야 할 기존 코드
-- `AIRFORCE.toastText` 필드 삭제 (3524행의 `ctx.fillText(AIRFORCE.toastText, ...)`가 새 렌더로 교체되면서 더 이상 참조 없음)
-- 기존 3510~3526행 블록을 새 2단 박스 블록으로 통째 교체
-
-### 접근성/보안 고려사항
-- **보안**: `AIRFORCE.title`, `AIRFORCE.subtitle`은 상수 문자열이고 `ctx.fillText`로 canvas에 직접 그리므로 XSS 무관. `esc()`/`safeUrl()` 불필요.
-- **접근성 — prefers-reduced-motion**: 
-  - 기존 `reducedMotion` 플래그(game.js:189) 참조
-  - alpha 페이드 공식 `alpha = Math.min(1, remain / 300)` → `reducedMotion ? 1 : Math.min(1, remain / 300)`로 변경
-  - 박스 자체는 표시해야 한다(내러티브 정보 전달이 목적). 단지 페이드 애니메이션만 생략.
-- **스크린리더**: canvas 2D 렌더는 스크린리더에 노출되지 않지만, 기존 토스트(`AIRFORCE.toastText`)도 동일한 한계를 가졌으므로 현재 SPEC 범위 밖. 추후 개선 과제.
-- **테마 대응**: `isLightTheme()` 분기로 다크/라이트 색상 모두 지정. 하드코딩 hex는 캔버스 렌더의 기존 관례(`'#ff7b7b'` 등)를 따르며, 글로벌 CSS 변수에 영향 없음.
-
-### 평가 기준 자체 점검 가이드
-Generator는 구현 후 SELF_CHECK.md에 아래를 확인:
-- [ ] `AIRFORCE.title`, `AIRFORCE.subtitle` 상수화 완료 (하드코딩 문자열 아님)
-- [ ] `AIRFORCE.toastText` 필드 제거 및 모든 참조 제거
-- [ ] `AIRFORCE.toastDuration` 2600ms로 변경
-- [ ] 기존 `triggerAirforceEasterEgg`, `startChiefFlee`, `updateAirplane`, `drawAirplane` 로직 무변경
-- [ ] `CUTSCENES.introStoneGuard` 텍스트 원문 유지 ("경고 · 석조무사 출현" / "마주치면 잡혀갑니다" 포함)
-- [ ] 2단 박스 렌더 순서가 화캉스 토스트 블록 뒤에 위치
-- [ ] `reducedMotion`에서 alpha 페이드 생략
-- [ ] 다크/라이트 테마 모두 색상 지정
-- [ ] subtitle 텍스트 폭이 boxW 이내 확인 (초과 시 2줄 분리)
-- [ ] CSS/HTML 파일 무변경
+- **기존 모바일 블록이 데스크탑보다 작게 설정된 역전 상태**: `.theme-toggle`(42→38), `.platform-showcase__cta`(10/18 → 8/14) 두 요소는 현재 모바일이 오히려 더 작다. 이번 변경이 이 비정상 역전을 해소한다.
+- **카테고리 나브 인디케이터**: `.category-nav__indicator`의 `top`/`height`는 `calc(100% - 12px)` 상대 계산으로 자동 적응하므로 수정 불필요. Generator가 괜히 인디케이터 값을 건드리지 않도록 주의.
+- **모달 닫기 버튼 위치 보정**: 32 → 44로 커지면서 기본값 `top:16 right:16`이면 시각 여백이 부족해 보임 → 모바일만 `top:12 right:12`로 살짝 당김. 이미지 영역 침범 없음 확인.
+- **라이트 테마 별도 작업 불필요**: 모든 변경이 크기 속성이라 `html.light` 오버라이드가 영향받지 않는다.
+- **보안/접근성 고려사항**: 이번 변경은 외부 데이터·사용자 입력·URL 주입과 무관하므로 `esc()`/`safeUrl()` 해당 없음. 포커스 가시성(`:focus-visible`)은 기존 규칙이 그대로 유지되므로 별도 조치 불필요.
+- **Generator 유의**: `.game-showcase__cta`도 line 1868에 유사한 모바일 규칙(`padding: 8px 14px; font-size: 12px;`)이 있지만 이번 SPEC의 대상 5종이 아니므로 **건드리지 않는다**. SPEC 범위 위반 판정 대상.
