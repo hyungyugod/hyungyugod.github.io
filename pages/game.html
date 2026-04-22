@@ -129,24 +129,19 @@
         </div>
       </div>
 
-      <div class="game-joycons" id="gameJoycons" aria-hidden="true" hidden>
-        <div class="game-joycon game-joycon--left" data-side="left">
-          <button class="game-joycon__btn game-joycon__btn--up"    type="button" data-dir="up"    aria-label="위로 이동">▲</button>
-          <button class="game-joycon__btn game-joycon__btn--left"  type="button" data-dir="left"  aria-label="왼쪽으로 이동">◀</button>
-          <button class="game-joycon__btn game-joycon__btn--right" type="button" data-dir="right" aria-label="오른쪽으로 이동">▶</button>
-          <button class="game-joycon__btn game-joycon__btn--down"  type="button" data-dir="down"  aria-label="아래로 이동">▼</button>
-        </div>
-        <div class="game-joycon game-joycon--right" data-side="right">
-          <button class="game-joycon__btn game-joycon__btn--up"    type="button" data-dir="up"    aria-label="위로 이동">▲</button>
-          <button class="game-joycon__btn game-joycon__btn--left"  type="button" data-dir="left"  aria-label="왼쪽으로 이동">◀</button>
-          <button class="game-joycon__btn game-joycon__btn--right" type="button" data-dir="right" aria-label="오른쪽으로 이동">▶</button>
-          <button class="game-joycon__btn game-joycon__btn--down"  type="button" data-dir="down"  aria-label="아래로 이동">▼</button>
+      <div class="game-keypad" id="gameKeypad" aria-hidden="true" hidden>
+        <div class="game-keypad__dpad" role="group" aria-label="이동 키패드">
+          <button class="game-keypad__btn game-keypad__btn--up"    type="button" data-dir="up"    aria-label="위로 이동">▲</button>
+          <button class="game-keypad__btn game-keypad__btn--left"  type="button" data-dir="left"  aria-label="왼쪽으로 이동">◀</button>
+          <button class="game-keypad__btn game-keypad__btn--right" type="button" data-dir="right" aria-label="오른쪽으로 이동">▶</button>
+          <button class="game-keypad__btn game-keypad__btn--down"  type="button" data-dir="down"  aria-label="아래로 이동">▼</button>
         </div>
       </div>
 
       <div class="game-controls" aria-hidden="true">
         <span>이동 <span class="game-controls__key">←↑↓→</span> / <span class="game-controls__key">WASD</span></span>
         <span>수집 <span class="game-controls__key">접촉</span></span>
+        <span>모바일: 하단 키패드 또는 화면 터치</span>
       </div>
     </section>
 
@@ -154,15 +149,6 @@
       © hgfolio · a tiny room to catch your breath
     </footer>
   </main>
-
-  <!-- 모바일 세로 모드 회전 안내 오버레이 -->
-  <div class="game-rotate-hint" id="rotateHint" role="dialog" aria-labelledby="rotateHintTitle" aria-hidden="true" hidden>
-    <div class="game-rotate-hint__panel">
-      <span class="game-rotate-hint__icon" aria-hidden="true">⟳</span>
-      <h2 class="game-rotate-hint__title" id="rotateHintTitle">기기를 가로로 돌려주세요</h2>
-      <p class="game-rotate-hint__desc">가로 모드에서 맵을 터치해 이동합니다.</p>
-    </div>
-  </div>
 
   <script src="/assets/js/game.js"></script>
 </body>

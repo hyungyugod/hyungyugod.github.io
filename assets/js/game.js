@@ -2053,26 +2053,26 @@
     // 캔버스 위에서의 기본 스크롤/줌 제스처 차단
     canvas.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
     initCanvasTapMove();
-    initDualDpad();
+    initKeypad();
   }
 
-  // 좌/우 양쪽 D-pad가 동일 dir 버튼을 공유하므로, 한쪽을 떼도 다른 쪽이
+  // 키패드/키보드/캔버스 탭이 동일 dir을 공유하므로, 한쪽을 떼도 다른 입력이
   // 여전히 눌려 있다면 `state.keys[dir]`을 유지하기 위한 레퍼런스 카운터.
   // `clearDpadPressed()`에서 함께 0으로 리셋한다.
   const dpadPressCount = { up: 0, down: 0, left: 0, right: 0 };
 
   /**
-   * 닌텐도 조이콘 스타일 듀얼 D-pad 초기화.
-   * 좌/우 양쪽 모두 상/하/좌/우 4방향 크로스 패드(총 8버튼)를 Pointer Events로 바인딩해
-   * `state.keys[dir]` 레일에 직접 반영한다. 동시 입력(대각선) 및 양손 공동 입력 지원.
+   * 모바일 하단 키패드(세로 전용) 초기화.
+   * 캔버스 아래 고정된 4방향 D-Pad 버튼을 Pointer Events로 바인딩해
+   * `state.keys[dir]` 레일에 직접 반영한다. 두 버튼 동시 터치로 대각선 이동 지원.
    */
-  function initDualDpad() {
-    const root = document.getElementById('gameJoycons');
+  function initKeypad() {
+    const root = document.getElementById('gameKeypad');
     if (!root) return;
     root.hidden = false;
     root.setAttribute('aria-hidden', 'false');
 
-    const btns = root.querySelectorAll('.game-joycon__btn');
+    const btns = root.querySelectorAll('.game-keypad__btn');
     btns.forEach((btn) => {
       const dir = btn.dataset.dir;
       if (!dir) return;
@@ -2109,11 +2109,11 @@
   }
 
   /**
-   * 오버레이 전환 시 조이콘의 `is-pressed` 잔존 상태와 프레스 카운터를 동시에 리셋.
+   * 오버레이 전환 시 키패드의 `is-pressed` 잔존 상태와 프레스 카운터를 동시에 리셋.
    * 카운터를 리셋하지 않으면 오버레이 해제 후 팬텀 입력이 남을 수 있다.
    */
   function clearDpadPressed() {
-    const pressed = document.querySelectorAll('#gameJoycons .game-joycon__btn.is-pressed');
+    const pressed = document.querySelectorAll('#gameKeypad .game-keypad__btn.is-pressed');
     pressed.forEach((b) => b.classList.remove('is-pressed'));
     dpadPressCount.up = 0;
     dpadPressCount.down = 0;
@@ -2193,86 +2193,13 @@
     canvas.addEventListener('contextmenu', e => e.preventDefault());
   }
 
-  /**
-   * 터치 디바이스 감지 + orientation 상태를 `<body>` 클래스로 노출한다.
-   * CSS는 이 바디 클래스를 트리거로 조이콘/캔버스 축소/회전 안내를 제어한다.
-   * iPhone Pro Max(landscape 932px 등)처럼 폭 >520px인 폰도 커버하기 위해
-   * 뷰포트 폭이 아닌 디바이스 특성(pointer: coarse) 기반으로 판정한다.
-   */
-  function syncMobileLayoutClasses() {
-    const body = document.body;
-    if (!body) return;
-    if (!isTouchDevice()) return; // 데스크톱은 바디 클래스 미부착 → 기존 레이아웃 유지
-
-    body.classList.add('is-touch');
-
-    const mql = window.matchMedia('(orientation: portrait)');
-
-    const apply = (isPortrait) => {
-      if (isPortrait) {
-        body.classList.add('is-portrait');
-        body.classList.remove('is-landscape');
-      } else {
-        body.classList.add('is-landscape');
-        body.classList.remove('is-portrait');
-      }
-    };
-
-    apply(mql.matches);
-
-    if (typeof mql.addEventListener === 'function') {
-      mql.addEventListener('change', (e) => apply(e.matches));
-    } else if (typeof mql.addListener === 'function') {
-      mql.addListener((e) => apply(e.matches));
-    }
-    // resize 폴백 — 일부 브라우저는 orientation 변경 시 change 이벤트가 지연됨
-    window.addEventListener('resize', () => apply(mql.matches));
-  }
-
-  /**
-   * 모바일 세로 모드에서 "가로로 돌려주세요" 오버레이를 토글한다.
-   * orientation lock API는 사용하지 않고 안내만 표시 (브라우저 호환성).
-   * 표시 조건은 바디 클래스(`is-touch` + `is-portrait`) 기반 — 뷰포트 폭 >520px인 폰도 커버.
-   */
-  function initOrientationHint() {
-    const hint = document.getElementById('rotateHint');
-    if (!hint) return;
-    const body = document.body;
-    const mql = window.matchMedia('(orientation: portrait)');
-
-    const apply = () => {
-      // 바디 클래스 의존 대신 런타임 재계산 — 이벤트 콜백 순서 독립성 확보
-      const shouldShow = isTouchDevice() && mql.matches;
-      if (shouldShow) {
-        hint.hidden = false;
-        hint.setAttribute('aria-hidden', 'false');
-        hint.classList.add('is-visible');
-      } else {
-        hint.hidden = true;
-        hint.setAttribute('aria-hidden', 'true');
-        hint.classList.remove('is-visible');
-      }
-    };
-
-    apply();
-    // 최신 브라우저는 addEventListener 지원, 일부 구형은 addListener만
-    if (typeof mql.addEventListener === 'function') {
-      mql.addEventListener('change', apply);
-    } else if (typeof mql.addListener === 'function') {
-      mql.addListener(apply);
-    }
-    window.addEventListener('resize', apply);
-  }
-
   // =====================================================
   // 초기화
   // =====================================================
   loadBest();
   updateBestHud();
   updateStartGoal();
-  syncMobileLayoutClasses();
   if (isTouchDevice()) initTouchControls();
-  initOrientationHint();
 
   /**
    * 시작 오버레이 뒤 캔버스 프리뷰 — 김간호 + 수간호사 + F 한 장

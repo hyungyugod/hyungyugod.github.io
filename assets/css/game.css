@@ -690,41 +690,39 @@ html.light .game-overlay--cutscene {
 }
 
 /* =====================================================
-   듀얼 조이콘 D-Pad (모바일 가로 모드 전용)
-   좌/우 가장자리 고정 오버레이. 기본은 숨김이며,
-   `@media (max-width: 520px) and (orientation: landscape)`에서만 노출.
+   모바일 하단 키패드 (세로 전용)
+   캔버스 아래에 고정 노출되는 십자 4방향 D-Pad.
+   데스크톱에서는 기본 숨김. 터치 디바이스(pointer:coarse)에서만 노출.
    ===================================================== */
-.game-joycons {
+.game-keypad {
   display: none;
+  padding-bottom: max(4px, env(safe-area-inset-bottom));
 
   &[hidden] {
     display: none;
   }
 }
 
-.game-joycon {
+.game-keypad__dpad {
   display: grid;
-  grid-template-columns: repeat(3, auto);
-  grid-template-rows: repeat(3, auto);
-  gap: 8px;
-  background: transparent;
-  pointer-events: none;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  gap: 10px;
 
-  & .game-joycon__btn--up    { grid-column: 2; grid-row: 1; }
-  & .game-joycon__btn--left  { grid-column: 1; grid-row: 2; }
-  & .game-joycon__btn--right { grid-column: 3; grid-row: 2; }
-  & .game-joycon__btn--down  { grid-column: 2; grid-row: 3; }
+  & .game-keypad__btn--up    { grid-column: 2; grid-row: 1; }
+  & .game-keypad__btn--left  { grid-column: 1; grid-row: 2; }
+  & .game-keypad__btn--right { grid-column: 3; grid-row: 2; }
+  & .game-keypad__btn--down  { grid-column: 2; grid-row: 3; }
 }
 
-.game-joycon__btn {
-  pointer-events: auto;
-  width: 56px;
-  height: 56px;
+.game-keypad__btn {
+  width: 72px;
+  height: 72px;
   border: 1px solid var(--border);
   background: var(--bg-card);
   color: var(--text-muted);
   border-radius: 50%;
-  font-size: 18px;
+  font-size: 22px;
   font-weight: 700;
   cursor: pointer;
   user-select: none;
@@ -740,12 +738,35 @@ html.light .game-overlay--cutscene {
     border-color: var(--brand-40);
     color: var(--brand-light);
     transform: scale(0.92);
-    box-shadow: 0 0 18px var(--brand-14);
+    box-shadow: 0 0 22px var(--brand-14);
   }
 
   &:focus-visible {
     outline: 2px solid var(--brand-40);
     outline-offset: 2px;
+  }
+}
+
+/* 터치 디바이스에서만 노출 — JS가 hidden 속성을 제거하면 나타남 */
+@media (hover: none) and (pointer: coarse) {
+  .game-keypad:not([hidden]) {
+    display: flex;
+    justify-content: center;
+    padding: 12px 8px 4px;
+    padding-bottom: max(4px, env(safe-area-inset-bottom));
+  }
+}
+
+/* 초소형 기기(≤380px) — 버튼 축소 */
+@media (max-width: 380px) {
+  .game-keypad__btn {
+    width: 60px;
+    height: 60px;
+    font-size: 18px;
+  }
+
+  .game-keypad__dpad {
+    gap: 8px;
   }
 }
 
@@ -771,6 +792,11 @@ html.light .game-overlay--cutscene {
   .game-stage {
     padding: 10px;
     gap: 10px;
+  }
+
+  /* 하단 키패드 공간 확보 — aspect-ratio 16/10 유지, 최대 높이 상한 부여 */
+  .game-canvas-wrap {
+    max-height: calc(100dvh - 340px);
   }
 
   .game-hud {
@@ -999,157 +1025,6 @@ html.light .game-overlay--cutscene {
   }
 }
 
-/* 세로 모드 (터치 디바이스) — 조이콘 숨김. 회전 안내 오버레이가 채움.
-   바디 클래스 기반으로 전환 — 뷰포트 폭 >520px인 폰도 커버한다. */
-body.is-touch.is-portrait .game-joycons {
-  display: none;
-}
-
-/* 가로 모드 (터치 디바이스) — 캔버스를 뷰포트에 꽉 채우는 "게임판" 모드.
-   `@media (max-width: 520px) and (orientation: landscape)`가 아닌
-   `body.is-touch.is-landscape`로 트리거 — iPhone Pro/갤럭시 S22 등
-   landscape 폭 >520px인 폰에서도 올바르게 적용된다. */
-body.is-touch.is-landscape {
-  &.game-page {
-    padding: 4px;
-    gap: 4px;
-  }
-
-  & .game-topbar,
-  & .game-header,
-  & .game-footer,
-  & .game-controls {
-    display: none;
-  }
-
-  & .game-shell {
-    padding: 0;
-    gap: 4px;
-    max-width: 100%;
-  }
-
-  & .game-stage {
-    padding: 6px;
-    gap: 6px;
-  }
-
-  & .game-hud {
-    padding: 2px 2px;
-  }
-
-  & .game-canvas-wrap {
-    aspect-ratio: 16 / 10;
-    max-height: calc(100vh - 60px);
-    max-height: calc(100dvh - 60px);
-    max-width: calc(100vw - 340px);
-    width: auto;
-    margin-inline: auto;
-  }
-
-  & #gameCanvas {
-    cursor: pointer;
-    touch-action: none;
-  }
-
-  /* 듀얼 조이콘 — 좌/우 가장자리 고정 오버레이 */
-  & .game-joycons {
-    position: fixed;
-    inset: 0;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 8px 10px;
-    pointer-events: none;
-    z-index: 30;
-  }
-}
-
-/* 초소형 landscape (height ≤ 360px) — 조이콘 버튼 크기 축소 */
-@media (max-height: 360px) {
-  body.is-touch.is-landscape .game-joycon__btn {
-    width: 48px;
-    height: 48px;
-    font-size: 16px;
-  }
-}
-
-/* =====================================================
-   회전 안내 오버레이 — 모바일 세로 모드에서만 노출
-   JS `initOrientationHint()`가 `hidden` 속성과 `.is-visible` 토글
-   ===================================================== */
-.game-rotate-hint {
-  position: fixed;
-  inset: 0;
-  z-index: 100;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
-  background: rgba(9, 8, 15, 0.88);
-  backdrop-filter: blur(14px) saturate(1.1);
-  -webkit-backdrop-filter: blur(14px) saturate(1.1);
-
-  &[hidden] {
-    display: none;
-  }
-
-  & .game-rotate-hint__panel {
-    width: 100%;
-    max-width: 320px;
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 26px 22px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 14px;
-    text-align: center;
-    backdrop-filter: blur(14px) saturate(1.1);
-    -webkit-backdrop-filter: blur(14px) saturate(1.1);
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.45);
-  }
-
-  & .game-rotate-hint__icon {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 56px;
-    height: 56px;
-    border-radius: 50%;
-    border: 1px solid var(--brand-40);
-    background: var(--brand-12);
-    color: var(--brand-light);
-    font-size: 30px;
-    line-height: 1;
-    animation: gameRotateSpin 2.4s linear infinite;
-    box-shadow: 0 0 18px var(--brand-14);
-  }
-
-  & .game-rotate-hint__title {
-    font-family: var(--font-serif);
-    font-size: 18px;
-    font-weight: 600;
-    color: var(--text);
-    letter-spacing: 0.3px;
-  }
-
-  & .game-rotate-hint__desc {
-    font-size: 12px;
-    color: var(--text-muted);
-    line-height: 1.5;
-  }
-}
-
-html.light .game-rotate-hint {
-  background: rgba(245, 244, 248, 0.88);
-}
-
-@keyframes gameRotateSpin {
-  0%   { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
 /* 접근성 — reduced motion */
 @media (prefers-reduced-motion: reduce) {
   .game-hud__value.is-warning {
@@ -1179,16 +1054,12 @@ html.light .game-rotate-hint {
     transform: none;
   }
 
-  .game-rotate-hint__icon {
-    animation: none;
-  }
-
-  .game-joycon__btn {
+  .game-keypad__btn {
     transition: none;
   }
 
-  .game-joycon__btn:active,
-  .game-joycon__btn.is-pressed {
+  .game-keypad__btn:active,
+  .game-keypad__btn.is-pressed {
     transform: none;
     box-shadow: none;
   }
