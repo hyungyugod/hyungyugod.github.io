@@ -1,240 +1,294 @@
-# 임간호 스킬 단발화 & 박병장 폭격 시퀀스
+# SPEC.md
 
 ## 개요
-임간호의 스킬을 **게임당 1회 · 1.5초 지속**으로 단축해 더 극적인 한 방 자원으로 재정의한다. 동시에 박병장 이스터에그를 **"석조무사 경고문"과 동일한 2단 박스 알림 → 일시정지 → 확인 버튼 → 폭격 연출 → F 전멸 → 수간호사 복귀 시 F 재시딩"**의 완결된 컷신 시퀀스로 승격시킨다.
+김간호는 음악박사 미니게임에서 **각 간호사 캐릭터가 상/중/하 난이도의 목표 점수를 모두 넘긴 순간**, 그 캐릭터 전용 "졸업장"을 모달 형태로 띄워 준다. 졸업장에는 해당 캐릭터의 픽셀 정면 스프라이트와 서사적 멘트가 새겨지고, 플레이어는 "이미지로 다운로드" 버튼 한 번으로 PNG를 저장할 수 있다. 이는 단순 최고기록판 이상의 **누적 성취 서사**를 남기는 보상 장치다.
 
 ## 변경 유형
-**기능** (로직/상태 기계 재구성 중심, 신규 UI는 기존 컷씬 오버레이 패턴 재사용)
+**혼합** — 새 저장/판정 로직이 추가되므로 로직·기능 중심이지만, 졸업장 UI 자체는 글래스 + 픽셀 + 코럴 포인트로 세심하게 디자인되어야 하므로 디자인 비중도 작지 않다. 평가 기준은 "기능 변경 평가 기준"을 적용한다.
 
 ## 디자인 언어 & 의도
-임간호의 스킬을 "언제 쓸지 목숨 걸고 고민하는 단 한 발의 카드"로 만들어, 다른 캐릭터의 쿨다운형 스킬과 체감 차이를 극대화한다. 박병장은 등장 자체가 서사의 클라이맥스 — 순간 정지되는 알림창이 플레이어의 숨을 멈추게 만들고, 확인 버튼을 누르는 순간 비행기 엔진음과 폭탄 낙하가 터지며 맵 위 F가 동시에 소멸한다. "석조무사를 피하라"던 경고와 대비되는 반전 쾌감을 극장 연출로 증폭시키는 것이 목표다.
+졸업장은 "실습생의 긴 여정이 끝나고 세상으로 나가는 순간"을 응축한 **한 장의 증명서**다. 게임의 픽셀 미학과 hgfolio의 코럴핑크(`--brand`) 정체성을 정면으로 잇고, 빛바랜 미색 종이 + 인장 스탬프 + 잔잔한 빛 번짐으로 "이건 진짜 기념품"이라는 감각을 준다. 다운로드된 PNG 파일은 그대로 인스타그램/카톡 프로필로 자랑할 수 있을 만큼 **독립된 완성품**이어야 한다.
 
 ## Sprint 범위 계약
 Generator가 SPEC 외 변경을 하려 할 때의 판단 기준:
-- **허용**:
-  - 본 SPEC의 데이터 무결성을 위해 필요한 `state.skill` / `state.airplane` 필드 추가·리셋 (startGame/endGame/난이도 뒤로가기)
-  - 기존 캔버스 상단 AIRFORCE 토스트 렌더 블록 제거 (오버레이가 동일 안내를 대체하므로 중복 제거)
-  - 폭탄/폭발 시각화에 필요한 최소 파티클·사운드 추가 (기존 `spawnParticles`/`playTone` 재사용)
-  - 이벤트 바인딩·HUD 업데이트 경로에서 `im && usedOnce` 분기 추가
-- **금지**:
-  - 다른 캐릭터(김/정/건/이)의 스킬 밸런스 변경 (지속·쿨다운·효과)
-  - 수간호사/이교수/석조무사 본체 밸런스(속도·HP·투척 주기) 수정
-  - 박병장 비행기 비주얼 대폭 재설계 (픽셀 스프라이트·속도·Y 위치 유지)
-  - 신규 BGM, 신규 아이콘·이미지 에셋 추가
-  - 기능 요청과 무관한 CSS 리팩토링이나 전역 테마 변수 조정
-- **판단 기준**: "이 변경이 없으면 SPEC의 7가지 기능 중 하나가 정상 동작하지 않는가?" → YES면 허용, NO면 금지
+- **허용**: 졸업장 모달/트리거/다운로드 구현에 필수적인 연동 변경 (예: `endGame`에 졸업 판정 호출 1줄 추가, 캐릭터 선택 오버레이/엔딩 오버레이 내 "졸업장 다시 보기" 진입점 1개 추가)
+- **금지**: SPEC에 없는 새로운 이스터에그·업적 시스템·SNS 공유 기능·추가 오디오/애니메이션·캐릭터 선택 그리드의 시각 개편 등
+- **판단 기준**: "이 변경이 없으면 졸업장이 정상적으로 트리거/표시/다운로드되지 않는가?" → YES면 허용, NO면 금지
 
----
+## 영향 파일
+이 기능은 **게임 서브시스템 전용**이므로 루트 3개 파일(`index.html`, `assets/css/style.css`, `assets/js/main.js`)이 아니라 게임 3개 파일에만 변경을 가한다:
+
+| 파일 | 역할 |
+|---|---|
+| `pages/game.html` | 졸업장 오버레이 DOM 뼈대 추가 |
+| `assets/css/game.css` | 졸업장 스타일 추가 (기존 오버레이 BEM 패턴 `game-overlay__panel--*` 확장) |
+| `assets/js/game.js` | 졸업 판정 · 누적 기록 저장 · 졸업장 렌더 · PNG 다운로드 로직 |
+
+루트 3개 파일은 건드리지 않는다.
+
+## 기존 저장 구조 분석 (이미 완료)
+- `BEST_BY_CHAR_KEY = 'pixelNurseBestByChar'` → `{ version: 2, records: { kim:{easy,normal,hard}, jung:{...}, geon:{...}, im:{...}, lee:{...} } }`
+- `TARGET_SCORE = { easy: 60, normal: 50, hard: 30 }` — 난이도별 성공 기준점
+- `state.best[characterId][difficulty]` 에 역대 최고 점수가 이미 저장 중
+- 엔딩 판정: `success = state.score >= TARGET_SCORE[state.difficulty]` (`endGame` 함수)
+- 캐릭터 목록: `CHARACTERS = [{id:'kim',name:'김간호'}, {id:'jung',name:'정간호'}, {id:'geon',name:'건간호'}, {id:'im',name:'임간호'}, {id:'lee',name:'이간호'}]`
+
+## 졸업장 트리거 조건
+**판정 공식 (clear는 "역대 베스트 기준"):**
+```js
+function isGraduated(charId) {
+  const rec = state.best[charId]; // 역대 베스트
+  if (!rec) return false;
+  return rec.easy   >= TARGET_SCORE.easy
+      && rec.normal >= TARGET_SCORE.normal
+      && rec.hard   >= TARGET_SCORE.hard;
+}
+```
+즉 **과거에 한 번이라도** 해당 난이도 목표 점수를 넘긴 기록이 3개 난이도 모두에 있어야 졸업. 이번 라운드에서 전부 깨야 하는 것이 아니다.
+
+**졸업 상태 스냅샷 영속 저장 (신설):**
+- 새 localStorage 키 `pixelNurseGraduates` 추가
+- 구조: `{ version: 1, graduated: { kim: '2026-04-22T13:45:00.000Z' | null, jung: null, ... } }`
+- 최초로 `isGraduated(charId)`가 true가 되는 순간의 ISO 타임스탬프를 저장 → 졸업장에 "졸업일자"로 표기
+- 이후 기록이 갱신되어도 최초 졸업일은 유지 (한 번 졸업하면 졸업일은 고정)
+- 저장/로드 함수: `loadGraduates()` (초기화 시 `loadBest()` 직후 호출), `saveGraduates()`, `recordGraduationIfNew(charId)` (점수 저장 후 호출)
+
+## 졸업장 표시 타이밍
+1. **자동 트리거 (최우선)**: `endGame` 내부에서 `saveBest()` 직후 `recordGraduationIfNew(state.characterId)`를 호출. 이 호출로 **"방금 졸업이 확정된 경우"**(이전엔 미졸업, 이번 라운드로 졸업이 성립한 경우)를 감지한 경우에만 자동으로 엔딩 오버레이를 띄운 뒤 **0.9초 뒤** 졸업장 오버레이를 덮어쓰듯 표시.
+2. **수동 재열람**: 엔딩 오버레이 CTA 영역에 "졸업장 보기" 버튼(`#btnShowCertificate`)을 추가. 해당 캐릭터가 이미 졸업한 상태일 때만 `is-hidden` 해제로 노출. 클릭 시 졸업장 오버레이 표시.
+3. **캐릭터 선택 카드에서도 진입**: 각 `.game-character-card`의 최고 기록 라인 옆에 졸업 마크(🎓) 또는 "졸업" 뱃지를 조건부 추가. 뱃지는 표시 전용.
+
+## 졸업장 UI 구성
+오버레이 id: `overlayCertificate`, BEM: `.game-overlay--certificate` + `.game-overlay__panel--certificate`.
+
+레이아웃 (위→아래):
+1. **상단 장식선**: 코럴(`--brand`) 얇은 이중선 + 좌우 끝 별 모양(✦) 두 개
+2. **영문 타이틀**: `CERTIFICATE OF GRADUATION` (Cormorant Garamond, letter-spacing 크게, `--text-dim`)
+3. **한글 서브타이틀**: "실습 수료 증서" (Noto Sans KR, `--brand`)
+4. **픽셀 캐릭터 캔버스** (`<canvas class="game-certificate__avatar" width="192" height="240">`, SCALE=12): `nurseSprite('down', 0, charId)` + `getNursePalette(charId)` 재사용
+5. **본문 서사 영역** (`.game-certificate__body`):
+   - "다사다난한 실습을 마치고 **○○간호**는 드디어 졸업하였다."
+   - "이제 세상이라는 악보 위에 마음껏 노래를 부르며 자유롭게 살 것이다."
+   - ○○ 부분만 `<strong>` + `--brand` 색상으로 강조
+6. **서명 & 날짜 블록** (`.game-certificate__sign`):
+   - 좌측: `발행 ` + 졸업일(YYYY년 M월 D일)
+   - 우측: "hgfolio · 김간호는 음악박사" + 코럴 인장(`::after` 가상요소, `--brand-20` 배경 + `--brand` 테두리 + 작은 음표 글리프)
+7. **하단 CTA (2버튼)**:
+   - `#btnDownloadCertificate` — "이미지로 다운로드" (primary `.game-btn`)
+   - `#btnCloseCertificate` — "닫기" (`.game-btn--ghost`)
+8. **배경**: 기존 `.game-overlay` 블러 유지. 패널은 `--bg-card` 베이스 + 미세한 코럴 그라디언트 오버레이 + 4px 이중 테두리(바깥 `--brand-20`, 안쪽 `--border`)로 "증서 용지" 느낌.
+
+## 멘트 템플릿
+```js
+const CERT_COPY = {
+  title_en: 'CERTIFICATE OF GRADUATION',
+  title_ko: '실습 수료 증서',
+  body1: (name) => `다사다난한 실습을 마치고 ${name}는 드디어 졸업하였다.`,
+  body2: '이제 세상이라는 악보 위에 마음껏 노래를 부르며 자유롭게 살 것이다.',
+  issuer: 'hgfolio · 김간호는 음악박사'
+};
+```
+- `name` 은 `CHARACTERS.find(c => c.id === charId).name` 을 직접 사용 (예: `김간호`, `정간호`)
+- DOM 주입 시 **반드시 `textContent`** 사용. 본문 조립은 두 개의 `<p>` 로 분리(첫 번째 `<p>` 에 `<strong>` 요소를 `createElement`로 만들어 이름만 감싼다). `innerHTML` 금지.
+
+## 이미지 다운로드 구현 방식
+**외부 라이브러리 금지** → 순수 Canvas API로 구현.
+
+### 알고리즘
+1. `#btnDownloadCertificate` 클릭 → `generateCertificateImage(charId)` 호출
+2. 내부에서 오프스크린 `<canvas>` 생성: `width=720`, `height=1000` (3:4 비율)
+3. DPR 보정: `canvas.width = 720 * dpr; canvas.height = 1000 * dpr; ctx.scale(dpr, dpr);`
+4. 배경: `--bg-card` 색상으로 fill → 가장자리 16px 여백에 코럴 테두리(`--brand-20` 4px) + 안쪽 1px 라인 → 상/하단에 `--brand` 1px 장식선
+5. 상단 텍스트:
+   - `ctx.font = "700 22px 'Cormorant Garamond', serif"` → `CERTIFICATE OF GRADUATION`
+   - `ctx.font = "500 14px 'Noto Sans KR', sans-serif"` → `실습 수료 증서`
+6. 픽셀 캐릭터: 기존 `nurseSprite('down', 0, charId)` + `getNursePalette(charId)` 를 재사용하여 **SCALE=14**로 16×20→224×280 렌더
+   - `ctx.imageSmoothingEnabled = false` 필수
+7. 본문: 줄바꿈 수동 처리, `ctx.font = "500 18px 'Noto Sans KR'"`, `textAlign='center'`
+   - 이름 포함 첫 줄은 `--brand` 색, 두 번째 줄은 `--text` 색으로 단순화 허용
+8. 서명 블록: 좌하 날짜(`YYYY.MM.DD`) + 우하 "hgfolio · 김간호는 음악박사" (`--text-dim`, 12px)
+9. 인장: 우하 끝에 `arc`로 원(`--brand-20` 채움 + `--brand` 2px 스트로크) + 원 안에 `♪` 문자
+10. `canvas.toDataURL('image/png')` → 가상 `<a>` 생성 → `download` 속성에 `pixel-nurse-certificate-${charId}-${YYYYMMDD}.png` 부여 → `.click()` → DOM에서 제거
+
+### 색상 읽기
+`getComputedStyle(document.documentElement).getPropertyValue('--brand').trim()` 패턴 사용.
+
+### 폰트 로드 타이밍
+`Promise.race([document.fonts.ready, new Promise(r => setTimeout(r, 1500))])` 패턴으로 최대 1.5초 대기 후 렌더 진행.
+
+## 접근성 & 보안
+- **텍스트 주입**: 모든 동적 텍스트는 `textContent` 만 사용. `innerHTML` 금지.
+- **role/aria**: 오버레이는 `role="dialog"` + `aria-modal="true"` + `aria-labelledby="certTitle"` + `aria-describedby="certBody"`.
+- **키보드 닫기**: `keydown` 이벤트로 `Escape` 감지 → `closeCertificate()`. 졸업장이 열려 있을 때만 활성.
+- **포커스 트랩**: 오버레이 오픈 시 다운로드 버튼에 `focus()`, 닫을 때 이전 포커스로 복귀.
+- **reduced motion**: 진입 애니메이션은 `@media (prefers-reduced-motion: reduce)`에서 즉시 표시.
+- **다운로드 파일명 안전성**: charId(화이트리스트 5개)만 사용하므로 경로 조작 불가.
 
 ## 변경 범위
 
-### `pages/game.html` 변경사항
-신규 오버레이 1개 추가. 기존 `#overlayCutscene` 구조 모방.
+### pages/game.html 변경사항
+- `#overlayEnd` 블록 **바로 다음**에 졸업장 오버레이 DOM 추가:
+  ```html
+  <div class="game-overlay game-overlay--certificate is-hidden" id="overlayCertificate" role="dialog" aria-modal="true" aria-labelledby="certTitle" aria-describedby="certBody">
+    <div class="game-overlay__panel game-overlay__panel--certificate">
+      <div class="game-certificate__deco game-certificate__deco--top" aria-hidden="true">✦ ✦</div>
+      <h2 class="game-certificate__title-en" id="certTitle">CERTIFICATE OF GRADUATION</h2>
+      <p class="game-certificate__title-ko">실습 수료 증서</p>
+      <div class="game-certificate__avatar-wrap">
+        <canvas class="game-certificate__avatar" id="certAvatar" width="192" height="240" aria-hidden="true"></canvas>
+      </div>
+      <div class="game-certificate__body" id="certBody">
+        <p class="game-certificate__body-line game-certificate__body-line--lead" id="certLine1"></p>
+        <p class="game-certificate__body-line">이제 세상이라는 악보 위에 마음껏 노래를 부르며 자유롭게 살 것이다.</p>
+      </div>
+      <div class="game-certificate__sign">
+        <span class="game-certificate__date" id="certDate"></span>
+        <span class="game-certificate__issuer">
+          hgfolio · 김간호는 음악박사
+          <span class="game-certificate__seal" aria-hidden="true">♪</span>
+        </span>
+      </div>
+      <div class="game-certificate__deco game-certificate__deco--bottom" aria-hidden="true">✦ ✦</div>
+      <div class="game-cta">
+        <button class="game-btn" type="button" id="btnDownloadCertificate">이미지로 다운로드</button>
+        <button class="game-btn game-btn--ghost" type="button" id="btnCloseCertificate">닫기</button>
+      </div>
+    </div>
+  </div>
+  ```
+- `#overlayEnd` 의 CTA 영역(`.game-cta`)에 `#btnReplay` **앞**으로 다음 버튼 추가:
+  ```html
+  <button class="game-btn game-btn--ghost is-hidden" type="button" id="btnShowCertificate" aria-label="졸업장 보기">🎓 졸업장 보기</button>
+  ```
 
-1. **박병장 경고 오버레이 추가** — `.game-canvas-wrap` 내부(기존 오버레이들 근처)에 추가:
-   - 루트: `<div class="game-overlay game-overlay--cutscene game-overlay--airforce is-hidden" id="overlayAirforce" role="dialog" aria-labelledby="airforceTitle" aria-describedby="airforceText" aria-live="assertive">`
-   - 패널: `<div class="game-overlay__panel game-overlay__panel--cutscene">`
-   - 제목: `<h3 class="game-overlay__title" id="airforceTitle"></h3>` (textContent는 JS가 `AIRFORCE.title` 주입)
-   - 본문: `<p class="game-overlay__text" id="airforceText"></p>` (`AIRFORCE.subtitle` 주입)
-   - 고정 부제: `<p class="game-overlay__goal">📯 확인을 누르면 박병장이 출동합니다</p>`
-   - CTA: `<button class="game-btn" type="button" id="btnAirforceContinue">확인</button>`
+### assets/css/game.css 변경사항
+- **새 BEM 블록 `.game-certificate__*`** 추가:
+  - `.game-overlay__panel--certificate`: max-width 420px, 패딩 28px, `border: 4px double var(--brand-20)`, 코럴 그라디언트 오버레이, `border-radius: var(--radius-lg, 16px)`
+  - `.game-certificate__title-en`: Cormorant Garamond 24px weight 700, letter-spacing 0.2em, color `--text-dim`, text-align center
+  - `.game-certificate__title-ko`: Noto Sans KR 14px weight 500, color `--brand`, letter-spacing 0.08em
+  - `.game-certificate__avatar-wrap`: flex center + 부드러운 radial `--brand-10` 배경 후광
+  - `.game-certificate__avatar`: `image-rendering: pixelated`, width 192px, height 240px
+  - `.game-certificate__body`: text-align center, gap 10px
+  - `.game-certificate__body-line--lead strong`: color `--brand`, font-weight 700
+  - `.game-certificate__sign`: flex space-between, 12px, `--text-dim`, 상단 `1px solid var(--border)`
+  - `.game-certificate__seal`: inline-block 원형, `background: var(--brand-20)`, `border: 2px solid var(--brand)`, `color: var(--brand)`
+  - `.game-certificate__deco`: 중앙정렬, `--brand` 색
+- **진입 애니메이션**: `@keyframes certIn` 180ms
+- **reduced-motion**: `@media (prefers-reduced-motion: reduce) { .game-overlay__panel--certificate { animation: none; } }`
+- **반응형 (520px 이하)**: 패널 max-width 92vw, 캐릭터 캔버스 144×180
+- `.game-character-card__grad { color: var(--brand); font-size: 11px; }` 뱃지
 
-### `assets/css/game.css` 변경사항
-1. **`.game-overlay--airforce` 악센트** — 기존 `.game-overlay--cutscene` 규칙 근처에 추가.
-   - `.game-overlay--airforce .game-overlay__title { color: var(--brand); }` (기존 팔레트 재사용, 신규 색상 하드코딩 금지)
-2. **폭탄 낙하 비네트** — `@keyframes gameBombFlash { 0%{filter:brightness(1)} 20%{filter:brightness(2.4) saturate(1.3)} 100%{filter:brightness(1)} }`
-   - `.game-canvas-wrap.is-bomb-flash { animation: gameBombFlash 420ms ease-out 1; }`
-   - `@media (prefers-reduced-motion: reduce) { .game-canvas-wrap.is-bomb-flash { animation: none; filter: none; } }`
+### assets/js/game.js 변경사항
 
-### `assets/js/game.js` 변경사항
-
-#### [A] 상수 변경
-
-1. **SKILLS.im 수정** (약 line 166):
-   ```js
-   im: { name: '나는야 모범생', desc: '수간호사를 매혹시켜 F 대신 A를 던지게 한다. A를 먹으면 점수 2배. (게임당 1회)', durationMs: 1500, cooldownMs: 0, abbr: '모범' }
-   ```
-   - 스킬명 `벼락치기` → `나는야 모범생`
-   - 지속시간 `2500` → `1500`
-   - 쿨다운 `25000` → `0`
-   - abbr `매혹` → `모범`
-
-2. **AIRFORCE 확장** (약 line 107–125):
-   - 유지: `flyDuration`, `planeSpeed`, `planeY`, `planeW`, `planeH`, `fleeDuration`, `fleeSpeed`, `title`, `subtitle`
-   - 추가:
-     - `bombDropDelay: 300` (ms — 오버레이 닫힘 → 폭탄 투하까지)
-     - `bombFlashDuration: 420` (ms)
-     - `bombY: 140` (폭탄 낙하 y 기준점)
-     - `respawnCountMultiplier: 1.0` (수간호사 복귀 시 F 재시딩 비율)
-   - 캔버스 토스트 상수(`toastDuration`, `toastBoxW/H/Y`, `toastTitleSize`, `toastSubtitleSize`) — 사용 코드가 모두 제거되므로 상수 자체도 제거 권장.
-
-#### [B] state 확장
-
-1. **`state.skill.usedOnce: false`** 추가. `im` 캐릭터 전용 게임당 1회 플래그.
-2. **`state.airplane` 확장**:
-   - `pendingBombDrop: 0` (폭탄 투하 예정 타임스탬프)
-   - `bombDropped: false` (중복 방지)
-   - `pauseOverlayOpen: false` (일시정지 상태 플래그)
-
-#### [C] 단발 스킬 로직 — `tryActivateSkill`
-
-기존 `if (now < state.skill.readyAt) return;` 바로 아래에:
+#### 1. 상수 추가
 ```js
-if (state.characterId === 'im' && state.skill.usedOnce) return;
+const GRADUATES_KEY = 'pixelNurseGraduates';
+const CERT_COPY = {
+  title_en: 'CERTIFICATE OF GRADUATION',
+  title_ko: '실습 수료 증서',
+  body1: (name) => `다사다난한 실습을 마치고 ${name}는 드디어 졸업하였다.`,
+  body2: '이제 세상이라는 악보 위에 마음껏 노래를 부르며 자유롭게 살 것이다.',
+  issuer: 'hgfolio · 김간호는 음악박사'
+};
 ```
 
-성공 분기에서 `im`일 때:
+#### 2. state에 graduates 필드 추가
 ```js
-if (state.characterId === 'im') {
-  state.skill.usedOnce = true;
-  state.skill.readyAt = Number.POSITIVE_INFINITY;
-} else {
-  state.skill.readyAt = now + def.cooldownMs;
+graduates: { kim: null, jung: null, geon: null, im: null, lee: null },
+```
+
+#### 3. 신규 함수 (loadBest/saveBest 아래)
+- `loadGraduates()`
+- `saveGraduates()`
+- `isGraduated(charId)`
+- `recordGraduationIfNew(charId)` — 신규 졸업이면 `true` 반환
+
+#### 4. DOM 참조 추가
+```js
+const overlayCertificate = document.getElementById('overlayCertificate');
+const btnDownloadCertificate = document.getElementById('btnDownloadCertificate');
+const btnCloseCertificate = document.getElementById('btnCloseCertificate');
+const btnShowCertificate = document.getElementById('btnShowCertificate');
+const certAvatar = document.getElementById('certAvatar');
+const certLine1 = document.getElementById('certLine1');
+const certDate = document.getElementById('certDate');
+```
+
+#### 5. `endGame` 내부 수정 (`saveBest()` 직후)
+```js
+const justGraduated = recordGraduationIfNew(state.characterId);
+if (btnShowCertificate) {
+  btnShowCertificate.classList.toggle('is-hidden', !isGraduated(state.characterId));
 }
-```
-`state.skill.activeUntil = now + def.durationMs;` 유지 (1500ms).
-
-#### [D] HUD — `updateSkillHud`
-
-`im` + `usedOnce === true`일 때 최우선 분기:
-- label `—` 표시
-- conic-gradient `prog = 0`
-- `is-skill-ready` 제거 + `is-skill-cooling` 유지(시각적 비활성화)
-- 모바일 `keypadSkillBtn` 동일 처리
-- 반드시 NaN 경로(`remaining/cd` 계산)를 타지 않도록 이 분기가 우선.
-
-#### [E] 초기화 지점 3곳에서 `state.skill.usedOnce = false`
-1. `startGame` (약 line 1714)
-2. `endGame` (약 line 1799)
-3. 난이도 뒤로가기/재플레이 리셋 (약 line 1324)
-
-#### [F] 박병장 등장 시퀀스 재작성 — `triggerAirforceEasterEgg`
-
-3단계 상태 기계:
-
-```
-[1: 접촉] triggerAirforceEasterEgg(now)
-  - state.stoneGuard.active = false
-  - state.running = false
-  - cancelAnimationFrame(state.rafId); state.rafId = null
-  - state.keys = Object.create(null)
-  - state.airplane.pauseOverlayOpen = true
-  - #overlayAirforce 열기 (is-hidden 제거)
-      · #airforceTitle.textContent = AIRFORCE.title
-      · #airforceText.textContent = AIRFORCE.subtitle
-      · #btnAirforceContinue.focus({preventScroll: true})
-
-[2: 확인 버튼] onAirforceContinue()
-  - #overlayAirforce.classList.add('is-hidden')
-  - state.airplane.pauseOverlayOpen = false
-  - 비행기 스폰: x=-planeW, y=planeY, active=true, expiresAt=now+flyDuration
-  - state.airplane.pendingBombDrop = now + AIRFORCE.bombDropDelay
-  - state.airplane.bombDropped = false
-  - 수간호사 flee 시작 (기존 startChiefFlee / chief.fleeUntil = now + fleeDuration)
-  - 엔진음: playTone 2연타
-  - 게임 루프 재개:
-      state.running = true
-      state.lastTs = performance.now()
-      nextSpawnAt 보정
-      state.rafId = requestAnimationFrame(loop)
-
-[3: 폭탄 낙하] 업데이트 루프 내 체크
-  조건: state.airplane.active && !state.airplane.bombDropped && now >= state.airplane.pendingBombDrop
-  - state.airplane.bombDropped = true
-  - dropBomb(now) 호출 (신규 함수):
-      · state.obstacles = state.obstacles.filter(o => o.type === 'A')   // F만 제거, A 보존
-      · canvasWrap.classList.add('is-bomb-flash'); 420ms 후 remove
-      · (reduced-motion 가드) 파티클 20~25개 bombY 중심
-      · playTone(80, 0.4) + setTimeout(()=>playTone(55, 0.55), 120)
-      · canvasWrap.classList.add('is-shake'); 500ms 후 remove (기존 셰이크 재사용)
-```
-
-#### [G] 수간호사 복귀 시 F 재시딩 (약 line 2167)
-
-기존:
-```js
-if (chief.fleeUntil > 0 && now >= chief.fleeUntil) {
-  chief.fleeUntil = 0;
-  chief.throwTimer = DIFFICULTY[state.difficulty].spawnInterval[0];
+if (justGraduated) {
+  setTimeout(() => openCertificate(state.characterId), 900);
 }
 ```
 
-변경:
+#### 6. 신규 함수들
+- `openCertificate(charId)`: 날짜/이름 주입 → `drawCertificateAvatar(certAvatar, charId)` → 오버레이 오픈 → focus
+- `closeCertificate()`: 오버레이 닫기 → 이전 포커스 복귀
+- `generateCertificateImage(charId)`: 오프스크린 캔버스에 전체 졸업장 렌더 후 dataURL 반환
+- `drawCertificateAvatar(canvas, charId)`: 픽셀 스프라이트만 그리는 헬퍼
+- `downloadCertificate(charId)`: 파일명 구성 → `<a>` 클릭
+
+#### 7. 이벤트 바인딩
 ```js
-if (chief.fleeUntil > 0 && now >= chief.fleeUntil) {
-  chief.fleeUntil = 0;
-  chief.throwTimer = DIFFICULTY[state.difficulty].spawnInterval[0];
-  const targetCount = Math.round(DIFFICULTY[state.difficulty].obstacles * AIRFORCE.respawnCountMultiplier);
-  const existingF = state.obstacles.filter(o => o.type === 'F').length;
-  const toSpawn = Math.max(0, targetCount - existingF);
-  for (let i = 0; i < toSpawn; i++) spawnObstacle();
-  playTone(220, 0.08);
+btnDownloadCertificate?.addEventListener('click', () => downloadCertificate(state.characterId));
+btnCloseCertificate?.addEventListener('click', closeCertificate);
+btnShowCertificate?.addEventListener('click', () => openCertificate(state.characterId));
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Escape') return;
+  if (!overlayCertificate || overlayCertificate.classList.contains('is-hidden')) return;
+  closeCertificate();
+});
+```
+
+#### 8. `initCharacterGrid` 내부 — 졸업 뱃지 추가
+```js
+if (isGraduated(ch.id)) {
+  const gradBadge = document.createElement('span');
+  gradBadge.className = 'game-character-card__grad';
+  gradBadge.textContent = '🎓 졸업';
+  gradBadge.setAttribute('aria-label', '졸업 완료');
+  btn.appendChild(gradBadge);
 }
 ```
-`spawnObstacle()`은 이미 플레이어 회피 + `findEmptyTile` 안전 로직 포함.
 
-#### [H] 캔버스 상단 토스트 렌더 제거
-
-기존 "박병장 2단 안내 박스" 캔버스 렌더 블록 전체 삭제. `state.airplane.toastUntil` 관련 라인도 정리.
-
-#### [I] DOM 이벤트 바인딩
-
-기존 `btnCutsceneContinue` 바인딩 근처:
+#### 9. 초기화 (`loadBest();` 다음)
 ```js
-const btnAirforceContinue = document.getElementById('btnAirforceContinue');
-if (btnAirforceContinue) btnAirforceContinue.addEventListener('click', onAirforceContinue);
+loadGraduates();
 ```
-ESC 키/외부 클릭으로 닫히지 않음 (컷씬과 동일, 강제 진행).
-
----
 
 ## 기능 상세
 
-### 기능 1: "나는야 모범생" 단발 스킬
-- 사용자 동작: Shift 키 또는 모바일 중앙 스킬 키패드로 1회 발동. 사용 후 HUD 라벨 `—`, 링 비어있는 상태로 고정.
-- 구현: SKILLS.im / tryActivateSkill / updateSkillHud / 초기화 3지점.
+### 기능 1: 졸업 상태 영속 저장
+- 설명: 캐릭터별로 상/중/하 모두 목표 점수를 넘긴 "졸업" 상태와 그 최초 달성 일자를 localStorage에 영속.
+- 구현 위치: `assets/js/game.js` (`loadGraduates`/`saveGraduates`/`isGraduated`/`recordGraduationIfNew`)
 
-### 기능 2: 스킬명/지속시간 데이터 변경
-- SKILLS.im.name/desc/durationMs/cooldownMs/abbr 수정. 설명 오버레이는 `renderSkillOverlay`가 자동 반영.
+### 기능 2: 졸업장 자동 표시
+- 설명: 새로 졸업이 확정된 순간 엔딩 오버레이를 보여준 뒤 0.9초 후 졸업장 오버레이가 덮어씀.
+- 구현 위치: `endGame` 내부 (game.js)
 
-### 기능 3: 박병장 등장 알림창 (일시정지형)
-- 석조무사 접촉 시 캔버스 토스트 대신 DOM 오버레이, `state.running = false`로 완전 정지.
-- 제목 "나와라 박병장!" / 본문 AIRFORCE.subtitle 원문 그대로 / 확인 버튼 포커스.
-- `role="dialog"`, `aria-live="assertive"`.
+### 기능 3: 졸업장 수동 재열람
+- 설명: 이미 졸업한 캐릭터는 언제든 엔딩 오버레이의 🎓 "졸업장 보기" 버튼으로 재열람.
 
-### 기능 4: 비행기 출격 + 폭탄 낙하 연출
-- 오버레이 닫힘 즉시 비행기 스폰 + 300ms 후 폭탄 투하.
-- 섬광(`.is-bomb-flash`) + 파티클 + 저음 2연타 폭발음 + 셰이크.
-- `prefers-reduced-motion` 가드 (CSS + JS 양쪽).
+### 기능 4: 졸업장 렌더
+- 설명: 선택된 캐릭터의 픽셀 스프라이트 + 이름 치환된 서사 멘트 + 졸업일자 + 코럴 인장을 모달에 표시.
+- 세부 요소: `textContent` 주입, 기존 `nurseSprite`/`getNursePalette` 재사용
 
-### 기능 5: 맵 위 F 전멸
-- `state.obstacles.filter(o => o.type === 'A')`로 F만 제거. 매혹 중 생성된 A는 보존(플레이어 보상).
-- 비행기 활성 중 수간호사는 flee 상태 → 신규 F 투척 원천 차단.
+### 기능 5: PNG 다운로드
+- 설명: Canvas API로 720×1000 PNG를 생성하여 파일로 내려받는다.
+- 세부 요소: DPR 보정, `imageSmoothingEnabled = false`, `document.fonts.ready` 대기, `a.download` 활용
 
-### 기능 6: 수간호사 복귀 시 F 재생성
-- `chief.fleeUntil` 만료 순간 난이도별 기본 F 개수만큼 `spawnObstacle()` 보충.
-- 복귀 효과음 `playTone(220, 0.08)`.
-
-### 기능 7: 접근성 & 반응형
-- 신규 오버레이는 기존 컷씬과 동일 포커스 관리·aria 속성·520px 반응형 스타일 상속.
-- `prefers-reduced-motion` 시 섬광·파티클·셰이크 스킵하되 게임 로직(F 제거/복구)은 동일 수행.
-
----
+### 기능 6: 캐릭터 선택 카드 졸업 뱃지
+- 설명: 캐릭터 선택 오버레이에서 졸업한 캐릭터는 🎓 뱃지로 구분.
 
 ## 주의사항
-
-- **충돌 가능성**:
-  - 캔버스 상단 AIRFORCE 토스트 잔존 시 오버레이와 이중 안내 → 반드시 제거.
-  - `state.skill.readyAt = Infinity` 설정 시 HUD의 `(remaining/cd)` 계산이 NaN → `im && usedOnce` 분기를 **HUD 헬퍼 최우선**으로 배치.
-  - 오버레이 닫힘 시 `lastTs = performance.now()` 갱신 누락 시 dt 폭주로 타이머 순간 삭제 → 컷씬 재개 패턴 엄수.
-
-- **삭제/수정 대상**:
-  - `game.js` 박병장 캔버스 2단 박스 렌더 블록 전체
-  - AIRFORCE.toastDuration / toastBoxW/H/Y / toastTitleSize / toastSubtitleSize 상수
-  - state.airplane.toastUntil 관련 라인
-  - `triggerAirforceEasterEgg` 본문 전체 교체
-
-- **보안/접근성**:
-  - 오버레이 텍스트는 상수 기반 `textContent` 주입 → XSS 무관.
-  - ESC/외부 클릭 닫힘 비활성화 (강제 컷씬).
-  - 모바일 스킬 버튼도 `usedOnce` 시 비활성 시각 (`is-skill-cooling` 재활용).
+- **기존 `endGame` 로직 보전**: `saveBest()` 호출 위치/순서를 바꾸지 말고 졸업 판정은 그 직후에 삽입.
+- **신규 졸업 타이밍**: `recordGraduationIfNew`는 `saveBest()`가 `state.best`를 실제로 반영한 **이후**에 호출.
+- **키보드 ESC 충돌 방지**: 졸업장이 열린 경우에만 반응하도록 가드.
+- **XSS**: 모든 텍스트는 `textContent` 전용.
+- **팔레트 캐시 무효화**: 테마 전환 시 졸업장이 열려 있으면 `drawCertificateAvatar` 재호출.
+- **폰트 로드 실패**: `Promise.race` 패턴으로 최대 1.5초 대기.
+- **3개 파일 제약**: 게임 서브시스템 3파일(`pages/game.html` + `assets/css/game.css` + `assets/js/game.js`)에만 변경. 루트 3파일은 건드리지 않는다.

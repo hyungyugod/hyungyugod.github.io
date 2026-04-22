@@ -191,9 +191,38 @@
                  aria-label="HG가 실습때 만든 노래 새 탭에서 듣기">
                 🎵 HG가 실습때 만든 노래 듣기
               </a>
+              <button class="game-btn game-btn--ghost is-hidden" type="button" id="btnShowCertificate" aria-label="졸업장 보기">🎓 졸업장 보기</button>
               <button class="game-btn" type="button" id="btnReplay">다시 플레이</button>
               <button class="game-btn game-btn--ghost" type="button" id="btnBackToDifficulty">난이도 다시 선택</button>
               <a class="game-btn game-btn--ghost" href="/">홈으로</a>
+            </div>
+          </div>
+        </div>
+
+        <!-- 졸업장 오버레이 — 3난이도 모두 목표 달성 시 자동 또는 수동 재열람 -->
+        <div class="game-overlay game-overlay--certificate is-hidden" id="overlayCertificate" role="dialog" aria-modal="true" aria-labelledby="certTitle" aria-describedby="certBody">
+          <div class="game-overlay__panel game-overlay__panel--certificate">
+            <div class="game-certificate__deco game-certificate__deco--top" aria-hidden="true">✦ &nbsp;&nbsp; ✦</div>
+            <h2 class="game-certificate__title-en" id="certTitle">CERTIFICATE OF GRADUATION</h2>
+            <p class="game-certificate__title-ko">실습 수료 증서</p>
+            <div class="game-certificate__avatar-wrap">
+              <canvas class="game-certificate__avatar" id="certAvatar" width="192" height="240" aria-hidden="true"></canvas>
+            </div>
+            <div class="game-certificate__body" id="certBody">
+              <p class="game-certificate__body-line game-certificate__body-line--lead" id="certLine1"></p>
+              <p class="game-certificate__body-line">이제 세상이라는 악보 위에 마음껏 노래를 부르며 자유롭게 살 것이다.</p>
+            </div>
+            <div class="game-certificate__sign">
+              <span class="game-certificate__date" id="certDate"></span>
+              <span class="game-certificate__issuer">
+                hgfolio · 김간호는 음악박사
+                <span class="game-certificate__seal" aria-hidden="true">♪</span>
+              </span>
+            </div>
+            <div class="game-certificate__deco game-certificate__deco--bottom" aria-hidden="true">✦ &nbsp;&nbsp; ✦</div>
+            <div class="game-cta">
+              <button class="game-btn" type="button" id="btnDownloadCertificate">이미지로 다운로드</button>
+              <button class="game-btn game-btn--ghost" type="button" id="btnCloseCertificate">닫기</button>
             </div>
           </div>
         </div>

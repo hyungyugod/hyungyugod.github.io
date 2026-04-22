@@ -701,6 +701,15 @@ html.light .game-overlay--cutscene {
     margin-top: 2px;
     font-variant-numeric: tabular-nums;
   }
+
+  /* 졸업 뱃지 — 3난이도 모두 목표 달성한 캐릭터 카드에 표시 */
+  & .game-character-card__grad {
+    font-size: 11px;
+    color: var(--brand);
+    letter-spacing: 0.3px;
+    font-weight: 700;
+    margin-top: 1px;
+  }
 }
 
 /* 픽셀 아바타 컨테이너 — 48×60 상자, 내부 canvas에 인게임 정면 스프라이트 렌더 */
@@ -1298,6 +1307,170 @@ html.light .game-overlay--cutscene {
   }
 }
 
+/* =====================================================
+   졸업장(Certificate) 오버레이
+   3난이도 모두 목표 달성 시 자동/수동 표시되는 실습 수료 증서.
+   "빛바랜 미색 종이 + 코럴 인장 + 픽셀 캐릭터" 디자인 언어.
+   ===================================================== */
+/* 졸업장 오버레이는 .game-canvas-wrap(aspect-ratio:16/10; overflow:hidden) 안에 있어도
+   패널 내용이 데스크톱에서 클리핑되므로 뷰포트 레벨로 승격(position:fixed; 100dvh)한다.
+   z-index:60 — 기존 오버레이(.game-overlay 기본)보다 위, 키패드/헤더보다 위.
+   주의: .game-overlay--certificate 선택자에만 한정. 다른 오버레이의 기본 레이아웃은 유지. */
+.game-overlay--certificate {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100dvh;
+  z-index: 60;
+  padding: 24px;
+  background: rgba(9, 8, 15, 0.82);
+  overflow-y: auto;
+}
+
+html.light .game-overlay--certificate {
+  background: rgba(245, 244, 248, 0.82);
+}
+
+.game-overlay__panel--certificate {
+  max-width: 420px;
+  padding: 28px 24px;
+  gap: 12px;
+  border: 4px double var(--brand-20);
+  border-radius: var(--radius-lg, 16px);
+  background-color: var(--bg-card);
+  background-image:
+    radial-gradient(ellipse at top, var(--brand-06), transparent 60%),
+    radial-gradient(ellipse at bottom, var(--brand-04), transparent 60%);
+  box-shadow:
+    0 12px 50px rgba(0, 0, 0, 0.42),
+    inset 0 0 0 1px var(--border);
+  animation: gameCertIn 180ms ease-out both;
+
+  & .game-cta {
+    margin-top: 6px;
+  }
+}
+
+@keyframes gameCertIn {
+  from { transform: translateY(8px) scale(0.98); opacity: 0; }
+  to   { transform: translateY(0) scale(1);     opacity: 1; }
+}
+
+.game-certificate__deco {
+  text-align: center;
+  color: var(--brand);
+  font-size: 14px;
+  letter-spacing: 1em;
+  line-height: 1;
+  user-select: none;
+  -webkit-user-select: none;
+
+  &--top {
+    margin-bottom: 2px;
+  }
+
+  &--bottom {
+    margin-top: 2px;
+  }
+}
+
+.game-certificate__title-en {
+  font-family: var(--font-serif, 'Cormorant Garamond', serif);
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  color: var(--text-dim);
+  text-align: center;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.game-certificate__title-ko {
+  font-family: var(--font, 'Noto Sans KR', sans-serif);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--brand);
+  letter-spacing: 0.08em;
+  text-align: center;
+  margin: 0;
+}
+
+.game-certificate__avatar-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 0;
+  background: radial-gradient(circle at center, var(--brand-10), transparent 70%);
+}
+
+.game-certificate__avatar {
+  width: 192px;
+  height: 240px;
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  background: transparent;
+}
+
+.game-certificate__body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  text-align: center;
+  padding: 4px 6px;
+}
+
+.game-certificate__body-line {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text);
+  margin: 0;
+  letter-spacing: 0.2px;
+
+  &--lead strong {
+    color: var(--brand);
+    font-weight: 700;
+  }
+}
+
+.game-certificate__sign {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--text-dim);
+  letter-spacing: 0.3px;
+  font-variant-numeric: tabular-nums;
+}
+
+.game-certificate__date {
+  color: var(--text-muted);
+}
+
+.game-certificate__issuer {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-muted);
+}
+
+.game-certificate__seal {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--brand-20);
+  border: 2px solid var(--brand);
+  color: var(--brand);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+}
+
 /* 반응형 (520px 이하) */
 @media (max-width: 520px) {
   body.game-page {
@@ -1638,6 +1811,48 @@ html.light .game-overlay--cutscene {
   .game-hud__skill-label {
     font-size: 9px;
   }
+
+  /* 졸업장 오버레이 — 모바일 컴팩트 (position/inset/size/z-index는 상시 규칙에서 상속) */
+  .game-overlay--certificate {
+    padding: 12px;
+  }
+
+  .game-overlay__panel--certificate {
+    max-width: 92vw;
+    max-height: calc(100dvh - 24px);
+    overflow-y: auto;
+    padding: 20px 16px;
+    gap: 10px;
+
+    & .game-certificate__title-en {
+      font-size: 19px;
+      letter-spacing: 0.16em;
+    }
+
+    & .game-certificate__title-ko {
+      font-size: 12px;
+    }
+
+    & .game-certificate__avatar {
+      width: 144px;
+      height: 180px;
+    }
+
+    & .game-certificate__body-line {
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    & .game-certificate__sign {
+      font-size: 11px;
+    }
+
+    & .game-certificate__seal {
+      width: 22px;
+      height: 22px;
+      font-size: 11px;
+    }
+  }
 }
 
 /* 접근성 — reduced motion */
@@ -1711,6 +1926,11 @@ html.light .game-overlay--cutscene {
 
   .game-keypad__skill {
     transition: none;
+  }
+
+  /* 졸업장 진입 애니메이션 — 감광성 고려하여 즉시 표시 */
+  .game-overlay__panel--certificate {
+    animation: none;
   }
 
   * {

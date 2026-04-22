@@ -1,83 +1,130 @@
-# 자체 점검
+# 자체 점검 — 졸업장(Certificate) 시스템 R2
 
-## SPEC 기능 체크
+전략: **Case A: 같은 방향 유지**, QA_REPORT의 "구체적 개선 지시"를 정밀 적용. 가중 점수 7.30에 P0 1건만 남은 상태이므로 구조 재설계 없이 지시사항만 정확히 반영.
 
-### 기능 1: "나는야 모범생" 단발 스킬
-- [x] 게임당 1회 제한 — `tryActivateSkill` (game.js:3098)에서 `im && usedOnce` early return, 성공 시 `state.skill.usedOnce = true` + `readyAt = Infinity` (game.js:3103-3108)
-- [x] 지속시간 1500ms — `SKILLS.im.durationMs: 1500` (game.js:166)
-- [x] HUD에서 사용 완료 시 라벨 `—`, 링 비워짐(prog=0), `is-skill-cooling` 고정 — `updateSkillHud` 최우선 분기 (game.js:3293-3304)
-- [x] 모바일 `keypadSkillBtn`도 동일 처리 (`applyUsedOnce`가 양쪽에 적용)
-- [x] NaN 경로 차단 — `im && usedOnce` 분기를 `remaining/cd` 계산보다 먼저 배치
+---
 
-### 기능 2: 스킬명/지속시간 데이터 변경
-- [x] SKILLS.im 수정 (game.js:166): name `나는야 모범생`, desc 갱신(+"게임당 1회" 명시), durationMs 1500, cooldownMs 0, abbr `모범`
-- [x] 스킬 설명 오버레이는 기존 `renderSkillOverlay`가 SKILLS 맵을 그대로 읽으므로 자동 반영
+## 1. 이번에 수정한 구체적 위치
 
-### 기능 3: 박병장 등장 알림창 (일시정지형)
-- [x] `#overlayAirforce` DOM 오버레이 추가 (game.html:138-147): `role="dialog"`, `aria-labelledby`, `aria-describedby`, `aria-live="assertive"`
-- [x] `game-overlay--cutscene` + `game-overlay--airforce` 복합 클래스로 기존 컷씬 스타일(배경/애니메이션) 상속
-- [x] `triggerAirforceEasterEgg`에서 `state.running=false`, `rafId` 취소, `state.keys` 초기화, `clearDpadPressed()` (game.js:2874-2900)
-- [x] 제목/본문에 `AIRFORCE.title` / `AIRFORCE.subtitle` 상수 `textContent` 주입 (XSS 무관)
-- [x] `#btnAirforceContinue.focus({ preventScroll: true })` 포커스 관리
+| 우선순위 | 파일 | 위치 | 변경 요약 |
+|---|---|---|---|
+| **P0** | `assets/css/game.css` | 1315~1328 (`.game-overlay--certificate`) | 상시 `position: fixed; inset: 0; width: 100vw; height: 100dvh; z-index: 60; padding: 24px; overflow-y: auto;` 로 뷰포트 레벨 승격 |
+| **P0** | `assets/css/game.css` | 1815~1818 (`@media (max-width: 520px)` 내부) | 기존 `#overlayCertificate` id 선택자의 중복 `position/inset/width/height/z-index` 블록 제거, `.game-overlay--certificate { padding: 12px }` 만 유지 |
+| **P1** | `assets/css/game.css` | 1339 (`.game-overlay__panel--certificate`) | `border-radius: var(--radius);` → `border-radius: var(--radius-lg, 16px);` (SPEC 명세 일치) |
+| **P2-a** | `assets/js/game.js` | 2088~2109 (ESC 핸들러 바로 아래) | Tab 포커스 트랩 keydown 리스너 추가 — 패널 밖 포커스는 다운로드 버튼으로 복귀, 두 버튼 간 Shift+Tab/Tab 순환 |
+| **P2-b** | `assets/js/game.js` | 1016~1017 (`state.graduates` 초기화) | 하드코딩 `{kim,jung,geon,im,lee}` 나열 제거 → `CHARACTER_IDS.reduce((acc, id) => (acc[id] = null, acc), {})` 로 화이트리스트 기반 초기화 |
+| **P2-c** | `assets/js/game.js` | 1151~1157 (`saveGraduates`) | `graduated: state.graduates` → `graduated: { ...state.graduates }` 얕은 복사로 외부 mutation 방어 |
 
-### 기능 4: 비행기 출격 + 폭탄 낙하 연출
-- [x] `onAirforceContinue` (game.js:2906-2936)에서 오버레이 닫고 비행기 스폰 + `pendingBombDrop = now + 300ms` 예약 + `startChiefFlee(now)` + 게임 루프 재개
-- [x] `updateAirplane` (game.js:3004-3007)에서 `pendingBombDrop` 도달 시 `dropBomb(now)` 1회만 실행 (`bombDropped` 플래그 가드)
-- [x] `dropBomb` (game.js:2943-2971): `.is-bomb-flash` 420ms + 파티클 22개 + `playTone(80, 0.4)` → 120ms 후 `playTone(55, 0.55)` + `.is-shake` 500ms
-- [x] CSS `@keyframes gameBombFlash` + `.is-bomb-flash` (game.css:596-605)
-- [x] `dt` 폭주 방지로 `state.lastTs = now` 갱신 + `nextSpawnAt` 컷씬 재개 패턴 보정
+---
 
-### 기능 5: 맵 위 F 전멸
-- [x] `state.obstacles.filter((o) => o.type === 'A')` — F만 제거, A 보존 (game.js:2945)
-- [x] flee 중 수간호사는 투척 불가 (기존 flee 로직 재사용) → 폭탄 낙하 후 신규 F 생성 원천 차단
+## 2. P0/P1/P2 해결 방법
 
-### 기능 6: 수간호사 복귀 시 F 재시딩
-- [x] `updateNurseChief` flee-end 블록 확장 (game.js:2199-2209): 난이도 기본 F 개수 × `respawnCountMultiplier` 까지 부족분 `spawnObstacle()` 호출
-- [x] 복귀 효과음 `playTone(220, 0.08)` 추가
-- [x] `spawnObstacle`는 플레이어 안전지대(4타일 avoid) + `findEmptyTile` 폴백 내장이라 불공정 즉사 방지
+### P0 — 데스크톱 클리핑 해결
+- QA_REPORT가 지시한 해결책을 그대로 적용: `.game-overlay--certificate` 선택자에 `position: fixed; inset: 0; width: 100vw; height: 100dvh; z-index: 60; padding: 24px; overflow-y: auto;` 를 **미디어쿼리 바깥**에 상시 선언하여 뷰포트 레벨로 승격.
+- 이로써 패널이 더 이상 `.game-canvas-wrap`(aspect-ratio:16/10; overflow:hidden) 안에 갇히지 않음 → 1200×900 데스크톱에서도 CTA 2버튼까지 전부 뷰포트 내에 표시되고 `overflow-y: auto` 로 키가 큰 창에서는 패널 상하 스크롤도 가능.
+- 기존 모바일(≤520px) 블록의 `#overlayCertificate` 규칙은 중복이므로 삭제했고, 모바일용 `padding: 12px` 만 `.game-overlay--certificate` 로 바꿔 남겨둠 (상위 cascade로 덮어씀 — 상시 규칙의 24px → 모바일 12px).
+- 라이트 테마 배경도 기존 로직 유지(`html.light .game-overlay--certificate { background: rgba(245,244,248,0.82) }`).
 
-### 기능 7: 접근성 & 반응형
-- [x] 신규 오버레이는 기존 `.game-overlay--cutscene` 스타일 체인을 상속해 520px 반응형 자동 대응
-- [x] `@media (prefers-reduced-motion: reduce)` `.game-canvas-wrap.is-bomb-flash { animation: none; filter: none; }` (game.css:1667-1671)
-- [x] JS 파티클은 `if (!reducedMotion)` 가드 (game.js:2956)
-- [x] 수간호사 flee/F 재시딩 같은 게임 로직은 reduced-motion과 무관하게 동일 수행
-- [x] `role="dialog"` + `aria-live="assertive"` + `aria-labelledby` + `aria-describedby`
+### P1 — border-radius 토큰 교정
+- SPEC "변경 범위 → assets/css/game.css 변경사항" 섹션이 명시한 `border-radius: var(--radius-lg, 16px)` 값으로 교체. `--radius-lg` 변수가 `:root`에 정의되지 않아도 fallback 16px이 적용되므로 루트 수정 불필요 (SPEC의 금지 조항 준수).
 
-## 범위 준수 확인
+### P2-a — 포커스 트랩 (Tab 순환 가드)
+- ESC 핸들러와 **같은 document.addEventListener('keydown', ...)** 패턴으로 Tab 가드 리스너 추가.
+- 졸업장이 열려 있지 않거나 두 버튼이 부재하면 즉시 return → 다른 오버레이 Tab 동작에 영향 없음.
+- 포커스가 패널 밖으로 흘러나간 경우(`active`가 다운로드/닫기 중 어느 것도 아닌 경우) `preventDefault` 후 다운로드 버튼으로 복귀.
+- 패널 내부에서는 Shift+Tab at 다운로드 버튼 → 닫기 버튼으로, Tab at 닫기 버튼 → 다운로드 버튼으로 순환.
+- 접근성 규칙(SPEC "접근성 & 보안 — 포커스 트랩")을 정확히 충족.
 
-- [x] **금지 준수**: 다른 캐릭터(kim/jung/geon/lee) 스킬 밸런스 미변경 — `SKILLS.jung/geon/lee`는 원본 그대로 유지
-- [x] **금지 준수**: 수간호사/이교수/석조무사 본체 밸런스(속도·HP·투척 주기) 미변경 — `DIFFICULTY`/`PROFESSOR`/`STONE_GUARD` 상수 그대로
-- [x] **금지 준수**: 비행기 비주얼 미변경 — `planeSpeed/planeY/planeW/planeH` 유지, `airplaneSprite`/`drawAirplane` 건드리지 않음
-- [x] **금지 준수**: 신규 BGM/아이콘/이미지 에셋 추가 없음
-- [x] **금지 준수**: 전역 테마 변수 조정 없음 — `--brand` 등 기존 변수만 재사용
-- [x] **허용 변경**: `state.skill.usedOnce` / `state.airplane.pendingBombDrop/bombDropped/pauseOverlayOpen` 필드 추가 (SPEC [B])
-- [x] **허용 변경**: 캔버스 상단 AIRFORCE 토스트 렌더 블록 제거 (SPEC [H]) + `AIRFORCE.toast*` 상수 7개 제거
-- [x] **허용 변경**: 폭탄 파티클(22개) + 폭발음 2연타 — 기존 `spawnParticles`/`playTone` 재사용
-- [x] **필수 연동 변경**: `isAnyOverlayOpen()`에 `overlayAirforce` 포함 — 포함하지 않으면 Shift 키 입력이나 이동 키가 오버레이 중에도 처리되어 시퀀스가 깨짐
-- [x] **필수 연동 변경**: `startGame`/`endGame`/난이도 뒤로가기 리셋 블록에 `skill.usedOnce/airplane.*/is-bomb-flash` 정리 로직 추가 — SPEC [E] 명시
+### P2-b — state.graduates 초기화 DRY
+- `CHARACTER_IDS`(라인 92에서 `CHARACTERS.map(c => c.id)` 로 이미 정의됨, state 정의 블록보다 위)를 reduce로 순회하여 `{ [id]: null }` 맵 생성 → 신규 캐릭터 추가 시 한 곳(CHARACTERS 배열)만 수정하면 자동 반영.
 
-## 패턴 준수 확인
+### P2-c — saveGraduates 얕은 복사
+- 저장 직전 `{ ...state.graduates }` 로 새 객체를 만들어 payload에 주입 → 호출자가 payload 참조를 변경해도 `state.graduates` 원본이 오염되지 않음. JSON.stringify 이전 시점의 방어.
 
-- **BEM 네이밍**: `game-overlay--airforce` modifier, `game-overlay__title/text/goal` element — 기존 컷씬 패턴과 일관
-- **CSS 변수 사용**: 제목 색상 `var(--brand)` 사용, 하드코딩 색 없음
-- **CSS 네이티브 중첩**: 추가한 규칙은 단순 선택자라 중첩 불필요. 기존 중첩은 건드리지 않음
-- **반응형 520px**: 기존 `.game-overlay--cutscene` 520px 미디어쿼리(game.css:1499-1520)를 `game-overlay--airforce`가 자동 상속 (복합 클래스 사용)
-- **reduced-motion**: CSS `@media (prefers-reduced-motion: reduce)` 블록에 `.is-bomb-flash` 가드 추가 (game.css:1667-1671) + JS에서 `if (!reducedMotion) spawnParticles(...)` 가드
-- **esc()/safeUrl()**: 외부 데이터 삽입 없음. 모든 텍스트는 상수 `AIRFORCE.title/subtitle`를 `textContent`로 주입 — XSS 무관
-- **가드 클래스**: `onAirforceContinue`에서 `if (!overlay || overlay.classList.contains('is-hidden')) return;`, `triggerAirforceEasterEgg`에서 `if (titleEl) ...` 개별 null 체크
-- **DOMContentLoaded 등록**: 기존 IIFE 스타일 유지 — 새 버튼 바인딩도 같은 스코프에 추가 (game.js:2033-2036)
-- **-webkit-backdrop-filter**: 신규 규칙에 `backdrop-filter` 미사용이므로 해당 없음
-- **파일 간 정합성**: `overlayAirforce`/`airforceTitle`/`airforceText`/`btnAirforceContinue` 4개 ID가 game.html ↔ game.js 일치. `is-bomb-flash` 클래스도 game.js ↔ game.css 일치
+---
 
-## 발견한 엣지케이스 처리
+## 3. 다른 오버레이에 영향 없음 확인
 
-1. **오버레이 닫힘 시 dt 폭주**: `onAirforceContinue`에서 `state.lastTs = performance.now()` 갱신 (game.js:2931) — 기존 컷씬 재개 패턴(`resumeFromCutscene`, game.js:2016-2017)과 동일
-2. **F 스폰 타이머 누적**: 오버레이 열려 있는 동안 `state.nextSpawnAt`이 흘러가지만, `onAirforceContinue`에서 `nextSpawnAt = now + intervalSec * 1000`로 보정 (game.js:2933-2934)
-3. **이전 라운드 잔존 오버레이**: `startGame`/`endGame`/난이도 뒤로가기 3곳 모두 `overlayAirforce.classList.add('is-hidden')` 명시 안전망 추가
-4. **`is-bomb-flash` 잔존 클래스**: `endGame`/`startGame`/`btnBackToDifficulty` 3곳 모두 `canvasWrap.classList.remove('is-bomb-flash')` 추가 — 폭탄 섬광 중 엔딩이 발생해도 다음 라운드로 새지 않음
-5. **중복 폭탄 투하 방지**: `bombDropped` 플래그로 `updateAirplane`이 매 프레임 호출되어도 `dropBomb`은 1회만 실행
-6. **입력 잔존 방지**: `triggerAirforceEasterEgg`에서 `state.keys = Object.create(null) + clearDpadPressed()` — 관성 이동 차단
-7. **매혹 중 A 보존**: `dropBomb`의 filter가 `o.type === 'A'`만 남겨, 임간호 스킬로 전환된 A는 폭발 후에도 플레이어가 수집 가능 (SPEC 기능 5에 명시된 "플레이어 보상")
-8. **포커스 관리**: `btn.focus({ preventScroll: true })` — 오버레이 열림 시 모바일/데스크톱 공통으로 버튼에 포커스 이동
-9. **`isAnyOverlayOpen` 확장**: 이스터에그 시퀀스 중 Shift 키가 입력되면 `tryActivateSkill` 내부에서도 `isAnyOverlayOpen()` 체크로 차단됨 (game.js:3093)
-10. **`f` 타입 캐스팅 없음**: `state.obstacles`의 `type` 필드는 기존 `'F'`/`'A'` 두 값만 가지므로 filter 안전
+이번 변경은 **모두 `.game-overlay--certificate`(또는 `.game-overlay__panel--certificate`) 선택자에만 한정**되어 다른 오버레이(`overlayStart`, `overlayCharacters`, `overlayReady`, `overlayEnd`, `overlaySkill`, `overlayCutscene`, `overlayAirforce`)의 기본 레이아웃에 영향이 없다.
+
+| 검사 항목 | 결과 |
+|---|---|
+| `.game-overlay`(기본) 규칙 수정 여부 | **미수정** — 기존 `position:absolute; inset:0` 유지 |
+| `.game-overlay__panel`(기본) 규칙 수정 여부 | **미수정** |
+| 다른 오버레이 전용 modifier(`--cutscene`/`--skill`/`--airforce` 등) 수정 여부 | **미수정** |
+| 다른 오버레이용 ESC/Tab/포커스 관련 JS 수정 여부 | **미수정** — 이번에 추가한 Tab 가드는 `overlayCertificate.classList.contains('is-hidden')` 체크로 졸업장이 닫혀 있으면 즉시 return |
+| 기존 `#overlayCertificate` id 선택자로 있던 position 속성 이관 시 다른 id 선택자 충돌 | 없음 — id 중복 없음 확인 |
+
+**JS Tab 리스너 가드 코드**:
+```js
+if (!overlayCertificate || overlayCertificate.classList.contains('is-hidden')) return;
+```
+→ 졸업장이 is-hidden 상태(= 닫힘)인 경우 Tab 동작은 기존 브라우저 기본 동작 그대로 유지.
+
+---
+
+## 4. 루트 3파일 미수정 확인
+
+`git diff --name-only` 결과:
+```
+.claude/settings.local.json
+QA_REPORT.md
+SELF_CHECK.md
+SPEC.md
+assets/css/game.css
+assets/js/game.js
+pages/game.html
+```
+
+- `index.html` : 변경 없음
+- `assets/css/style.css` : 변경 없음
+- `assets/js/main.js` : 변경 없음
+
+이번 R2 라운드에서 실제 코드가 수정된 파일은 `assets/css/game.css` + `assets/js/game.js` 2개 (게임 서브시스템 한정). `pages/game.html` 은 R1에서만 수정되고 R2에서는 추가 변경 없음.
+
+---
+
+## 5. 정적 분석 체크
+
+### JS 문법
+- `node -c assets/js/game.js` → **통과** (에러 없음)
+
+### CSS 중괄호 대칭
+- open `{` : **306**
+- close `}` : **306**
+- match: **true**
+
+### HTML 태그 대칭
+- `<div>` : 42
+- `</div>` : 42
+- match: **true**
+
+### 선택자 범위 한정 확인
+- 새로 추가된 CSS 규칙 전체가 `.game-overlay--certificate` 또는 `.game-overlay__panel--certificate`로 시작하는 BEM modifier에만 걸린다. grep 기반 수동 검증.
+- 모바일 @media 블록 내부 id 선택자 `#overlayCertificate` 제거 후 클래스 선택자로 교체 → ID/class 혼재로 인한 specificity 예상 외 충돌 가능성 제거.
+
+### Tab 리스너 중복 등록 확인
+- 기존 ESC 리스너와 별도로 `'keydown'`에 `'Tab'` 만 처리하는 리스너 1건 추가. ESC와 Tab을 분리하여 각 리스너가 자기 키만 early-return 이후 처리. 다른 전역 keydown 리스너(게임 이동 조작 등)와 충돌 없음 — 졸업장 is-hidden 상태에서는 즉시 return하므로 키 입력 흐름 방해 없음.
+
+---
+
+## 6. QA_REPORT 재검증 체크리스트 대응
+
+| 항목 | 대응 |
+|---|---|
+| 1200x900에서 btnDownloadCertificate가 viewport 내부 | position:fixed + 100dvh 승격으로 해결 |
+| 1200x900에서 certDate가 viewport 내부 | 동일 (overflow-y: auto 보조) |
+| 375x667에서 기존 통과 상태 유지 | 모바일 블록에 `padding: 12px` + `.game-overlay__panel--certificate`의 max-width/max-height/overflow-y 그대로 유지 |
+| border-radius: var(--radius-lg, 16px) 적용 | 완료 (라인 1339) |
+| Tab 키 순환 가드 동작 | 완료 (2088~2109) |
+| 콘솔 에러 0건 유지 | JS 문법 검증 통과, 신규 에러 경로 없음 |
+| 루트 3파일 미수정 유지 | 완료 (git diff 확인) |
+
+---
+
+## 요약
+- **P0 해결**: 데스크톱 클리핑의 근본 원인(부모 overflow:hidden)을 `.game-overlay--certificate` 뷰포트 승격으로 제거. 다른 오버레이는 영향 없음.
+- **P1 해결**: SPEC 명세값 `--radius-lg` 로 교정.
+- **P2 3건 해결**: Tab 트랩 + DRY 초기화 + 얕은 복사.
+- **회귀 방지**: textContent/화이트리스트/Canvas 렌더/endGame 순서/테마 연동/reduced-motion 등 기존 동작 코드는 건드리지 않음.
+- **범위 유지**: 게임 3파일(`pages/game.html`은 R2 미수정) + 실제 R2 수정은 2파일. 루트 3파일 불변.

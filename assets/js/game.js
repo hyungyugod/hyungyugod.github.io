@@ -40,6 +40,15 @@
       if (skillOv && !skillOv.classList.contains('is-hidden')) {
         if (typeof renderSkillOverlay === 'function') renderSkillOverlay();
       }
+      // 졸업장 오버레이가 열려 있으면 아바타 재렌더 — 새 테마 팔레트 반영
+      const certOv = document.getElementById('overlayCertificate');
+      if (certOv && !certOv.classList.contains('is-hidden')) {
+        const certAvatarEl = document.getElementById('certAvatar');
+        // state.characterId 현재 캐릭터 기준 (졸업장은 현재 캐릭터로만 열림)
+        if (certAvatarEl && typeof drawCertificateAvatar === 'function') {
+          drawCertificateAvatar(certAvatarEl, state.characterId);
+        }
+      }
     });
   }
 
@@ -59,6 +68,17 @@
   const STORAGE_KEY = 'pixelNurseBest';              // 구 스키마({easy,normal,hard}) — 마이그레이션용 롤백 여지로 남긴다.
   const BEST_BY_CHAR_KEY = 'pixelNurseBestByChar';   // 신 스키마(캐릭터×난이도) 저장 키
   const CHARACTER_STORAGE_KEY = 'pixelNurseChar';
+  // 졸업장 — 최초 졸업(3난이도 모두 목표 달성) 시각을 영속 저장. 이후 기록 갱신에도 최초 날짜 유지.
+  const GRADUATES_KEY = 'pixelNurseGraduates';
+
+  // 졸업장 본문 카피 — DOM/Canvas 모두에서 재사용. name은 CHARACTERS에서 직접 가져오므로 화이트리스트 안전.
+  const CERT_COPY = {
+    title_en: 'CERTIFICATE OF GRADUATION',
+    title_ko: '실습 수료 증서',
+    body1: (name) => '다사다난한 실습을 마치고 ' + name + '는 드디어 졸업하였다.',
+    body2: '이제 세상이라는 악보 위에 마음껏 노래를 부르며 자유롭게 살 것이다.',
+    issuer: 'hgfolio · 김간호는 음악박사'
+  };
 
   // 선택 가능한 5명 캐릭터 — 능력치는 전원 동일, 외형·이름만 차별화.
   // `id`는 화이트리스트이자 스프라이트 분기 키로 사용된다.
@@ -992,6 +1012,9 @@
       im:   { easy: 0, normal: 0, hard: 0 },
       lee:  { easy: 0, normal: 0, hard: 0 }
     },
+    // 캐릭터별 최초 졸업 일시(ISO 문자열). null이면 미졸업. 한 번 졸업하면 갱신되지 않는다.
+    // CHARACTER_IDS 화이트리스트 기반으로 초기화 — 키 중복 정의를 피해 DRY 유지.
+    graduates: CHARACTER_IDS.reduce((acc, id) => { acc[id] = null; return acc; }, {}),
     gameoverReason: null,     // 'time' | 'hit' — endGame 분기용
     // 수간호사 NPC — 맵 가장자리를 순찰하며 플레이어 방향으로 F 투척
     nurseChief: {
@@ -1098,6 +1121,70 @@
   }
 
   // =====================================================
+  // 졸업 판정 — 3난이도 목표 달성 시 최초 졸업일을 영속 저장
+  // 키: GRADUATES_KEY ('pixelNurseGraduates')
+  // 구조: { version: 1, graduated: { [charId]: ISOString | null } }
+  // =====================================================
+  /**
+   * localStorage에서 졸업 상태를 로드. 화이트리스트 외 키/비ISO 값은 무시.
+   * 접근 실패 시 기본 null 유지.
+   */
+  function loadGraduates() {
+    try {
+      const raw = localStorage.getItem(GRADUATES_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      if (!parsed || typeof parsed !== 'object' || !parsed.graduated || typeof parsed.graduated !== 'object') return;
+      CHARACTER_IDS.forEach((id) => {
+        const v = parsed.graduated[id];
+        if (typeof v === 'string' && v.length > 0) {
+          // ISO 문자열 형식 검증 — 파싱 실패 시 무시
+          const d = new Date(v);
+          if (!isNaN(d.getTime())) {
+            state.graduates[id] = v;
+          }
+        }
+      });
+    } catch (e) { /* 무시 */ }
+  }
+
+  function saveGraduates() {
+    try {
+      // 얕은 복사로 외부 mutation 방어 — 호출자가 보유한 state.graduates 참조 변경과 분리.
+      const payload = { version: 1, graduated: { ...state.graduates } };
+      localStorage.setItem(GRADUATES_KEY, JSON.stringify(payload));
+    } catch (e) { /* 무시 */ }
+  }
+
+  /**
+   * 해당 캐릭터가 "역대 베스트 기준"으로 3난이도 모두 목표를 넘겼는지 판정.
+   * 이번 라운드에서 한 번에 다 깰 필요는 없다.
+   */
+  function isGraduated(charId) {
+    if (CHARACTER_IDS.indexOf(charId) < 0) return false;
+    const rec = state.best[charId];
+    if (!rec) return false;
+    return (rec.easy   || 0) >= TARGET_SCORE.easy
+        && (rec.normal || 0) >= TARGET_SCORE.normal
+        && (rec.hard   || 0) >= TARGET_SCORE.hard;
+  }
+
+  /**
+   * 이번 라운드로 "신규 졸업"이 확정된 경우에만 true 반환 + 졸업일 최초 저장.
+   * 이미 졸업 상태였거나 아직 미달이면 false.
+   * @param {string} charId
+   * @returns {boolean} 신규 졸업 여부
+   */
+  function recordGraduationIfNew(charId) {
+    if (CHARACTER_IDS.indexOf(charId) < 0) return false;
+    if (!isGraduated(charId)) return false;
+    if (state.graduates[charId]) return false; // 이미 졸업
+    state.graduates[charId] = new Date().toISOString();
+    saveGraduates();
+    return true;
+  }
+
+  // =====================================================
   // 캐릭터 선택 — 영속 저장 / 이름 치환 유틸
   // =====================================================
   /**
@@ -1181,6 +1268,16 @@
   const endRecordsTbody = document.getElementById('endRecordsTbody');
   const endRecordsAll = document.getElementById('endRecordsAll');
   const btnToggleAllRecords = document.getElementById('btnToggleAllRecords');
+  // 졸업장 오버레이 관련 DOM
+  const overlayCertificate = document.getElementById('overlayCertificate');
+  const btnDownloadCertificate = document.getElementById('btnDownloadCertificate');
+  const btnCloseCertificate = document.getElementById('btnCloseCertificate');
+  const btnShowCertificate = document.getElementById('btnShowCertificate');
+  const certAvatar = document.getElementById('certAvatar');
+  const certLine1 = document.getElementById('certLine1');
+  const certDate = document.getElementById('certDate');
+  // 졸업장 열기 직전 포커스 — 닫을 때 복귀용
+  let certPrevFocus = null;
 
   /**
    * 엔딩 오버레이의 "현재 캐릭터 최고 기록" 3칸 + "다른 실습생" 테이블을 갱신한다.
@@ -1443,6 +1540,15 @@
       btn.appendChild(tag);
       btn.appendChild(best);
 
+      // 졸업 뱃지 — 3난이도 모두 목표 달성(역대 베스트 기준) 캐릭터에만 표시
+      if (isGraduated(ch.id)) {
+        const gradBadge = document.createElement('span');
+        gradBadge.className = 'game-character-card__grad';
+        gradBadge.textContent = '🎓 졸업';
+        gradBadge.setAttribute('aria-label', '졸업 완료');
+        btn.appendChild(gradBadge);
+      }
+
       btn.addEventListener('click', () => selectCharacterCard(ch.id));
       btn.addEventListener('keydown', handleCharacterCardKey);
 
@@ -1638,6 +1744,365 @@
       if (activeDiff) activeDiff.focus({ preventScroll: true });
     });
   }
+
+  // =====================================================
+  // 졸업장 시스템 — 오버레이 열기/닫기, 픽셀 캐릭터 렌더, PNG 다운로드
+  // 모든 텍스트 주입은 textContent 전용 (XSS 차단).
+  // 외부 데이터 없음 — charId는 CHARACTER_IDS 화이트리스트로만 분기.
+  // =====================================================
+  /**
+   * ISO 문자열 → '2026년 4월 22일' 형식. 실패 시 빈 문자열.
+   */
+  function formatCertDateKo(iso) {
+    if (!iso) return '';
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return '';
+    return d.getFullYear() + '년 ' + (d.getMonth() + 1) + '월 ' + d.getDate() + '일';
+  }
+
+  /**
+   * ISO 문자열 → 'YYYY.MM.DD' 형식 (다운로드 이미지 서명용).
+   */
+  function formatCertDateDot(iso) {
+    if (!iso) return '';
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return '';
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return d.getFullYear() + '.' + mm + '.' + dd;
+  }
+
+  /**
+   * ISO 문자열 → 'YYYYMMDD' (파일명 suffix).
+   */
+  function formatCertDateFile(iso) {
+    if (!iso) {
+      const d = new Date();
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = String(d.getDate()).padStart(2, '0');
+      return d.getFullYear() + '' + mm + '' + dd;
+    }
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return '00000000';
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return d.getFullYear() + '' + mm + '' + dd;
+  }
+
+  /**
+   * 대상 canvas에 선택된 charId의 정면 스프라이트(nurseSprite('down', 0) + getNursePalette)를
+   * SCALE=12로 렌더. 인게임/선택카드와 완전 동일한 픽셀 외형.
+   * @param {HTMLCanvasElement} canvas
+   * @param {string} charId
+   */
+  function drawCertificateAvatar(canvas, charId) {
+    if (!canvas) return;
+    const SCALE = 12;
+    canvas.width = 16 * SCALE;   // 192
+    canvas.height = 20 * SCALE;  // 240
+    const cctx = canvas.getContext('2d');
+    if (!cctx) return;
+    cctx.imageSmoothingEnabled = false;
+    cctx.clearRect(0, 0, canvas.width, canvas.height);
+    const id = CHARACTER_IDS.indexOf(charId) >= 0 ? charId : 'kim';
+    const sprite = nurseSprite('down', 0, id);
+    const palette = getNursePalette(id);
+    for (let r = 0; r < 20; r++) {
+      const row = sprite[r];
+      for (let c = 0; c < 16; c++) {
+        const ch = row[c];
+        if (ch === '.' || !palette[ch]) continue;
+        cctx.fillStyle = palette[ch];
+        cctx.fillRect(c * SCALE, r * SCALE, SCALE, SCALE);
+      }
+    }
+  }
+
+  /**
+   * 졸업장 오버레이 열기 — 이름/날짜 주입 + 아바타 렌더 + 포커스.
+   * charId가 CHARACTER_IDS 외면 무시.
+   */
+  function openCertificate(charId) {
+    if (!overlayCertificate) return;
+    const id = CHARACTER_IDS.indexOf(charId) >= 0 ? charId : state.characterId;
+    const nurse = CHARACTERS.find(c => c.id === id);
+    if (!nurse) return;
+
+    // 본문 첫 줄 — "다사다난한 실습을 마치고 [이름]는 드디어 졸업하였다."
+    // <strong> 요소를 createElement로 만들어 이름만 감싼다. textContent 전용.
+    if (certLine1) {
+      while (certLine1.firstChild) certLine1.removeChild(certLine1.firstChild);
+      const prefix = document.createTextNode('다사다난한 실습을 마치고 ');
+      const strong = document.createElement('strong');
+      strong.textContent = nurse.name;
+      const suffix = document.createTextNode('는 드디어 졸업하였다.');
+      certLine1.appendChild(prefix);
+      certLine1.appendChild(strong);
+      certLine1.appendChild(suffix);
+    }
+
+    // 날짜 주입 — 졸업일이 없으면(이론상 불가) 오늘 날짜로 폴백
+    if (certDate) {
+      const iso = state.graduates[id] || new Date().toISOString();
+      certDate.textContent = '발행 ' + formatCertDateKo(iso);
+    }
+
+    // 픽셀 아바타 렌더
+    drawCertificateAvatar(certAvatar, id);
+
+    // 포커스 복귀용 이전 포커스 저장
+    certPrevFocus = document.activeElement;
+
+    overlayCertificate.classList.remove('is-hidden');
+    if (btnDownloadCertificate) btnDownloadCertificate.focus({ preventScroll: true });
+  }
+
+  /**
+   * 졸업장 오버레이 닫기 — 이전 포커스로 복귀.
+   */
+  function closeCertificate() {
+    if (!overlayCertificate) return;
+    overlayCertificate.classList.add('is-hidden');
+    if (certPrevFocus && typeof certPrevFocus.focus === 'function') {
+      try { certPrevFocus.focus({ preventScroll: true }); } catch (e) { /* 노드가 사라졌으면 무시 */ }
+    }
+    certPrevFocus = null;
+  }
+
+  /**
+   * CSS 변수값을 읽는다 (예: '--brand' → '#ff7b7b'). 실패 시 fallback.
+   */
+  function readCssVar(name, fallback) {
+    try {
+      const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+      return v || fallback;
+    } catch (e) { return fallback; }
+  }
+
+  /**
+   * 오프스크린 캔버스에 720×1000 졸업장 이미지를 렌더하여 dataURL 반환.
+   * 외부 라이브러리 미사용, 순수 Canvas API.
+   * DPR 보정 + imageSmoothingEnabled=false로 픽셀 경계 보존.
+   * @param {string} charId
+   * @returns {Promise<string>} PNG dataURL
+   */
+  function generateCertificateImage(charId) {
+    return new Promise((resolve) => {
+      const id = CHARACTER_IDS.indexOf(charId) >= 0 ? charId : state.characterId;
+      const nurse = CHARACTERS.find(c => c.id === id);
+      if (!nurse) { resolve(''); return; }
+
+      // 폰트 로드 대기 — 최대 1.5초
+      const fontsReady = (document.fonts && document.fonts.ready)
+        ? document.fonts.ready
+        : Promise.resolve();
+      const timeout = new Promise((r) => setTimeout(r, 1500));
+      Promise.race([fontsReady, timeout]).then(() => {
+        const W = 720;
+        const H = 1000;
+        const dpr = Math.max(1, Math.min(3, window.devicePixelRatio || 1));
+        const cv = document.createElement('canvas');
+        cv.width = W * dpr;
+        cv.height = H * dpr;
+        const cctx = cv.getContext('2d');
+        if (!cctx) { resolve(''); return; }
+        cctx.scale(dpr, dpr);
+        cctx.imageSmoothingEnabled = false;
+
+        // 색상 — CSS 변수 기반 (테마 반영)
+        // --bg-card는 rgba (반투명)이므로 먼저 불투명 --bg를 깔고 그 위에 쌓아 PNG 투과 방지.
+        const bgCard   = readCssVar('--bg-card', 'rgba(23,21,30,0.82)');
+        const bgSolid  = readCssVar('--bg', '#0f0e15');
+        const brand    = readCssVar('--brand', '#ff7b7b');
+        const brand20  = readCssVar('--brand-20', 'rgba(255,123,123,0.20)');
+        const textCol  = readCssVar('--text', '#eee');
+        const textDim  = readCssVar('--text-dim', '#555');
+        const textMut  = readCssVar('--text-muted', '#aaa');
+        const borderCol = readCssVar('--border', 'rgba(255,255,255,0.07)');
+
+        // 배경 1단 — 불투명 단색 (PNG 투과 방지)
+        cctx.fillStyle = bgSolid;
+        cctx.fillRect(0, 0, W, H);
+        // 배경 2단 — 카드 반투명 톤
+        cctx.fillStyle = bgCard;
+        cctx.fillRect(0, 0, W, H);
+
+        // 외곽 코럴 이중 테두리
+        cctx.strokeStyle = brand20;
+        cctx.lineWidth = 4;
+        cctx.strokeRect(16, 16, W - 32, H - 32);
+        cctx.strokeStyle = borderCol;
+        cctx.lineWidth = 1;
+        cctx.strokeRect(24, 24, W - 48, H - 48);
+
+        // 상하 장식 라인 (코럴)
+        cctx.strokeStyle = brand;
+        cctx.lineWidth = 1;
+        cctx.beginPath();
+        cctx.moveTo(60, 72);
+        cctx.lineTo(W - 60, 72);
+        cctx.moveTo(60, H - 72);
+        cctx.lineTo(W - 60, H - 72);
+        cctx.stroke();
+
+        // 상단 별 장식
+        cctx.fillStyle = brand;
+        cctx.font = "16px 'Cormorant Garamond', serif";
+        cctx.textAlign = 'center';
+        cctx.textBaseline = 'middle';
+        cctx.fillText('✦       ✦', W / 2, 100);
+
+        // 영문 타이틀
+        cctx.fillStyle = textDim;
+        cctx.font = "700 28px 'Cormorant Garamond', serif";
+        cctx.fillText(CERT_COPY.title_en, W / 2, 148);
+
+        // 한글 서브타이틀
+        cctx.fillStyle = brand;
+        cctx.font = "500 18px 'Noto Sans KR', sans-serif";
+        cctx.fillText(CERT_COPY.title_ko, W / 2, 188);
+
+        // 픽셀 캐릭터 — SCALE=14로 224×280 렌더, 중앙 정렬
+        const SPRITE_SCALE = 14;
+        const spriteW = 16 * SPRITE_SCALE;  // 224
+        const spriteH = 20 * SPRITE_SCALE;  // 280
+        const spriteX = Math.round((W - spriteW) / 2);
+        const spriteY = 230;
+        const sprite = nurseSprite('down', 0, id);
+        const palette = getNursePalette(id);
+        cctx.imageSmoothingEnabled = false;
+        for (let r = 0; r < 20; r++) {
+          const row = sprite[r];
+          for (let c = 0; c < 16; c++) {
+            const ch = row[c];
+            if (ch === '.' || !palette[ch]) continue;
+            cctx.fillStyle = palette[ch];
+            cctx.fillRect(spriteX + c * SPRITE_SCALE, spriteY + r * SPRITE_SCALE, SPRITE_SCALE, SPRITE_SCALE);
+          }
+        }
+
+        // 본문 — 이름 포함 첫 줄(코럴) + 둘째 줄(본문)
+        const body1Y = spriteY + spriteH + 68;
+        const body2Y = body1Y + 36;
+        cctx.textAlign = 'center';
+        cctx.textBaseline = 'middle';
+        cctx.fillStyle = brand;
+        cctx.font = "700 20px 'Noto Sans KR', sans-serif";
+        cctx.fillText(CERT_COPY.body1(nurse.name), W / 2, body1Y);
+        cctx.fillStyle = textCol;
+        cctx.font = "500 18px 'Noto Sans KR', sans-serif";
+        cctx.fillText(CERT_COPY.body2, W / 2, body2Y);
+
+        // 하단 서명 블록 — 좌하 날짜 / 우하 이슈어 + 인장
+        const signY = H - 110;
+        const iso = state.graduates[id] || new Date().toISOString();
+        const dateStr = formatCertDateDot(iso);
+        cctx.fillStyle = textMut;
+        cctx.font = "500 13px 'Noto Sans KR', sans-serif";
+        cctx.textAlign = 'left';
+        cctx.textBaseline = 'middle';
+        cctx.fillText('발행  ' + dateStr, 72, signY);
+
+        cctx.textAlign = 'right';
+        cctx.fillStyle = textMut;
+        cctx.fillText(CERT_COPY.issuer, W - 118, signY);
+
+        // 인장 — 우하 원 (코럴 배경 + 코럴 스트로크 + ♪)
+        const sealX = W - 84;
+        const sealY = signY;
+        const sealR = 22;
+        cctx.beginPath();
+        cctx.arc(sealX, sealY, sealR, 0, Math.PI * 2);
+        cctx.fillStyle = brand20;
+        cctx.fill();
+        cctx.strokeStyle = brand;
+        cctx.lineWidth = 2;
+        cctx.stroke();
+        cctx.fillStyle = brand;
+        cctx.font = "700 18px 'Noto Sans KR', sans-serif";
+        cctx.textAlign = 'center';
+        cctx.textBaseline = 'middle';
+        cctx.fillText('♪', sealX, sealY + 1);
+
+        try {
+          resolve(cv.toDataURL('image/png'));
+        } catch (e) {
+          resolve('');
+        }
+      });
+    });
+  }
+
+  /**
+   * 졸업장 PNG 다운로드 — 가상 <a> 클릭으로 브라우저 저장 다이얼로그 호출.
+   * 파일명: pixel-nurse-certificate-{charId}-{YYYYMMDD}.png
+   *         charId는 화이트리스트 5개만 허용, 날짜는 숫자만 — 경로 조작 불가.
+   */
+  function downloadCertificate(charId) {
+    const id = CHARACTER_IDS.indexOf(charId) >= 0 ? charId : state.characterId;
+    if (CHARACTER_IDS.indexOf(id) < 0) return;
+    // 중복 클릭 방지
+    if (btnDownloadCertificate) btnDownloadCertificate.disabled = true;
+    generateCertificateImage(id).then((dataUrl) => {
+      try {
+        if (!dataUrl) return;
+        const iso = state.graduates[id] || new Date().toISOString();
+        const stamp = formatCertDateFile(iso);
+        const a = document.createElement('a');
+        a.href = dataUrl;
+        a.download = 'pixel-nurse-certificate-' + id + '-' + stamp + '.png';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      } catch (e) {
+        console.warn('Certificate download failed:', e);
+      } finally {
+        if (btnDownloadCertificate) btnDownloadCertificate.disabled = false;
+      }
+    });
+  }
+
+  // 이벤트 바인딩 — 다운로드/닫기/재열람/ESC
+  if (btnDownloadCertificate) {
+    btnDownloadCertificate.addEventListener('click', () => downloadCertificate(state.characterId));
+  }
+  if (btnCloseCertificate) {
+    btnCloseCertificate.addEventListener('click', closeCertificate);
+  }
+  if (btnShowCertificate) {
+    btnShowCertificate.addEventListener('click', () => openCertificate(state.characterId));
+  }
+  // ESC — 졸업장이 열려 있을 때만 닫기 (다른 오버레이 ESC와 충돌 방지)
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    if (!overlayCertificate || overlayCertificate.classList.contains('is-hidden')) return;
+    e.preventDefault();
+    closeCertificate();
+  });
+
+  // Tab 포커스 트랩 — 졸업장이 열린 동안 포커스가 패널 밖으로 나가면 다운로드 버튼으로 되돌린다.
+  // 졸업장 내부 포커스 가능 요소는 다운로드/닫기 2개로 한정되므로 단순 가드만 둔다.
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Tab') return;
+    if (!overlayCertificate || overlayCertificate.classList.contains('is-hidden')) return;
+    if (!btnDownloadCertificate || !btnCloseCertificate) return;
+    const active = document.activeElement;
+    const inPanel = active === btnDownloadCertificate || active === btnCloseCertificate;
+    if (!inPanel) {
+      // 포커스가 패널 밖으로 흘러간 경우 — 다운로드 버튼으로 되돌린다.
+      e.preventDefault();
+      try { btnDownloadCertificate.focus({ preventScroll: true }); } catch (err) { /* 무시 */ }
+      return;
+    }
+    // 순환: Shift+Tab at 첫 요소 → 마지막 요소 / Tab at 마지막 요소 → 첫 요소
+    if (e.shiftKey && active === btnDownloadCertificate) {
+      e.preventDefault();
+      try { btnCloseCertificate.focus({ preventScroll: true }); } catch (err) { /* 무시 */ }
+    } else if (!e.shiftKey && active === btnCloseCertificate) {
+      e.preventDefault();
+      try { btnDownloadCertificate.focus({ preventScroll: true }); } catch (err) { /* 무시 */ }
+    }
+  });
 
   // 키보드 입력
   const KEY_MAP = {
@@ -1859,6 +2324,17 @@
       newRecord = true;
     }
     updateBestHud();
+
+    // 졸업 판정 — saveBest가 state.best에 실제 반영된 직후에 실행.
+    // "이번 라운드로 최초 졸업이 확정된 경우"에만 자동 오버레이 트리거.
+    const justGraduated = recordGraduationIfNew(state.characterId);
+    if (btnShowCertificate) {
+      btnShowCertificate.classList.toggle('is-hidden', !isGraduated(state.characterId));
+    }
+    if (justGraduated) {
+      // 엔딩 오버레이를 먼저 보여준 뒤 0.9초 후 졸업장이 덮어쓰듯 등장
+      setTimeout(() => openCertificate(state.characterId), 900);
+    }
 
     // 목표 점수 대비 성공/실패 판정
     const target = TARGET_SCORE[state.difficulty];
@@ -4068,6 +4544,8 @@
   // 초기화
   // =====================================================
   loadBest();
+  // 졸업 상태 복원 — loadBest 직후에 호출하여 isGraduated 판정이 올바른 역대 베스트를 참조하도록 보장
+  loadGraduates();
   // 기본값은 항상 김간호 — 이전 선택을 복원하지 않는다.
   initCharacterGrid();
   applyNurseNameToDom();
