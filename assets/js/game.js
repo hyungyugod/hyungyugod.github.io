@@ -56,7 +56,8 @@
   const CANVAS_W = COLS * TILE; // 640
   const CANVAS_H = ROWS * TILE; // 400
   const GAME_DURATION = 45; // 초 (30→45로 연장)
-  const STORAGE_KEY = 'pixelNurseBest';
+  const STORAGE_KEY = 'pixelNurseBest';              // 구 스키마({easy,normal,hard}) — 마이그레이션용 롤백 여지로 남긴다.
+  const BEST_BY_CHAR_KEY = 'pixelNurseBestByChar';   // 신 스키마(캐릭터×난이도) 저장 키
   const CHARACTER_STORAGE_KEY = 'pixelNurseChar';
 
   // 선택 가능한 5명 캐릭터 — 능력치는 전원 동일, 외형·이름만 차별화.
@@ -123,6 +124,19 @@
     toastSubtitleSize: 13  // px — 본문 regular
   };
 
+  // 청진기 피격 알림 — 박병장(AIRFORCE) 토스트와 동일한 2단 박스 스타일 재사용.
+  // 토스트 노출 중에는 frozenUntil에 토스트 시간을 합산해 "스턴 2초 전체"가 토스트 이후부터 체감되도록 직렬화한다.
+  const STETHO_TOAST = {
+    duration: 1000,              // ms — 토스트 표시 시간
+    title: '청진기 명중!',
+    subtitle: '이교수의 청진기에 맞았습니다. 잠시 움직일 수 없습니다.',
+    boxW: 360,                   // px — 제목/부제가 여유롭게 들어가는 폭
+    boxH: 62,                    // px — AIRFORCE 1줄 박스와 동일한 높이
+    boxY: 24,                    // px — 상단 y (화캉스 토스트 y=40보다 위)
+    titleSize: 16,               // px — 제목 bold
+    subtitleSize: 12             // px — 부제 regular
+  };
+
   // 콤보 단계별 수집 사운드 — C장조 스케일 (C4→D4→E4→G4→A4→C5→D5→E5→G5→A5)
   const SCALE_FREQS = [261.63, 293.66, 329.63, 392.00, 440.00, 523.25, 587.33, 659.25, 783.99, 880.00];
 
@@ -149,7 +163,7 @@
   const SKILLS = {
     jung: { name: '암벽등반 돌진', desc: '바라보는 방향으로 3타일 돌진하며 앞을 막는 벽 1칸을 부순다.', durationMs: 260,  cooldownMs: 22000, abbr: '돌진' },
     geon: { name: '북클럽 소집', desc: '주변 6타일 안의 음표를 한번에 끌어와 수집한다.',     durationMs: 0,    cooldownMs: 20000, abbr: '소집' },
-    im:   { name: '벼락치기',   desc: '수간호사를 매혹시켜 F 대신 A를 던지게 한다. A를 먹으면 점수 2배.', durationMs: 4000, cooldownMs: 25000, abbr: '매혹' },
+    im:   { name: '벼락치기',   desc: '수간호사를 매혹시켜 F 대신 A를 던지게 한다. A를 먹으면 점수 2배.', durationMs: 2500, cooldownMs: 25000, abbr: '매혹' },
     lee:  { name: '대만여행',   desc: '가장 먼 빈 타일로 순간 이동하고 0.5초 착지 무적.',    durationMs: 500,  cooldownMs: 22000, abbr: '여행' }
   };
   const hasSkill = (id) => Boolean(SKILLS[id]);
@@ -191,6 +205,10 @@
     introStoneGuard: {
       title: '경고 · 석조무사 출현',
       text: '수간호사의 충실한 부하 석조무사가 출현합니다! 마주치면 잡혀갑니다. 절대 만나지 마세요.'
+    },
+    introProfessor: {
+      title: '경고 · 이교수 출현',
+      text: '학교에서 나온 깐깐한 이교수가 청진기를 들고 순찰을 돕니다! 맞으면 잠시 움직일 수 없게 됩니다. 피하세요.'
     }
   };
 
@@ -944,7 +962,7 @@
     // 선택된 플레이어 캐릭터 ID — CHARACTER_IDS 중 하나. 기본 'kim'(기존 김간호).
     characterId: 'kim',
     map: null,
-    player: { x: 0, y: 0, w: 14, h: 14, dir: 'down', frameAcc: 0, frame: 0, stunUntil: 0, frozenUntil: 0, invincibleUntil: 0 },
+    player: { x: 0, y: 0, w: 14, h: 14, dir: 'down', frameAcc: 0, frame: 0, stunUntil: 0, frozenUntil: 0, invincibleUntil: 0, stethoToastUntil: 0 },
     // 스킬 상태 — readyAt(재사용 가능 시각), activeUntil(효과 종료 시각), lastUsedAt(마지막 발동), flashUntil(HUD 플래시 종료)
     skill: { readyAt: 0, activeUntil: 0, lastUsedAt: 0, flashUntil: 0 },
     notes: [],         // {x, y, born, bobSeed}
@@ -965,7 +983,14 @@
     rafId: null,
     nextSpawnAt: 0,           // 다음 수간호사 F 스폰 예정 시각(ms)
     cutscenesShown: null,     // Set — 이미 본 컷씬 id 기록
-    best: { easy: 0, normal: 0, hard: 0 },
+    // 캐릭터 × 난이도 조합별 최고 점수. 구 스키마({easy,normal,hard})는 loadBest가 kim 하위로 이관한다.
+    best: {
+      kim:  { easy: 0, normal: 0, hard: 0 },
+      jung: { easy: 0, normal: 0, hard: 0 },
+      geon: { easy: 0, normal: 0, hard: 0 },
+      im:   { easy: 0, normal: 0, hard: 0 },
+      lee:  { easy: 0, normal: 0, hard: 0 }
+    },
     gameoverReason: null,     // 'time' | 'hit' — endGame 분기용
     // 수간호사 NPC — 맵 가장자리를 순찰하며 플레이어 방향으로 F 투척
     nurseChief: {
@@ -1015,22 +1040,57 @@
     }
   };
 
+  /**
+   * 점수 정규화 — 숫자가 아니면 0, 음수/비정상값은 [0, 9999]로 clamp.
+   */
+  function normalizeBestScore(v) {
+    const n = Number(v) || 0;
+    if (n < 0) return 0;
+    if (n > 9999) return 9999;
+    return n;
+  }
+
+  /**
+   * 신 스키마(pixelNurseBestByChar) 우선 로드. 없으면 구 스키마(pixelNurseBest)를
+   * kim 캐릭터 하위로 이관한다. 구 키는 롤백용으로 삭제하지 않고 그대로 둔다.
+   * 화이트리스트 외 캐릭터 키는 무시. 저장소 접근 실패 시 기본 zero 객체 유지.
+   */
   function loadBest() {
     try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return;
-      const parsed = JSON.parse(raw);
-      if (parsed && typeof parsed === 'object') {
-        state.best.easy = Number(parsed.easy) || 0;
-        state.best.normal = Number(parsed.normal) || 0;
-        state.best.hard = Number(parsed.hard) || 0;
+      const raw = localStorage.getItem(BEST_BY_CHAR_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed && typeof parsed === 'object' && parsed.records && typeof parsed.records === 'object') {
+          CHARACTER_IDS.forEach((id) => {
+            const rec = parsed.records[id];
+            if (rec && typeof rec === 'object') {
+              state.best[id].easy = normalizeBestScore(rec.easy);
+              state.best[id].normal = normalizeBestScore(rec.normal);
+              state.best[id].hard = normalizeBestScore(rec.hard);
+            }
+          });
+          return;
+        }
+      }
+      // 신 키 없음/파싱 실패 → 구 키에서 마이그레이션
+      const legacyRaw = localStorage.getItem(STORAGE_KEY);
+      if (legacyRaw) {
+        const legacy = JSON.parse(legacyRaw);
+        if (legacy && typeof legacy === 'object') {
+          state.best.kim.easy = normalizeBestScore(legacy.easy);
+          state.best.kim.normal = normalizeBestScore(legacy.normal);
+          state.best.kim.hard = normalizeBestScore(legacy.hard);
+        }
+        // 즉시 신 키로 저장해 이후부터 신 키만 사용하도록 한다.
+        saveBest();
       }
     } catch (e) { /* 무시 */ }
   }
 
   function saveBest() {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state.best));
+      const payload = { version: 2, records: state.best };
+      localStorage.setItem(BEST_BY_CHAR_KEY, JSON.stringify(payload));
     } catch (e) { /* 무시 */ }
   }
 
@@ -1111,9 +1171,61 @@
   const hudSkillLabel = document.getElementById('hudSkillLabel');
   const hudSkillSlot = document.getElementById('hudSkillSlot');
   const keypadSkillBtn = document.getElementById('keypadSkill');
+  // 엔딩 오버레이 — 캐릭터별 최고 기록 표시부
+  const recMineEasy = document.getElementById('recMineEasy');
+  const recMineNormal = document.getElementById('recMineNormal');
+  const recMineHard = document.getElementById('recMineHard');
+  const endRecordsTbody = document.getElementById('endRecordsTbody');
+  const endRecordsAll = document.getElementById('endRecordsAll');
+  const btnToggleAllRecords = document.getElementById('btnToggleAllRecords');
+
+  /**
+   * 엔딩 오버레이의 "현재 캐릭터 최고 기록" 3칸 + "다른 실습생" 테이블을 갱신한다.
+   * 모든 삽입은 textContent/createElement만 사용 (XSS 차단).
+   */
+  function renderEndRecords() {
+    const mine = state.best[state.characterId] || { easy: 0, normal: 0, hard: 0 };
+    if (recMineEasy)   recMineEasy.textContent   = String(mine.easy   || 0);
+    if (recMineNormal) recMineNormal.textContent = String(mine.normal || 0);
+    if (recMineHard)   recMineHard.textContent   = String(mine.hard   || 0);
+
+    if (!endRecordsTbody) return;
+    // 기존 행 제거 후 CHARACTERS 순서대로 재구성
+    while (endRecordsTbody.firstChild) endRecordsTbody.removeChild(endRecordsTbody.firstChild);
+    CHARACTERS.forEach((ch) => {
+      const rec = state.best[ch.id] || { easy: 0, normal: 0, hard: 0 };
+      const tr = document.createElement('tr');
+      if (ch.id === state.characterId) tr.className = 'is-current';
+      const tdName = document.createElement('td');
+      tdName.textContent = ch.name;
+      const tdEasy = document.createElement('td');
+      tdEasy.textContent = String(rec.easy || 0);
+      const tdNormal = document.createElement('td');
+      tdNormal.textContent = String(rec.normal || 0);
+      const tdHard = document.createElement('td');
+      tdHard.textContent = String(rec.hard || 0);
+      tr.appendChild(tdName);
+      tr.appendChild(tdEasy);
+      tr.appendChild(tdNormal);
+      tr.appendChild(tdHard);
+      endRecordsTbody.appendChild(tr);
+    });
+  }
+
+  if (btnToggleAllRecords && endRecordsAll) {
+    btnToggleAllRecords.addEventListener('click', () => {
+      const willOpen = endRecordsAll.classList.contains('is-hidden');
+      endRecordsAll.classList.toggle('is-hidden');
+      endRecordsAll.hidden = !willOpen;
+      btnToggleAllRecords.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+      btnToggleAllRecords.textContent = willOpen ? '다른 실습생 기록 접기 ▴' : '다른 실습생 기록 보기 ▾';
+    });
+  }
 
   function updateBestHud() {
-    if (hudBest) hudBest.textContent = String(state.best[state.difficulty] || 0);
+    if (!hudBest) return;
+    const charRec = state.best[state.characterId] || { easy: 0, normal: 0, hard: 0 };
+    hudBest.textContent = String(charRec[state.difficulty] || 0);
   }
 
   /**
@@ -1219,6 +1331,7 @@
       state.nurseChief.fleeDx = 0;
       state.nurseChief.fleeDy = 0;
       state.player.frozenUntil = 0;
+      state.player.stethoToastUntil = 0;
       // HUD 리셋
       hudTime.textContent = String(GAME_DURATION);
       hudTime.classList.remove('is-warning');
@@ -1308,9 +1421,17 @@
       tag.className = 'game-character-card__tag';
       tag.textContent = ch.tag;
 
+      // 캐릭터별 최고 기록 한 줄 — 3난이도 중 최고값 노출 (0점이면 '기록 없음')
+      const best = document.createElement('span');
+      best.className = 'game-character-card__best';
+      const rec = state.best[ch.id] || { easy: 0, normal: 0, hard: 0 };
+      const maxScore = Math.max(rec.easy || 0, rec.normal || 0, rec.hard || 0);
+      best.textContent = maxScore > 0 ? '최고 ' + maxScore + '점' : '기록 없음';
+
       btn.appendChild(avatar);
       btn.appendChild(name);
       btn.appendChild(tag);
+      btn.appendChild(best);
 
       btn.addEventListener('click', () => selectCharacterCard(ch.id));
       btn.addEventListener('keydown', handleCharacterCardKey);
@@ -1369,6 +1490,8 @@
       startGame();
       return;
     }
+    // 매번 재렌더 — 이전 라운드에서 갱신된 캐릭터별 최고 기록을 카드에 반영
+    initCharacterGrid();
     if (overlayStart) overlayStart.classList.add('is-hidden');
     overlayCharacter.classList.remove('is-hidden');
     // 포커스 — 현재 선택된 카드 우선
@@ -1384,6 +1507,8 @@
     btnCharacterConfirm.addEventListener('click', () => {
       saveCharacter();
       applyNurseNameToDom();
+      // 캐릭터가 확정되면 HUD Best를 새 캐릭터×현재 난이도 값으로 즉시 갱신
+      updateBestHud();
       if (overlayCharacter) overlayCharacter.classList.add('is-hidden');
       if (overlaySkill && hasSkill(state.characterId)) {
         renderSkillOverlay();
@@ -1583,6 +1708,7 @@
     state.player.stunUntil = 0;
     state.player.frozenUntil = 0;
     state.player.invincibleUntil = 0;
+    state.player.stethoToastUntil = 0;
 
     // 스킬 상태 초기화 — 게임 시작과 동시에 사용 가능 (readyAt = now)
     const nowSkillInit = performance.now();
@@ -1674,6 +1800,9 @@
     state.skill.activeUntil = 0;
     state.skill.flashUntil = 0;
     state.player.invincibleUntil = 0;
+    // 청진기 토스트/스턴 잔존 상태 정리 — 엔딩 오버레이 위에 토스트가 그려지지 않도록 보장
+    state.player.stethoToastUntil = 0;
+    state.player.frozenUntil = 0;
 
     // 이스터에그 잔존 상태 정리 — 다음 라운드로 새지 않도록 보장
     state.airplane.active = false;
@@ -1692,10 +1821,12 @@
     if (btnListenTrack) btnListenTrack.classList.add('is-hidden');
     if (endCta) endCta.classList.remove('game-cta--success');
 
-    const prevBest = state.best[state.difficulty] || 0;
+    // 현재 캐릭터 × 현재 난이도 조합의 최고 점수 갱신
+    const charRec = state.best[state.characterId] || (state.best[state.characterId] = { easy: 0, normal: 0, hard: 0 });
+    const prevBest = charRec[state.difficulty] || 0;
     let newRecord = false;
     if (state.score > prevBest) {
-      state.best[state.difficulty] = state.score;
+      charRec[state.difficulty] = state.score;
       saveBest();
       newRecord = true;
     }
@@ -1755,6 +1886,18 @@
       statAccuracy.textContent = `${accuracy}%`;
     }
 
+    // 캐릭터별 최고 기록 섹션 갱신 — endScore 주입 직전에 호출
+    renderEndRecords();
+    // "다른 실습생 기록" 섹션은 매 엔딩마다 닫힌 상태로 시작 (사용자가 토글로 열 수 있음)
+    if (endRecordsAll) {
+      endRecordsAll.classList.add('is-hidden');
+      endRecordsAll.hidden = true;
+    }
+    if (btnToggleAllRecords) {
+      btnToggleAllRecords.setAttribute('aria-expanded', 'false');
+      btnToggleAllRecords.textContent = '다른 실습생 기록 보기 ▾';
+    }
+
     endScore.textContent = String(score);
     endRecord.textContent = newRecord ? '신기록!' : '';
     overlayEnd.classList.remove('is-hidden');
@@ -1765,7 +1908,7 @@
   // =====================================================
   /**
    * 컷씬 표시 + 게임 루프 정지
-   * @param {'intro'|'mid1'|'mid2'|'introStoneGuard'} id - 컷씬 식별자
+   * @param {'intro'|'mid1'|'mid2'|'introStoneGuard'|'introProfessor'} id - 컷씬 식별자
    */
   function triggerCutscene(id) {
     if (!CUTSCENES[id] || !state.cutscenesShown || state.cutscenesShown.has(id)) return;
@@ -1830,6 +1973,15 @@
       && !state.cutscenesShown.has('introStoneGuard');
     if (chainStoneGuard) {
       setTimeout(() => triggerCutscene('introStoneGuard'), 150);
+      return;
+    }
+    // intro 컷씬 종료 후 상 난이도면 이교수 안내문을 연이어 노출 (석조무사와 상호 배타)
+    const chainProfessor = state.difficulty === 'hard'
+      && state.cutscenesShown
+      && state.cutscenesShown.has('intro')
+      && !state.cutscenesShown.has('introProfessor');
+    if (chainProfessor) {
+      setTimeout(() => triggerCutscene('introProfessor'), 150);
       return;
     }
     state.running = true;
@@ -3290,7 +3442,10 @@
       if (p.x < sx + 12 && p.x + p.w > sx &&
           p.y < sy + 12 && p.y + p.h > sy) {
         state.stethoscopes.splice(i, 1);
-        p.frozenUntil = now + PROFESSOR.freezeDuration;
+        // 토스트 종료 시점부터 freezeDuration 전체가 적용되도록 "알림 + 스턴"을 직렬화한다.
+        // 두 번째 명중 시에도 덮어쓰기(플레이어가 매번 새 경고/스턴을 느끼도록).
+        p.stethoToastUntil = now + STETHO_TOAST.duration;
+        p.frozenUntil = now + STETHO_TOAST.duration + PROFESSOR.freezeDuration;
         // 콤보 끊김 — F 피격과 동일하게 흐름 단절감 부여
         state.combo = 0;
         updateComboHud(false);
@@ -3579,6 +3734,47 @@
       } else {
         ctx.fillText(subtitleLine1, cx, boxY + 42);
       }
+
+      ctx.restore();
+    }
+
+    // 청진기 피격 안내 박스 — AIRFORCE 토스트와 동일한 박스 스타일 재사용.
+    // 상수 텍스트만 fillText로 그리므로 XSS 무관.
+    if (now < state.player.stethoToastUntil) {
+      const remain = state.player.stethoToastUntil - now;
+      // 마지막 200ms 페이드아웃 — reduced-motion에서는 생략
+      const alpha = reducedMotion ? 1 : (remain < 200 ? remain / 200 : 1);
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+
+      const cx = CANVAS_W / 2;
+      const boxY = STETHO_TOAST.boxY;
+      const boxW = STETHO_TOAST.boxW;
+      const boxH = STETHO_TOAST.boxH;
+
+      // 외곽 그림자 (offset 2px) — AIRFORCE 토스트와 동일한 깊이감
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+      ctx.fillRect(cx - boxW / 2, boxY + 2, boxW, boxH);
+
+      // 본체 배경 — AIRFORCE와 동일한 네이비(다크) / 쿨그레이(라이트) 톤
+      ctx.fillStyle = isLightTheme() ? '#e8edf5' : '#1a2238';
+      ctx.fillRect(cx - boxW / 2 + 2, boxY, boxW - 4, boxH - 4);
+
+      // 좌측 엣지 악센트 — 브랜드 코럴 4px 세로 라인
+      ctx.fillStyle = isLightTheme() ? '#e85a6a' : '#ff7b7b';
+      ctx.fillRect(cx - boxW / 2 + 2, boxY, 4, boxH - 4);
+
+      // 제목
+      ctx.fillStyle = isLightTheme() ? '#8a1a2a' : '#ffd0d4';
+      ctx.font = `bold ${STETHO_TOAST.titleSize}px "Pretendard", system-ui, sans-serif`;
+      ctx.fillText(STETHO_TOAST.title, cx, boxY + 18);
+
+      // 부제 — 1줄로 수용되는 길이(360px box 기준)
+      ctx.fillStyle = isLightTheme() ? '#2a2432' : '#e8eaf2';
+      ctx.font = `${STETHO_TOAST.subtitleSize}px "Pretendard", system-ui, sans-serif`;
+      ctx.fillText(STETHO_TOAST.subtitle, cx, boxY + 42);
 
       ctx.restore();
     }
