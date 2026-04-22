@@ -1106,9 +1106,19 @@
       chief.speed = 80;
     }
 
-    chief.patrolIdx = 0;
-    chief.x = chief.patrolPath[0].x;
-    chief.y = chief.patrolPath[0].y;
+    // 플레이어 스폰 지점과 가장 먼 순찰 포인트에서 시작 — 첫 프레임 본체 충돌 즉사 방지
+    const spawnPx = state.player.x + state.player.w / 2;
+    const spawnPy = state.player.y + state.player.h / 2;
+    let farIdx = 0;
+    let farDist = -1;
+    for (let i = 0; i < chief.patrolPath.length; i++) {
+      const pt = chief.patrolPath[i];
+      const d = Math.hypot(pt.x - spawnPx, pt.y - spawnPy);
+      if (d > farDist) { farDist = d; farIdx = i; }
+    }
+    chief.patrolIdx = farIdx;
+    chief.x = chief.patrolPath[farIdx].x;
+    chief.y = chief.patrolPath[farIdx].y;
     chief.dir = 'down';
     chief.frame = 0;
     chief.frameAcc = 0;
