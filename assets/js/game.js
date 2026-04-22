@@ -112,26 +112,26 @@
     planeH: 14,
     fleeDuration: 5000,    // ms — 수간호사 공포 도망 시간
     fleeSpeed: 180,        // px/s — 평소 순찰(40~100)보다 빠름
-    toastDuration: 2600,   // ms — 2단 안내 박스 표시 시간 (비행기 2400ms + 여유 200ms)
-    // 2단 박스 텍스트 — 석조무사가 친구 박병장을 불러 실습생을 구한다는 반전 안내
+    // 오버레이 닫힘 → 폭탄 투하까지 지연 (비행기 엔진음이 먼저 깔린 뒤 폭발로 이어지는 연출용)
+    bombDropDelay: 300,    // ms
+    bombFlashDuration: 420,// ms — .is-bomb-flash 애니메이션 길이와 동기
+    bombY: 140,            // px — 폭탄 낙하 y 중심점 (맵 상단과 중단 사이)
+    // 수간호사 복귀 시 F 재시딩 비율 — 난이도별 초기 F 개수 × 이 값만큼 재스폰
+    respawnCountMultiplier: 1.0,
+    // DOM 오버레이 본문 텍스트 — textContent로만 주입되므로 XSS 무관.
     title: '나와라 박병장!',
-    subtitle: '석조무사가 학창시절 같은반 친구 박병장을 불러 실습생을 도와줍니다!',
-    // 2단 박스 레이아웃 상수
-    toastBoxW: 440,        // px — 박스 폭 (CANVAS_W 640 대비 안전)
-    toastBoxH: 62,         // px — 1줄 본문 기준 높이 (2줄 분리 시 78로 확장)
-    toastBoxY: 24,         // px — 상단 y (화캉스 y=40보다 위)
-    toastTitleSize: 18,    // px — 제목 bold
-    toastSubtitleSize: 13  // px — 본문 regular
+    subtitle: '석조무사가 학창시절 같은반 친구 박병장을 불러 실습생을 도와줍니다!'
   };
 
-  // 청진기 피격 알림 — 박병장(AIRFORCE) 토스트와 동일한 2단 박스 스타일 재사용.
+  // 청진기 피격 알림 — 캔버스 상단 2단 박스(제목+부제) 스타일.
   // 토스트 노출 중에는 frozenUntil에 토스트 시간을 합산해 "스턴 2초 전체"가 토스트 이후부터 체감되도록 직렬화한다.
+  // (박병장 연출은 DOM 오버레이 기반으로 전환되어 더 이상 이 캔버스 토스트 스타일을 공유하지 않는다.)
   const STETHO_TOAST = {
     duration: 1000,              // ms — 토스트 표시 시간
     title: '청진기 명중!',
     subtitle: '이교수의 청진기에 맞았습니다. 잠시 움직일 수 없습니다.',
     boxW: 360,                   // px — 제목/부제가 여유롭게 들어가는 폭
-    boxH: 62,                    // px — AIRFORCE 1줄 박스와 동일한 높이
+    boxH: 62,                    // px — 1줄 본문 기준 높이
     boxY: 24,                    // px — 상단 y (화캉스 토스트 y=40보다 위)
     titleSize: 16,               // px — 제목 bold
     subtitleSize: 12             // px — 부제 regular
@@ -163,7 +163,7 @@
   const SKILLS = {
     jung: { name: '암벽등반 돌진', desc: '바라보는 방향으로 3타일 돌진하며 앞을 막는 벽 1칸을 부순다.', durationMs: 260,  cooldownMs: 22000, abbr: '돌진' },
     geon: { name: '북클럽 소집', desc: '주변 6타일 안의 음표를 한번에 끌어와 수집한다.',     durationMs: 0,    cooldownMs: 20000, abbr: '소집' },
-    im:   { name: '벼락치기',   desc: '수간호사를 매혹시켜 F 대신 A를 던지게 한다. A를 먹으면 점수 2배.', durationMs: 2500, cooldownMs: 25000, abbr: '매혹' },
+    im:   { name: '나는야 모범생', desc: '수간호사를 매혹시켜 F 대신 A를 던지게 한다. A를 먹으면 점수 2배. (게임당 1회)', durationMs: 1500, cooldownMs: 0, abbr: '모범' },
     lee:  { name: '대만여행',   desc: '가장 먼 빈 타일로 순간 이동하고 0.5초 착지 무적.',    durationMs: 500,  cooldownMs: 22000, abbr: '여행' }
   };
   const hasSkill = (id) => Boolean(SKILLS[id]);
@@ -964,7 +964,8 @@
     map: null,
     player: { x: 0, y: 0, w: 14, h: 14, dir: 'down', frameAcc: 0, frame: 0, stunUntil: 0, frozenUntil: 0, invincibleUntil: 0, stethoToastUntil: 0 },
     // 스킬 상태 — readyAt(재사용 가능 시각), activeUntil(효과 종료 시각), lastUsedAt(마지막 발동), flashUntil(HUD 플래시 종료)
-    skill: { readyAt: 0, activeUntil: 0, lastUsedAt: 0, flashUntil: 0 },
+    //  · usedOnce: 게임당 1회 제한 플래그 (현재 'im' 전용). startGame/endGame/난이도 재선택에서 false로 리셋.
+    skill: { readyAt: 0, activeUntil: 0, lastUsedAt: 0, flashUntil: 0, usedOnce: false },
     notes: [],         // {x, y, born, bobSeed}
     obstacles: [],     // {x, y, dx, dy}
     stethoscopes: [],  // {x, y, dx, dy, born} — 이교수 청진기 투사체
@@ -1035,8 +1036,10 @@
     airplane: {
       x: 0, y: 0,
       active: false,
-      expiresAt: 0,   // ms
-      toastUntil: 0   // ms — 상단 토스트 만료 시각
+      expiresAt: 0,          // ms
+      pendingBombDrop: 0,    // ms — 폭탄 투하 예정 시각 (오버레이 닫힘 + bombDropDelay)
+      bombDropped: false,    // 이번 출격에서 폭탄 투하를 이미 실행했는지 — 중복 방지
+      pauseOverlayOpen: false // 박병장 경고 오버레이가 열려 있는 동안 true (게임 루프 정지 상태)
     }
   };
 
@@ -1301,10 +1304,13 @@
         cancelAnimationFrame(state.rafId);
         state.rafId = null;
       }
-      // 비네트/셰이크 잔존 클래스 정리
+      // 비네트/셰이크/폭탄 섬광 잔존 클래스 정리
       if (canvasWrap) {
-        canvasWrap.classList.remove('is-shake', 'is-gameover');
+        canvasWrap.classList.remove('is-shake', 'is-gameover', 'is-bomb-flash');
       }
+      // 박병장 경고 오버레이 닫기 (안전망)
+      const airforceOverlayBack = document.getElementById('overlayAirforce');
+      if (airforceOverlayBack) airforceOverlayBack.classList.add('is-hidden');
       // 상태 초기화 (best와 현재 난이도는 유지)
       state.score = 0;
       state.combo = 0;
@@ -1326,12 +1332,16 @@
       state.stoneGuard.active = false;
       // 이스터에그 잔존 상태 정리 — 난이도 재선택 시 깔끔히 리셋
       state.airplane.active = false;
-      state.airplane.toastUntil = 0;
+      state.airplane.pendingBombDrop = 0;
+      state.airplane.bombDropped = false;
+      state.airplane.pauseOverlayOpen = false;
       state.nurseChief.fleeUntil = 0;
       state.nurseChief.fleeDx = 0;
       state.nurseChief.fleeDy = 0;
       state.player.frozenUntil = 0;
       state.player.stethoToastUntil = 0;
+      // 단발 스킬 플래그 초기화 — 난이도 재선택 후 새 라운드에서 바로 사용 가능
+      state.skill.usedOnce = false;
       // HUD 리셋
       hudTime.textContent = String(GAME_DURATION);
       hudTime.classList.remove('is-warning');
@@ -1638,15 +1648,17 @@
   };
 
   /**
-   * 오버레이(시작/종료/컷씬) 중 하나라도 열려있는지 여부 (C2)
+   * 오버레이(시작/종료/컷씬/박병장) 중 하나라도 열려있는지 여부 (C2)
    */
   function isAnyOverlayOpen() {
     const cutOverlay = document.getElementById('overlayCutscene');
+    const airforceOverlay = document.getElementById('overlayAirforce');
     return (overlayStart && !overlayStart.classList.contains('is-hidden')) ||
            (overlayEnd && !overlayEnd.classList.contains('is-hidden')) ||
            (overlayCharacter && !overlayCharacter.classList.contains('is-hidden')) ||
            (overlaySkill && !overlaySkill.classList.contains('is-hidden')) ||
-           (cutOverlay && !cutOverlay.classList.contains('is-hidden'));
+           (cutOverlay && !cutOverlay.classList.contains('is-hidden')) ||
+           (airforceOverlay && !airforceOverlay.classList.contains('is-hidden'));
   }
 
   // 스킬 발동 키 — Shift (좌/우 모두). 오버레이 중이면 무시.
@@ -1716,6 +1728,8 @@
     state.skill.activeUntil = 0;
     state.skill.lastUsedAt = 0;
     state.skill.flashUntil = 0;
+    // 단발 스킬 플래그 — 신규 게임 시작 시 항상 해제 (임간호 '나는야 모범생'이 다시 사용 가능)
+    state.skill.usedOnce = false;
     updateSkillHud(nowSkillInit);
 
     // 컷씬 추적 Set 초기화
@@ -1743,12 +1757,17 @@
     state.nurseChief.fleeDx = 0;
     state.nurseChief.fleeDy = 0;
     state.airplane.active = false;
-    state.airplane.toastUntil = 0;
+    state.airplane.pendingBombDrop = 0;
+    state.airplane.bombDropped = false;
+    state.airplane.pauseOverlayOpen = false;
 
-    // 비네트/셰이크 잔존 클래스 정리
+    // 비네트/셰이크 잔존 클래스 정리 — 이전 라운드의 박병장 폭탄 섬광도 함께 정리
     if (canvasWrap) {
-      canvasWrap.classList.remove('is-shake', 'is-gameover');
+      canvasWrap.classList.remove('is-shake', 'is-gameover', 'is-bomb-flash');
     }
+    // 박병장 경고 오버레이가 이전 라운드에서 열려 있었다면 닫는다 (안전망)
+    const airforceOverlayInit = document.getElementById('overlayAirforce');
+    if (airforceOverlayInit) airforceOverlayInit.classList.add('is-hidden');
 
     // 초기 음표 스폰 (플레이어 주변 회피)
     for (let i = 0; i < diff.notes; i++) spawnNote();
@@ -1799,6 +1818,8 @@
     state.skill.readyAt = 0;
     state.skill.activeUntil = 0;
     state.skill.flashUntil = 0;
+    // 단발 스킬 플래그 초기화 — 엔딩 후 새 라운드에서 바로 사용 가능하도록
+    state.skill.usedOnce = false;
     state.player.invincibleUntil = 0;
     // 청진기 토스트/스턴 잔존 상태 정리 — 엔딩 오버레이 위에 토스트가 그려지지 않도록 보장
     state.player.stethoToastUntil = 0;
@@ -1806,10 +1827,17 @@
 
     // 이스터에그 잔존 상태 정리 — 다음 라운드로 새지 않도록 보장
     state.airplane.active = false;
-    state.airplane.toastUntil = 0;
+    state.airplane.pendingBombDrop = 0;
+    state.airplane.bombDropped = false;
+    state.airplane.pauseOverlayOpen = false;
     state.nurseChief.fleeUntil = 0;
     state.nurseChief.fleeDx = 0;
     state.nurseChief.fleeDy = 0;
+    // 박병장 경고 오버레이가 열린 채 엔딩이 온 경우(이론상 없지만) 안전하게 닫는다
+    const airforceOverlayEnd = document.getElementById('overlayAirforce');
+    if (airforceOverlayEnd) airforceOverlayEnd.classList.add('is-hidden');
+    // 폭탄 섬광 클래스가 잔존할 수 있으므로 제거
+    if (canvasWrap) canvasWrap.classList.remove('is-bomb-flash');
     if (hudSkillSlot) {
       hudSkillSlot.classList.remove('is-skill-ready', 'is-skill-cooling', 'is-skill-flash');
     }
@@ -2000,6 +2028,12 @@
   if (btnCutsceneContinue) {
     btnCutsceneContinue.addEventListener('click', resumeFromCutscene);
   }
+
+  // 박병장 경고 오버레이 "확인" 버튼 — 폭격 시퀀스 진입. Esc/외부 클릭으로는 닫지 않는다(강제 컷신).
+  const btnAirforceContinue = document.getElementById('btnAirforceContinue');
+  if (btnAirforceContinue) {
+    btnAirforceContinue.addEventListener('click', onAirforceContinue);
+  }
   // 컷씬 닫기 키 확장 — Escape / Enter / Space (Major #7)
   document.addEventListener('keydown', (e) => {
     if (e.key !== 'Escape' && e.key !== 'Enter' && e.key !== ' ') return;
@@ -2163,10 +2197,17 @@
       }
       return;  // 투척/텔레그래프/패트롤 로직 전부 스킵
     }
-    // flee 직후 복귀 — throwTimer를 base 주기로 재시작
+    // flee 직후 복귀 — throwTimer 재시작 + 폭탄으로 전멸한 F를 난이도 기본 개수만큼 재시딩.
+    // spawnObstacle은 플레이어 안전지대(4타일)와 findEmptyTile 폴백을 내장하므로 불공정 즉사가 발생하지 않는다.
     if (chief.fleeUntil > 0 && now >= chief.fleeUntil) {
       chief.fleeUntil = 0;
       chief.throwTimer = DIFFICULTY[state.difficulty].spawnInterval[0];
+      const targetCount = Math.round(DIFFICULTY[state.difficulty].obstacles * AIRFORCE.respawnCountMultiplier);
+      const existingF = state.obstacles.filter((o) => o.type === 'F').length;
+      const toSpawn = Math.max(0, targetCount - existingF);
+      for (let i = 0; i < toSpawn; i++) spawnObstacle();
+      // 복귀 효과음 — 수간호사가 돌아왔음을 청각적으로 신호
+      playTone(220, 0.08);
     }
 
     // --- 패트롤 이동: 현재 목표점까지 선형 이동, 도달하면 다음 포인트 ---
@@ -2819,31 +2860,113 @@
   }
 
   /**
-   * 이스터에그 오케스트레이션 — 석조무사 충돌 시 호출.
-   * 석조무사 퇴장 + 비행기 스폰 + 수간호사 flee 진입 + 효과음/파티클.
+   * 박병장 이스터에그 시퀀스 — 3단계 상태 기계의 1단계.
+   *
+   * [1: 접촉]   triggerAirforceEasterEgg(now)
+   *             → 석조무사 퇴장 + 게임 루프 완전 정지 + 경고 오버레이 표시 (플레이어의 숨을 멈추게 하는 컷신)
+   * [2: 확인]   onAirforceContinue()
+   *             → 비행기 스폰 + 수간호사 flee + 폭탄 투하 예약 + 게임 루프 재개
+   * [3: 폭탄]   update 루프 내에서 pendingBombDrop 시각 도달 → dropBomb(now)
+   *             → F 전멸 + 섬광/셰이크/파티클/폭발음
+   *
    * @param {number} now - 현재 시각(ms, performance.now)
    */
   function triggerAirforceEasterEgg(now) {
     // 석조무사 임무 완수로 퇴장
     state.stoneGuard.active = false;
 
+    // 게임 루프 완전 정지 — 컷신 오버레이가 떠 있는 동안 dt/타이머 누적 차단
+    state.running = false;
+    if (state.rafId) {
+      cancelAnimationFrame(state.rafId);
+      state.rafId = null;
+    }
+    // 입력 초기화 — 재개 시 관성 이동 방지
+    state.keys = Object.create(null);
+    clearDpadPressed();
+
+    state.airplane.pauseOverlayOpen = true;
+
+    // DOM 오버레이 열기 — 상수 텍스트만 textContent 주입(XSS 무관)
+    const overlay = document.getElementById('overlayAirforce');
+    const titleEl = document.getElementById('airforceTitle');
+    const textEl = document.getElementById('airforceText');
+    if (titleEl) titleEl.textContent = AIRFORCE.title;
+    if (textEl) textEl.textContent = AIRFORCE.subtitle;
+    if (overlay) overlay.classList.remove('is-hidden');
+
+    const btn = document.getElementById('btnAirforceContinue');
+    if (btn) btn.focus({ preventScroll: true });
+  }
+
+  /**
+   * 박병장 경고 오버레이 "확인" 버튼 — 시퀀스 2단계.
+   * 비행기를 즉시 스폰하고 폭탄 투하를 bombDropDelay(300ms) 후로 예약한 뒤 게임 루프를 재개한다.
+   */
+  function onAirforceContinue() {
+    const overlay = document.getElementById('overlayAirforce');
+    if (!overlay || overlay.classList.contains('is-hidden')) return;
+    overlay.classList.add('is-hidden');
+    state.airplane.pauseOverlayOpen = false;
+
+    const now = performance.now();
+
     // 비행기 스폰 (화면 좌측 바깥에서 등장)
     state.airplane.x = -AIRFORCE.planeW;
     state.airplane.y = AIRFORCE.planeY;
     state.airplane.active = true;
     state.airplane.expiresAt = now + AIRFORCE.flyDuration;
-    state.airplane.toastUntil = now + AIRFORCE.toastDuration;
+    state.airplane.pendingBombDrop = now + AIRFORCE.bombDropDelay;
+    state.airplane.bombDropped = false;
 
-    // 수간호사 flee 시작
+    // 수간호사 flee 시작 — flee 중엔 F 투척이 원천 차단됨
     startChiefFlee(now);
 
     // 비행기 엔진음 — 저음 지속 2연타
     playTone(120, 0.4);
     setTimeout(() => playTone(90, 0.5), 200);
 
-    // 승리감 파티클 (reduced-motion 시 생략)
+    // 게임 루프 재개 — dt 폭주 방지로 lastTs 갱신, F 스폰 타이머도 컷씬 재개 패턴과 동일하게 보정
+    state.running = true;
+    state.lastTs = now;
+    const diff = DIFFICULTY[state.difficulty];
+    const intervalSec = lerp(diff.spawnInterval[0], diff.spawnInterval[1], curveT());
+    state.nextSpawnAt = now + intervalSec * 1000;
+    state.rafId = requestAnimationFrame(loop);
+  }
+
+  /**
+   * 폭탄 투하 — 시퀀스 3단계. 맵 위 모든 F를 동시 소멸시키고 섬광/셰이크/폭발음을 출력한다.
+   * 매혹 중 생성된 A 오브스타클은 플레이어 보상으로 보존한다.
+   * @param {number} now - 현재 시각(ms)
+   */
+  function dropBomb(now) {
+    // F만 제거, A(매혹 전환)는 보존
+    state.obstacles = state.obstacles.filter((o) => o.type === 'A');
+
+    // 섬광 비네트 — 420ms 후 클래스 제거 (reduced-motion이어도 CSS 측이 filter/animation을 무력화)
+    if (canvasWrap) {
+      canvasWrap.classList.add('is-bomb-flash');
+      setTimeout(() => {
+        if (canvasWrap) canvasWrap.classList.remove('is-bomb-flash');
+      }, AIRFORCE.bombFlashDuration);
+    }
+
+    // 폭발 파티클 — 맵 중앙 bombY 라인을 따라 확산 (reduced-motion 시 생략)
     if (!reducedMotion) {
-      spawnParticles(state.player.x + 7, state.player.y + 7, 10);
+      spawnParticles(CANVAS_W / 2, AIRFORCE.bombY, 22);
+    }
+
+    // 폭발음 — 저음 2연타
+    playTone(80, 0.4);
+    setTimeout(() => playTone(55, 0.55), 120);
+
+    // 화면 셰이크 재사용 — 기존 F 피격 셰이크와 동일 클래스
+    if (canvasWrap) {
+      canvasWrap.classList.add('is-shake');
+      setTimeout(() => {
+        if (canvasWrap) canvasWrap.classList.remove('is-shake');
+      }, 500);
     }
   }
 
@@ -2878,6 +3001,11 @@
   function updateAirplane(dt, now) {
     if (!state.airplane.active) return;
     state.airplane.x += AIRFORCE.planeSpeed * dt;
+    // 폭탄 투하 예정 시각 도달 + 아직 미투하 → 1회만 실행 (bombDropped 플래그로 중복 방지)
+    if (!state.airplane.bombDropped && now >= state.airplane.pendingBombDrop) {
+      state.airplane.bombDropped = true;
+      dropBomb(now);
+    }
     if (now >= state.airplane.expiresAt || state.airplane.x > CANVAS_W) {
       state.airplane.active = false;
     }
@@ -2966,11 +3094,19 @@
     if (!hasSkill(state.characterId)) return; // 김간호는 스킬 없음
     const now = performance.now();
     if (now < state.skill.readyAt) return;
+    // 임간호 단발 스킬 — 이미 1회 사용했다면 재발동 차단
+    if (state.characterId === 'im' && state.skill.usedOnce) return;
     const def = SKILLS[state.characterId];
     const fired = executeSkill(state.characterId, now);
     if (!fired) return; // 예: geon 수집 0개 → 쿨다운 미소모
     state.skill.lastUsedAt = now;
-    state.skill.readyAt = now + def.cooldownMs;
+    // 임간호: 재사용 영구 차단(Infinity) + usedOnce=true. 그 외: 정상 쿨다운 적용.
+    if (state.characterId === 'im') {
+      state.skill.usedOnce = true;
+      state.skill.readyAt = Number.POSITIVE_INFINITY;
+    } else {
+      state.skill.readyAt = now + def.cooldownMs;
+    }
     state.skill.activeUntil = now + def.durationMs;
     state.skill.flashUntil = now + 400;
     // 발동 사운드 — 2음 상승
@@ -3144,7 +3280,6 @@
     if (hudSkillSlot) hudSkillSlot.classList.remove('is-hidden');
     if (keypadSkillBtn) keypadSkillBtn.classList.remove('is-hidden');
     const def = SKILLS[id];
-    if (hudSkillLabel) hudSkillLabel.textContent = def.abbr;
     // 패널/HUD/키패드 악센트 동기화 — 캐릭터 변경 시 data-char 재주입
     if (hudSkillSlot && hudSkillSlot.getAttribute('data-char') !== id) {
       hudSkillSlot.setAttribute('data-char', id);
@@ -3152,6 +3287,23 @@
     if (keypadSkillBtn && keypadSkillBtn.getAttribute('data-char') !== id) {
       keypadSkillBtn.setAttribute('data-char', id);
     }
+
+    // 임간호 단발 스킬 — 사용 완료 후 영구 비활성 표시.
+    // NaN 경로(readyAt = Infinity) 차단을 위해 반드시 remaining/cd 계산보다 먼저 처리한다.
+    if (id === 'im' && state.skill.usedOnce) {
+      if (hudSkillLabel) hudSkillLabel.textContent = '—';
+      if (hudSkill) hudSkill.style.setProperty('--skill-prog', '0');
+      const applyUsedOnce = (el) => {
+        if (!el) return;
+        el.classList.remove('is-skill-ready', 'is-skill-flash');
+        el.classList.add('is-skill-cooling');
+      };
+      applyUsedOnce(hudSkillSlot);
+      applyUsedOnce(keypadSkillBtn);
+      return;
+    }
+
+    if (hudSkillLabel) hudSkillLabel.textContent = def.abbr;
 
     const cd = def.cooldownMs;
     const remaining = Math.max(0, state.skill.readyAt - now);
@@ -3670,75 +3822,7 @@
       ctx.restore();
     }
 
-    // 박병장 2단 안내 박스 — AIRFORCE.title/subtitle 상수 텍스트(XSS 무관).
-    // 반전 서사: 석조무사가 친구 박병장을 불러 실습생을 구해주는 순간을 명시.
-    // reduced-motion에서는 alpha 페이드를 생략(박스는 그대로 표시).
-    if (state.airplane.active && now < state.airplane.toastUntil) {
-      const remain = state.airplane.toastUntil - now;
-      const alpha = reducedMotion ? 1 : Math.min(1, remain / 300);
-      ctx.save();
-      ctx.globalAlpha = alpha;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-
-      const cx = CANVAS_W / 2;
-      const boxY = AIRFORCE.toastBoxY;
-      const boxW = AIRFORCE.toastBoxW;
-
-      // subtitle 폭을 측정해 boxW - 32(좌우 padding)를 초과하면 적절한 지점에서 2줄로 분리
-      ctx.font = `${AIRFORCE.toastSubtitleSize}px "Pretendard", system-ui, sans-serif`;
-      const subtitleFull = AIRFORCE.subtitle;
-      const subtitleMaxW = boxW - 32;
-      const subtitleMeasuredW = ctx.measureText(subtitleFull).width;
-      let subtitleLine1 = subtitleFull;
-      let subtitleLine2 = '';
-      if (subtitleMeasuredW > subtitleMaxW) {
-        // 공백 기준 중간 지점에서 분리 — 앞쪽 절반이 maxW 이내가 되는 마지막 공백을 선택
-        const words = subtitleFull.split(' ');
-        let splitIdx = Math.ceil(words.length / 2);
-        for (let i = words.length - 1; i >= 1; i--) {
-          const head = words.slice(0, i).join(' ');
-          if (ctx.measureText(head).width <= subtitleMaxW) {
-            splitIdx = i;
-            break;
-          }
-        }
-        subtitleLine1 = words.slice(0, splitIdx).join(' ');
-        subtitleLine2 = words.slice(splitIdx).join(' ');
-      }
-      const boxH = subtitleLine2 ? 78 : AIRFORCE.toastBoxH;
-
-      // 외곽 그림자 (offset 2px) — 화캉스 토스트와 동일한 깊이감
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-      ctx.fillRect(cx - boxW / 2, boxY + 2, boxW, boxH);
-
-      // 본체 배경 — 밀리터리/공군 톤 네이비(다크) / 쿨그레이(라이트)
-      ctx.fillStyle = isLightTheme() ? '#e8edf5' : '#1a2238';
-      ctx.fillRect(cx - boxW / 2 + 2, boxY, boxW - 4, boxH - 4);
-
-      // 좌측 엣지 악센트 — 브랜드 코럴 4px 세로 라인 (컷씬 패널의 border-left 문법 재현)
-      ctx.fillStyle = isLightTheme() ? '#e85a6a' : '#ff7b7b';
-      ctx.fillRect(cx - boxW / 2 + 2, boxY, 4, boxH - 4);
-
-      // 제목
-      ctx.fillStyle = isLightTheme() ? '#8a1a2a' : '#ffd0d4';
-      ctx.font = `bold ${AIRFORCE.toastTitleSize}px "Pretendard", system-ui, sans-serif`;
-      ctx.fillText(AIRFORCE.title, cx, boxY + 18);
-
-      // 본문 (1줄 또는 2줄)
-      ctx.fillStyle = isLightTheme() ? '#2a2432' : '#e8eaf2';
-      ctx.font = `${AIRFORCE.toastSubtitleSize}px "Pretendard", system-ui, sans-serif`;
-      if (subtitleLine2) {
-        ctx.fillText(subtitleLine1, cx, boxY + 40);
-        ctx.fillText(subtitleLine2, cx, boxY + 58);
-      } else {
-        ctx.fillText(subtitleLine1, cx, boxY + 42);
-      }
-
-      ctx.restore();
-    }
-
-    // 청진기 피격 안내 박스 — AIRFORCE 토스트와 동일한 박스 스타일 재사용.
+    // 청진기 피격 안내 박스 — 컷씬 패널 톤의 2단 박스 스타일 재사용.
     // 상수 텍스트만 fillText로 그리므로 XSS 무관.
     if (now < state.player.stethoToastUntil) {
       const remain = state.player.stethoToastUntil - now;

@@ -1,75 +1,82 @@
-# QA 검수 보고서
+# QA 검수 보고서 - 임간호 단발 스킬 & 박병장 폭격 시퀀스
 
 ## UI 동작 검증 (Playwright)
 
-루트 포트폴리오(npm run ui-check) 기준:
-
 | 체크 항목 | 결과 | 비고 |
 |---|---|---|
-| 테마 토글 | PASS | 다크-라이트-다크 전환 정상 |
-| 카테고리 필터 (4종) | PASS | writing/music/social/all 모두 정상 |
-| 프로필 모달 | FAIL | locator.waitFor 3s 타임아웃 — 이번 SPEC 범위 외(루트 기능). Generator 수정사항(pages/game.*, game.js)과 무관한 기존 이슈 |
-| 링크카드 href | PASS | 2개 링크 유효 |
-| 모바일 520px | PASS | 핵심 3요소 visible |
-| 콘솔 에러 | PASS | 0건 |
+| 포트폴리오 테마 토글 | PASS | ui-check 통과 |
+| 카테고리 필터 (4종) | PASS | ui-check 통과 |
+| 프로필 모달 | FAIL (환경 한계) | Playwright scrollIntoViewIfNeeded x position fixed 환경 제약. 게임 SPEC과 무관 |
+| 링크카드 href | PASS | |
+| 모바일 520px | PASS | |
+| 포트폴리오 콘솔 에러 | PASS | 0건 |
+| 게임 페이지 (iPhone SE 375x667) | PASS | overlayStart 버튼 뷰포트 내 노출, 콘솔/페이지 에러 0건 (tests/game-check.js) |
 
-- 결과: 8/9 통과. 실패 1건은 루트 index.html 프로필 모달로, 이번 Sprint에서 수정하지 않은 영역. 루트 index.html / style.css / main.js는 변경되지 않았음(git diff --stat 확인).
-- 게임 페이지(pages/game.html) 전용 Playwright 시나리오는 존재하지 않아 수동 정적 검증으로 보완.
+실제 게임 상태기계(박병장 오버레이 -> 비행기 -> 폭탄 -> F 소멸 -> 수간호사 복귀 재시딩)는 Playwright 시나리오 주행하지 않았다. 정적 분석 + SELF_CHECK 크로스체크로 검증함.
 
-## Sprint 범위 계약 검증
+스크린샷: tests/screenshots/
 
-git diff --stat HEAD 결과:
-- assets/css/game.css | 186 +/-
-- assets/js/game.js   | 230 +/-
-- pages/game.html     |  21 +
-- 루트 index.html, assets/css/style.css, assets/js/main.js 변경 0건
-
-→ SPEC "금지: 루트 본체 수정" 준수.
-→ SPEC 외 변경으로 식별된 두 건(#overlayEnd .game-overlay__panel--end overflow-y: auto 추가 / openCharacterOverlay에서 initCharacterGrid 재호출)은 SPEC 허용 판단 기준("이 변경 없으면 SPEC 기능이 동작 안 하거나 기존 기능이 깨지는가 → YES") 충족. 범위 위반 아님.
+---
 
 ## SPEC 기능 검증
 
-1. [PASS] 모바일 버튼 확대 실제 수치
-   - .game-keypad__btn width/height: 96px (game.css L975-976), font-size 28px
-   - .game-keypad__dpad gap: 14px (L963), max-width: min(100%, 340px); margin: 0 auto 추가
-   - .game-keypad__skill 96x96px, font-size 18px (L1228-1236)
-   - @media (hover: none) and (pointer: coarse) padding: 14px 6px 6px
-   - @media (max-width: 380px): btn/skill 80x80px, font 22px/16px
-   - @media (max-width: 520px) .game-canvas-wrap max-height: calc(100dvh - 400px); min-height: 240px
-   - 모두 SPEC 수치와 1:1 일치.
+### 기능 1: 나는야 모범생 단발 스킬
+- [PASS] 게임당 1회 제한: tryActivateSkill (game.js:3098)에서 (state.characterId === im && state.skill.usedOnce) return; - 성공 분기(3104-3109)에서 usedOnce=true + readyAt=Infinity
+- [PASS] 지속 1500ms: SKILLS.im.durationMs: 1500 (game.js:166), activeUntil = now + def.durationMs (game.js:3110)
+- [PASS] HUD NaN 경로 차단: updateSkillHud (game.js:3293) im && usedOnce 분기가 remaining/cd 계산보다 먼저 배치 - readyAt=Infinity 상태에서도 NaN 없음
+- [PASS] 모바일 keypadSkillBtn 동기: applyUsedOnce 헬퍼가 hudSkillSlot과 keypadSkillBtn 양쪽 적용 (game.js:3301-3302)
+- [PASS] 라벨 대시 + prog=0 + is-skill-cooling 고정: 3294-3300 명시
 
-2. [PASS] SKILLS.im.durationMs === 2500
-   - game.js L166에 durationMs: 2500 확인. cooldownMs: 25000은 그대로(SPEC 범위 외).
+### 기능 2: 스킬명/지속시간 데이터 변경
+- [PASS] SKILLS.im 스키마 (game.js:166): name=나는야 모범생, desc에 (게임당 1회) 명시, durationMs=1500, cooldownMs=0, abbr=모범
+- [PASS] 설명 오버레이 자동 반영: renderSkillOverlay는 SKILLS 맵을 직접 읽으므로 자동 갱신
 
-3. [PASS] 청진기 충돌 직렬화 + drawStethoToast + endGame 리셋
-   - 충돌 처리(L3444-3454): stethoToastUntil = now + STETHO_TOAST.duration 세팅, frozenUntil = now + STETHO_TOAST.duration + PROFESSOR.freezeDuration로 토스트 이후 전체 freezeDuration이 체감되도록 직렬화.
-   - drawStethoToast 인라인 블록(L3743-3780): AIRFORCE 토스트 직후에 if (now < state.player.stethoToastUntil) 가드로 동일 박스 스타일(쉐도우/네이비/코럴 엣지/제목/부제) 재사용. reduced-motion 시 alpha=1 고정, 마지막 200ms 페이드아웃.
-   - 리셋 3곳: startGame L1711, btnBackToDifficulty L1334, endGame L1804 모두에 stethoToastUntil = 0 포함.
+### 기능 3: 박병장 등장 알림창 (일시정지형)
+- [PASS] DOM 오버레이 추가 (game.html:138-147): role=dialog, aria-labelledby=airforceTitle, aria-describedby=airforceText, aria-live=assertive
+- [PASS] 복합 클래스: game-overlay game-overlay--cutscene game-overlay--airforce - 기존 컷씬 스타일(배경/패널 진입 애니) 자동 상속
+- [PASS] 게임 정지: triggerAirforceEasterEgg (game.js:2874-2900) running=false + cancelAnimationFrame(rafId) + state.keys=Object.create(null) + clearDpadPressed() + pauseOverlayOpen=true
+- [PASS] textContent 주입: AIRFORCE.title/subtitle 상수 주입 (game.js:2894-2895) - XSS 무관
+- [PASS] 포커스 관리: btnAirforceContinue.focus({ preventScroll: true }) (game.js:2899)
+- [PASS] isAnyOverlayOpen 확장: overlayAirforce 포함 (game.js:1655) -> Shift/방향키 입력 차단
 
-4. [PASS] CUTSCENES.introProfessor + resumeFromCutscene hard 체이닝
-   - CUTSCENES.introProfessor 상수(L209-212): 제목 "경고 · 이교수 출현", 본문 "학교에서 나온 깐깐한 이교수가 청진기를 들고 순찰을 돕니다! 맞으면 잠시 움직일 수 없게 됩니다. 피하세요."
-   - triggerCutscene JSDoc에 'introProfessor' 타입 추가 (L1911).
-   - chainProfessor 분기(L1979-1986): state.difficulty === 'hard' AND cutscenesShown.has('intro') AND !cutscenesShown.has('introProfessor') 조건 150ms setTimeout. chainStoneGuard와 난이도 기반 상호 배타.
+### 기능 4: 비행기 출격 + 폭탄 낙하 연출
+- [PASS] onAirforceContinue (game.js:2906-2936): is-hidden 추가 + pauseOverlayOpen=false + 비행기 스폰(x=-planeW, y=planeY, active=true) + pendingBombDrop = now+300 + startChiefFlee(now) + 엔진음 2연타 + running=true + lastTs=now + nextSpawnAt 보정 + requestAnimationFrame(loop) 재개
+- [PASS] 폭탄 투하 트리거 (game.js:3004-3008): !bombDropped && now >= pendingBombDrop -> dropBomb(now) 1회 실행, bombDropped=true 플래그
+- [PASS] dropBomb 내용 (game.js:2943-2971): is-bomb-flash 420ms + 파티클 22개 + playTone(80, 0.4) -> 120ms 후 playTone(55, 0.55) + is-shake 500ms
+- [PASS] CSS 섬광 애니메이션: @keyframes gameBombFlash + .game-canvas-wrap.is-bomb-flash { animation: gameBombFlash 420ms ease-out 1; } (game.css:597-605)
+- [PASS] dt 폭주 방지: onAirforceContinue에서 state.lastTs = now 및 nextSpawnAt 재보정 (game.js:2931-2934)
 
-5. [PASS] state.best 스키마 5x3 + 모든 참조 교체
-   - state.best 리터럴(L987-993): kim/jung/geon/im/lee 각 {easy:0, normal:0, hard:0}.
-   - grep "state\.best" 결과 총 11건. 모두 state.best[id] 형태. 구 스키마 state.best.easy/normal/hard 직접 접근 0건.
+### 기능 5: F만 제거, A 보존
+- [PASS] filter 표현식 (game.js:2945): state.obstacles = state.obstacles.filter((o) => o.type === A) - A 보존 / F 전멸
+- [PASS] 매혹 중 신규 장애물 타입: spawnObstacle (game.js:2095) isImCharmed(now) ? A : F - 기존 로직 그대로 재사용
+- [PASS] flee 중 F 투척 차단: startChiefFlee에서 throwTimer=99, telegraphUntil=0 무력화 (game.js:2991-2993)
 
-6. [PASS] BEST_BY_CHAR_KEY 마이그레이션
-   - 상수(L60) BEST_BY_CHAR_KEY = 'pixelNurseBestByChar'. 구 STORAGE_KEY = 'pixelNurseBest'는 주석에 "롤백 여지" 명시 유지.
-   - loadBest(L1058-1088): 신 키 우선 + CHARACTER_IDS 화이트리스트 + normalizeBestScore [0, 9999] clamp. 신 키 없으면 구 키를 state.best.kim 하위로 이관 후 즉시 saveBest(). try/catch로 저장소 접근 실패 방어.
-   - saveBest(L1090-1095): { version: 2, records: state.best } payload로 신 키만 저장. 구 키는 건드리지 않음.
+### 기능 6: 수간호사 복귀 시 F 재시딩
+- [PASS] flee-end 블록 확장 (game.js:2202-2211): targetCount = Math.round(obstacles * respawnCountMultiplier) - 기존 F 개수 차감 후 spawnObstacle() N회
+- [PASS] spawnObstacle 안전성: 플레이어 주변 회피 (playerTile) + findEmptyTile 폴백 -> 불공정 즉사 방지
+- [PASS] 복귀 효과음: playTone(220, 0.08) (game.js:2210)
 
-7. [PASS] 엔딩 오버레이 #endRecords + renderEndRecords + textContent 안전 주입
-   - HTML(game.html L151-171): section#endRecords, ul#endRecordsMine, button#btnToggleAllRecords (aria-expanded, aria-controls 바인딩), div#endRecordsAll[hidden], tbody#endRecordsTbody.
-   - renderEndRecords(L1186-1213): recMine*에 String(...) textContent 주입. endRecordsTbody 자식 전체 제거 후 createElement('tr')/createElement('td')로 재구성. 현재 캐릭터 행 tr.className = 'is-current'. innerHTML 미사용.
-   - 토글 핸들러(L1215-1223): is-hidden 클래스 + hidden 속성 + aria-expanded + 버튼 라벨(v/^) 동기화.
-   - endGame 호출(L1890): endScore.textContent 주입 직전 renderEndRecords() + "다른 실습생" 섹션 기본 닫힘 리셋.
+### 기능 7: 접근성 & 반응형
+- [PASS] prefers-reduced-motion CSS 가드: .game-canvas-wrap.is-bomb-flash { animation: none; filter: none; } (game.css:1668-1671)
+- [PASS] prefers-reduced-motion JS 가드: if (!reducedMotion) spawnParticles(...) (game.js:2956-2958)
+- [PASS] 게임 로직은 reduced-motion과 무관하게 실행: F 제거 / 수간호사 flee / 재시딩 모두 상시 동작
+- [PASS] 520px 반응형 상속: .game-overlay--cutscene 미디어쿼리(game.css:1515-1520)를 복합 클래스로 자동 상속
+- [PASS] aria 속성: role=dialog + aria-labelledby + aria-describedby + aria-live=assertive
 
-8. [PASS] .game-character-card__best 추가 + XSS 안전
-   - initCharacterGrid(L1425-1434): createElement('span') + textContent. 입력은 Math.max(rec.easy, rec.normal, rec.hard) 숫자이므로 XSS 표면 없음.
-   - CSS(L681-687): color: var(--brand-light), font-size: 10px, tabular-nums. 하드코딩 색상 없음.
-   - 520px 블록(L1414-1416): font-size: 9px 모바일 대응.
+### 초기화 지점 3곳 일관성
+- [PASS] startGame (game.js:1732, 1759-1762, 1769-1770): skill.usedOnce=false, airplane.active/pendingBombDrop/bombDropped/pauseOverlayOpen 리셋, is-bomb-flash 제거, overlayAirforce is-hidden 강제
+- [PASS] endGame (game.js:1822, 1829-1832, 1837-1840): 동일 필드 리셋 + 오버레이 닫기 + is-bomb-flash 제거
+- [PASS] btnBackToDifficulty (game.js:1334-1344): 동일 필드 리셋 + 오버레이 닫기 + is-bomb-flash 제거
+
+### Sprint 범위 계약 위반 검사
+- [PASS] 금지 준수 - 다른 캐릭터(kim/jung/geon/lee) SKILLS 엔트리 원본 유지
+- [PASS] 금지 준수 - 수간호사/이교수/석조무사 속도/HP/투척 주기 상수 원본 유지 (DIFFICULTY/PROFESSOR/STONE_GUARD)
+- [PASS] 금지 준수 - airplaneSprite/drawAirplane/planeSpeed/planeY 원본 유지 (비주얼 미개편)
+- [PASS] 금지 준수 - 신규 BGM/아이콘/이미지 에셋 없음
+- [PASS] 금지 준수 - 전역 테마 변수 조정 없음, --brand 재사용
+- [PASS] 허용 변경 - state.skill.usedOnce, state.airplane.{pendingBombDrop,bombDropped,pauseOverlayOpen} 필드 추가 (SPEC [B])
+- [PASS] 허용 변경 - 캔버스 상단 AIRFORCE 토스트 완전 제거 (drawAirplane에 toast 관련 코드 없음, AIRFORCE.toast* 상수 0개. STETHO_TOAST는 별개 청진기 토스트로 SPEC 대상 아님)
+- [PASS] 필수 연동 - isAnyOverlayOpen에 overlayAirforce 추가 (game.js:1655)
 
 ---
 
@@ -77,60 +84,115 @@ git diff --stat HEAD 결과:
 
 | 등급 | 건수 |
 |---|---|
-| P0 치명 | 0 |
-| P1 중요 | 0 |
-| P2 권장 | 2 |
+| P0 치명 | 0건 |
+| P1 중요 | 1건 |
+| P2 권장 | 2건 |
 
-## P0 — 치명적 이슈
+---
 
-없음.
+## P0 - 치명적 이슈
 
-## P1 — 중요 이슈
+없음. 보안 취약점, 기능 장애 없음.
 
-없음.
 
-## P2 — 권장 사항
+---
 
-### 1. drawStethoToast 박스 높이 상수 불일치
-- 파일: assets/js/game.js:134 vs SPEC 3-1
-- 내용: SPEC 예시값 boxH: 54. 실제 구현 boxH: 62 (AIRFORCE toastBoxH와 동일).
-- 평가: SPEC 3-4 "같은 박스 스타일 재사용" 요구에 맞춘 합리적 조정. SELF_CHECK.md에 명시. 감점 없음.
+## P1 - 중요 이슈
 
-### 2. drawStethoToast 박스 색상 하드코딩
-- 파일: assets/js/game.js:3762, 3766, 3770, 3775
-- 내용: 본체 배경 (#1a2238/#e8edf5), 코럴 엣지 (#ff7b7b/#e85a6a), 제목 (#ffd0d4/#8a1a2a), 부제 (#e8eaf2/#2a2432) 하드코딩.
-- 근거: 기존 AIRFORCE 토스트 블록(L3716~3729)도 동일 팔레트를 하드코딩. SPEC 3-4 "같은 박스 스타일"을 문자 그대로 이행. 기존 패턴 일관성 측면에서는 오히려 정합.
-- 조치: 향후 별도 리팩토링 Sprint에서 공용 토스트 팔레트를 :root CSS 변수로 추출하는 방안 고려. 이번 Sprint 감점 없음.
+### 1. .game-overlay__text BEM 엘리먼트에 CSS 규칙 부재 - 본문 타이포/여백이 다른 오버레이와 불일치
+
+- 파일: pages/game.html:141, assets/css/game.css (부재)
+- 위반 규칙: docs/css-rules.md BEM 네이밍 일관성 + components.md 컴포넌트 스타일 일관성
+- 현상:
+  - AIRFORCE 오버레이 본문은 <p class="game-overlay__text" id="airforceText">로 선언되었으나, game.css 어느 곳에도 .game-overlay__text 선택자가 없다 (Grep 결과 0건).
+  - 기존 모든 오버레이 본문(overlayStart, overlayCharacter, overlayCutscene)은 class="game-overlay__desc"를 사용하며, .game-overlay__desc에 font-size:12px, color:var(--text-muted), line-height:1.5가 정의됨 (game.css:383).
+  - 결과적으로 박병장 오버레이 본문만 기본 <p> 스타일(브라우저 기본 또는 body 상속 16px)로 렌더되어 다른 컷씬과 타이포 톤이 불일치. 520px 미디어쿼리 (.game-overlay--cutscene .game-overlay__desc { font-size: 12px })(game.css:1520) 적용도 놓침.
+  - SPEC 라인 38이 이 클래스명을 지정했으나, SPEC 의도(라인 4)는 석조무사 경고문과 동일한 2단 박스 알림이며 동일한 시각 톤이 전제다. Generator가 SPEC 명세를 문자 그대로 따랐지만, 그 결과 .game-overlay--cutscene .game-overlay__desc의 520px 반응형/컷씬 특화 톤(font-size 12px)이 AIRFORCE에는 적용되지 않는다.
+- 수정 제안 (택1):
+  - (A) pages/game.html:141을 <p class="game-overlay__desc" id="airforceText">로 변경 (기존 컷씬 패턴과 일치, CSS 추가 0줄)
+  - (B) assets/css/game.css에 .game-overlay--airforce .game-overlay__text 스타일 신규 추가 (font-size:13px, line-height:1.55, color:var(--text-muted); 520px 미디어쿼리 font-size:12px)
+- 권장: (A). 이유: (1) 별도 클래스를 새로 만들 설계적 이유가 약함(본문은 본문), (2) 기존 .game-overlay__desc가 가진 strong 중첩/520px 대응/컷씬 톤을 자동 공유, (3) BEM 엘리먼트 수를 늘리지 않음.
+
+
+---
+
+## P2 - 권장 사항
+
+### 1. 오버레이 제목 태그가 <h3> - 문서 아웃라인 레벨 점프
+- 파일: pages/game.html:140
+- 현상: 다른 모든 game-overlay__title은 <h2>(startTitle, characterTitle, skillTitle, cutsceneTitle, endTitle)인데 airforceTitle만 <h3>.
+- 이유: SPEC 라인 37이 <h3>로 지정. 하지만 AIRFORCE 오버레이 패널 내부에서 더 상위 <h2>가 존재하지 않아 섹션 헤딩 계층이 <h3>부터 시작 - 스크린리더 사용자에게 상위 헤딩이 생략되었나는 혼란 가능.
+- 수정 제안: <h3> -> <h2>로 변경(전 오버레이 제목 톤 통일). SPEC 지시와 충돌 가능하나, SPEC 라인 37은 제목 의미 전달이 본질이고 태그는 접근성 패턴을 따르는 게 맞다.
+
+### 2. bombFlashDuration 상수가 JS에만 존재, CSS 420ms와 이중 선언
+- 파일: assets/js/game.js:117, assets/css/game.css:604
+- 현상: JS AIRFORCE.bombFlashDuration:420 (game.js:117) + CSS animation: gameBombFlash 420ms (game.css:604). 두 값이 독립적으로 선언되어, 한쪽 변경 시 다른 쪽과 어긋날 수 있다.
+- 수정 제안: CSS 커스텀 프로퍼티(--game-bomb-flash-duration:420ms)로 중앙화하거나, setTimeout에서 CSS 연산된 값을 읽어오기. 우선순위 낮음.
+
+
+---
 
 ## 통과 항목
 
-- 보안: innerHTML 0건, eval/document.write 0건, 인라인 이벤트 핸들러 0건. 모든 동적 주입은 textContent/createElement.
-- CSS 패턴: SCSS 문법($, @mixin 등) 0건. !important는 prefers-reduced-motion 전역 블록(L1694-1696)에서만 사용(표준 예외). 신규 클래스 모두 BEM + 네이티브 & 중첩 준수. 모든 색/보더는 var(--brand-*), var(--bg-card), var(--border), var(--text-*) 재사용.
-- JS 패턴: 섹션 구분선 일관. 가드 클래스 준수. console.error/console.warn 0건. try/catch가 localStorage 전반에 적용.
-- HTML 구조: aria-expanded + aria-controls="endRecordsAll", section aria-label="최고 기록" 랜드마크, js-nurse-name 후크. 새 id 8개 전부 JS getElementById와 1:1 매칭.
-- 반응형 & 접근성: 520px 블록에 records-title/list/table/character-card__best 모두 폰트·패딩 축소. prefers-reduced-motion 커버.
-- 파일 간 정합성: 새 id 8개 + 새 클래스 7개 모두 HTML/CSS/JS에 일관.
-- XSS: 캐릭터 이름은 CHARACTERS 정적 배열, 점수는 Number 캐스팅값. 테이블은 createElement + textContent.
-- AI 슬롭 패턴: 보라-청록 그라디언트/과대 box-shadow/임의 border-radius/독립 기능 무단 추가 모두 없음. setTimeout 사용은 기존 패턴 모방(chainStoneGuard 체이닝/효과음 2연타)으로 허용.
+1. 임간호 스킬 게임당 1회 제한 (early return + usedOnce 플래그 + Infinity readyAt)
+2. 1.5초 지속 (durationMs 1500 + activeUntil 계산 정상)
+3. 나는야 모범생 이름 및 (게임당 1회) 설명
+4. HUD NaN 경로 차단 (im && usedOnce 분기를 remaining/cd 계산보다 먼저 배치)
+5. 박병장 등장 시 게임 정지 알림창 (DOM 오버레이 + role=dialog + aria-live + focus 관리)
+6. 확인 버튼 -> 비행기 즉시 스폰 + 300ms pendingBombDrop + F 전멸 + 섬광/셰이크/폭발음 2연타
+7. A(매혹) 오브젝트 보존, F만 제거 (filter(o => o.type === A))
+8. 수간호사 복귀 시 F 재시딩 (respawnCountMultiplier 기반 targetCount 계산)
+9. 캔버스 상단 AIRFORCE 토스트 완전 제거 (drawAirplane에 토스트 코드 없음, AIRFORCE.toast* 상수 0건)
+10. 초기화 3곳 일관성 (startGame/endGame/btnBackToDifficulty - usedOnce/airplane 필드/is-bomb-flash/오버레이 닫기 모두 포함)
+11. prefers-reduced-motion 가드 (CSS is-bomb-flash 무력화 + JS 파티클 if(!reducedMotion))
+12. Sprint 범위 계약 위반 없음 (타 캐릭터/수간호사/이교수/석조무사/비행기 비주얼 전부 원본 유지)
+13. 보안: XSS 무관 (AIRFORCE.title/subtitle 상수를 textContent로만 주입)
+14. 이벤트 바인딩: btnAirforceContinue addEventListener 정상 (game.js:2033-2036)
+15. ESC/Enter/Space는 overlayCutscene에만 반응, overlayAirforce는 확인 버튼 전용(강제 컷씬 준수)
+
 
 ---
 
 ## 채점
 
-SPEC 변경 유형: 혼합. 기능 평가 기준 적용.
+항목별 점수:
 
-**항목별 점수**:
-- 패턴 일관성: 9/10 — BEM·CSS변수·네이티브 중첩·textContent·가드클래스 전부 준수. drawStethoToast의 하드코딩은 기존 AIRFORCE 토스트 패턴 모방이라 오히려 +.
-- 보안 & 접근성: 9/10 — XSS 없음. localStorage try/catch. aria-expanded/aria-controls/aria-label/role 전부 제공. reduced-motion 커버.
-- 반응형 & UI 품질: 9/10 — 96px/14px/400px SPEC 수치 정확. 320px에서 max-width: min(100%, 340px) + min-height: 240px 안전망. 520px 기록 테이블/카드 최고기록 폰트 축소.
-- 기능 완성도: 10/10 — SPEC 5개 변경 전부 정확 구현. 엣지 케이스(두 번째 명중 덮어쓰기 / endGame 리셋 / 캐릭터 변경 시 HUD 재계산)까지 커버.
+| 항목 | 점수 | 코멘트 |
+|---|---|---|
+| 패턴 일관성 | 7.5/10 | BEM 네이밍 대체로 준수. 단, game-overlay__text 엘리먼트를 신규 도입했으나 CSS 부재로 기존 game-overlay__desc 패턴과 이중화 - P1 1건 |
+| 보안 & 접근성 | 9.0/10 | XSS 무관(textContent), role/aria/focus 모두 정석, reduced-motion 양측 가드. <h3> 레벨 점프 사소한 감점 |
+| 반응형 & UI 품질 | 7.5/10 | 컷씬 복합 클래스로 520px 자동 상속. 단, game-overlay__text CSS 부재로 본문 타이포가 다른 오버레이와 불일치 - 모바일에서도 톤 차이 발생 |
+| 기능 완성도 | 9.5/10 | SPEC 7개 기능 + 초기화 3곳 + isAnyOverlayOpen 확장 + 엣지케이스(dt 폭주, 잔존 클래스, 중복 투하, 입력 잔존) 모두 처리 |
 
-**가중 점수**: (9 * 0.4) + (9 * 0.25) + (9 * 0.2) + (10 * 0.15) = 3.6 + 2.25 + 1.8 + 1.5 = **9.15 / 10**
+가중 점수 계산 (기능 변경 기준):
+= 7.5 x 0.40 + 9.0 x 0.25 + 7.5 x 0.20 + 9.5 x 0.15
+= 3.00 + 2.25 + 1.50 + 1.425
+= **8.18 / 10**
+
+이슈 건수 게이트 체크:
+- P0 0건 -> 통과
+- P1 1건 (3건 미만) -> 최종 판정 하락 없음
+
+---
 
 ## 최종 판정: 합격
 
-**구체적 개선 지시** (향후 Sprint 후보, 이번 라운드 수정 불요):
-1. drawStethoToast/drawAirforceToast의 하드코딩 팔레트를 :root { --toast-bg-navy, --toast-accent-coral, --toast-title } 같은 공용 변수로 추출, canvas에서 getComputedStyle로 읽도록 리팩토링.
-2. 엔딩 오버레이 "다른 실습생 기록" 테이블은 5행x4열 고정. 향후 캐릭터 이름이 더 긴 캐릭터 추가 시 520px 블록의 padding 재조정 필요(이번 Sprint 범위 밖).
+가중 점수 8.2 / 10, P0 0건, P1 1건 - 점수 게이트(7.0 이상)와 이슈 게이트(P0=0 / P1<3) 모두 충족.
 
-재검수 불요 — Generator R1 통과.
+단, 아래 P1 이슈 1건은 시각 일관성에 실제 영향을 주므로 빠른 수정을 권장한다.
+
+### 구체적 개선 지시 (권장)
+
+1. [P1] pages/game.html:141 - class="game-overlay__text" -> class="game-overlay__desc"로 변경. 이유: 기존 컷씬 오버레이 본문 BEM 엘리먼트와 일치시키고, .game-overlay--cutscene .game-overlay__desc { font-size: 12px }(game.css:1520) 520px 반응형 및 strong 중첩 스타일을 자동 상속. CSS 추가 0줄로 해결.
+2. [P2] pages/game.html:140 - <h3> -> <h2>로 승격. 다른 모든 오버레이 제목과 통일하여 스크린리더 아웃라인 일관성 확보.
+3. [P2] assets/css/game.css:604 + assets/js/game.js:117 - bombFlashDuration 값을 CSS 커스텀 프로퍼티로 중앙화(선택 사항, 단일 소스 보장). 우선순위 낮음.
+
+---
+
+## 참고: 잘한 점
+
+- state.skill.usedOnce 단일 플래그 + readyAt=Infinity 조합이 깔끔. updateSkillHud에서 NaN 경로를 최우선 분기로 막은 것이 설계서에 명시된 가장 큰 함정을 정확히 회피했다.
+- 초기화 3곳(startGame/endGame/btnBackToDifficulty)에서 동일 5종 필드를 일관 리셋 - 라운드 간 상태 누수 차단.
+- startChiefFlee에서 telegraphUntil=0, throwArmUntil=0, throwTimer=99로 flee 중 투척을 원천 차단한 처리가 SPEC의 신규 F 투척 차단 의도를 정확히 구현.
+- dropBomb의 filter(o => o.type === A)로 매혹 전환 A를 보존한 것이 플레이어 보상이라는 디자인 의도를 놓치지 않았다.
+- 기능 변경에도 불구하고 다른 캐릭터 스킬/NPC 밸런스/비행기 비주얼 전부 원본 유지 - Sprint 범위 계약 준수가 모범적.
