@@ -1,36 +1,36 @@
 {
-  "updatedAt": "2026-04-19",
+  "updatedAt": "2026-05-19",
   "cycleEndDay": 17,
   "streaks": [
     {
       "key": "diary",
       "label": "일기 작성",
-      "days": 75,
+      "days": 105,
       "startDate": "2026-02-12",
       "icon": "fa-book",
       "tone": "diary",
-      "history": [12, 18, 22, 28, 30, 31],
-      "historyMonths": ["11", "12", "01", "02", "03", "04"]
+      "history": [18, 22, 28, 31, 30, 19],
+      "historyMonths": ["12", "01", "02", "03", "04", "05"]
     },
     {
       "key": "workout",
       "label": "총 운동일수",
-      "days": 501,
+      "days": 522,
       "startDate": "2024-02-27",
       "icon": "fa-dumbbell",
       "tone": "workout",
-      "history": [26, 24, 15, 8, 23, 16],
-      "historyMonths": ["11", "12", "01", "02", "03", "04"]
+      "history": [24, 15, 8, 23, 24, 13],
+      "historyMonths": ["12", "01", "02", "03", "04", "05"]
     },
     {
       "key": "threec",
       "label": "3C 실천",
-      "days": 43,
+      "days": 67,
       "startDate": "2026-02-12",
       "icon": "fa-infinity",
       "tone": "threec",
-      "history": [0, 0, 0, 4, 18, 21],
-      "historyMonths": ["11", "12", "01", "02", "03", "04"]
+      "history": [0, 0, 4, 18, 27, 18],
+      "historyMonths": ["12", "01", "02", "03", "04", "05"]
     }
   ]
 }
