@@ -28,7 +28,7 @@
   <!-- Font Awesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
-  <link rel="stylesheet" href="/assets/css/style.css">
+  <link rel="stylesheet" href="/assets/css/style.css?v=20260601-2">
   <script>if(localStorage.getItem('theme')==='light')document.documentElement.classList.add('light');</script>
 </head>
 <body>
@@ -52,8 +52,40 @@
         <img class="profile__avatar js-open-profile" id="profileAvatar" src="/assets/img/15.jpg" alt="HG" tabindex="0">
       </div>
       <span class="profile__hint" aria-hidden="true">프로필 확인</span>
+      <p class="profile__eyebrow">Velog &amp; GitHub 중심의 작업 기록</p>
       <h1 class="profile__name">HG</h1>
       <p class="profile__subtitle">Developer <span class="profile__dot">·</span> Producer <span class="profile__dot">·</span> Writer</p>
+      <p class="profile__statement">
+        쓰면서 배우고, 코드로 확인하며, 최근 작업을 계속 공개합니다.
+      </p>
+      <div class="profile__actions" aria-label="주요 링크">
+        <a class="profile__action profile__action--primary" href="https://velog.io/@hyungyugod/posts" target="_blank" rel="noopener">
+          <i class="fa-solid fa-code" aria-hidden="true"></i>
+          Velog
+        </a>
+        <a class="profile__action" href="https://github.com/hyungyugod" target="_blank" rel="noopener">
+          <i class="fa-brands fa-github" aria-hidden="true"></i>
+          GitHub
+        </a>
+        <button class="profile__action profile__action--ghost js-open-profile" type="button">
+          <i class="fa-solid fa-id-card" aria-hidden="true"></i>
+          Profile
+        </button>
+      </div>
+      <div class="profile__quick-stats" aria-label="주요 활동 요약">
+        <span class="profile__stat">
+          <strong class="profile__stat-value">Velog</strong>
+          <span class="profile__stat-label">Latest writing</span>
+        </span>
+        <span class="profile__stat">
+          <strong class="profile__stat-value">GitHub</strong>
+          <span class="profile__stat-label">Latest code</span>
+        </span>
+        <span class="profile__stat">
+          <strong class="profile__stat-value">3C</strong>
+          <span class="profile__stat-label">Daily routine</span>
+        </span>
+      </div>
       <div class="profile__motto" aria-label="개인 모토">
         <div class="profile__motto-item">
           <div class="profile__motto-front">
@@ -89,15 +121,13 @@
       <div class="profile__bio">
         <p class="profile__bio-quote">
           <strong>Once. Everything.</strong><br>
-          In this one life, I want to keep being moved.<br>
-          To experience widely, to learn steadily,<br>
-          and to ride the waves as they come.
+          I learn in public, build in small loops,<br>
+          and leave the newest traces open.
         </p>
         <div class="profile__bio-divider"></div>
         <p class="profile__bio-kr">
-          한번 뿐인 삶에서 저는 꾸준히 흔들리고 싶습니다.<br>
-          하여 다양하게 경험하고, 꾸준히 배우며,<br>
-          인생의 파도를 한번 타보려합니다.
+          Velog에는 배운 것을 정리하고,<br>
+          GitHub에는 손으로 확인한 결과를 남깁니다.
         </p>
         <p class="profile__bio-attr"><span class="typing" id="typingText"></span><span class="typing-cursor">|</span></p>
       </div>
@@ -108,6 +138,60 @@
   </section>
 
   <div class="page-wrapper">
+
+    <!-- Focus Board -->
+    <section class="focus-board category-section" data-category="writing" aria-labelledby="focusBoardTitle">
+      <div class="focus-board__header">
+        <p class="section-label">Latest Work</p>
+        <h2 class="focus-board__title" id="focusBoardTitle">Writing and code, updated automatically</h2>
+        <p class="focus-board__lede">
+          Velog에는 배운 것을 정리하고, GitHub에는 최근에 손댄 프로젝트를 남깁니다. 아래 항목은 기존 RSS/API 흐름으로 자동 갱신됩니다.
+        </p>
+      </div>
+      <div class="focus-grid">
+        <article class="focus-card focus-card--velog" data-platform="velog">
+          <div class="focus-card__top">
+            <div class="focus-card__icon icon--velog">
+              <i class="fa-solid fa-code" aria-hidden="true"></i>
+            </div>
+            <div class="focus-card__info">
+              <p class="focus-card__kicker">Latest writing</p>
+              <h3 class="focus-card__title">Velog</h3>
+              <p class="focus-card__desc">개발 블로그와 학습 기록</p>
+            </div>
+          </div>
+          <div class="focus-card__items" id="velog-items">
+            <div class="featured-item featured-item--loading"><div class="featured-item__thumb"></div><div class="featured-item__label">로딩 중...</div></div>
+            <div class="featured-item featured-item--loading"><div class="featured-item__thumb"></div><div class="featured-item__label">로딩 중...</div></div>
+            <div class="featured-item featured-item--loading"><div class="featured-item__thumb"></div><div class="featured-item__label">로딩 중...</div></div>
+          </div>
+          <a class="focus-card__cta" href="https://velog.io/@hyungyugod/posts" target="_blank" rel="noopener">
+            모든 포스트 보기 <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+          </a>
+        </article>
+
+        <article class="focus-card focus-card--github" data-platform="github">
+          <div class="focus-card__top">
+            <div class="focus-card__icon icon--github">
+              <i class="fa-brands fa-github" aria-hidden="true"></i>
+            </div>
+            <div class="focus-card__info">
+              <p class="focus-card__kicker">Latest code</p>
+              <h3 class="focus-card__title">GitHub</h3>
+              <p class="focus-card__desc">최근 push된 프로젝트</p>
+            </div>
+          </div>
+          <div class="focus-card__items" id="github-items">
+            <div class="featured-item featured-item--loading"><div class="featured-item__thumb"></div><div class="featured-item__label">로딩 중...</div></div>
+            <div class="featured-item featured-item--loading"><div class="featured-item__thumb"></div><div class="featured-item__label">로딩 중...</div></div>
+            <div class="featured-item featured-item--loading"><div class="featured-item__thumb"></div><div class="featured-item__label">로딩 중...</div></div>
+          </div>
+          <a class="focus-card__cta" href="https://github.com/hyungyugod" target="_blank" rel="noopener">
+            GitHub 프로필 보기 <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+          </a>
+        </article>
+      </div>
+    </section>
 
 <section class="cover-band" aria-label="Selected works">
   <a href="#section-music" data-target="music" title="afterglow · EP">
@@ -199,33 +283,9 @@
     <div class="category-section" data-category="writing" id="section-writing">
     <div class="category-header">
       <h2 class="category-title">Study &amp; Writing &amp; Dev</h2>
-      <p class="section-label">개발 · 글쓰기 · 학습 기록</p>
+      <p class="section-label">보조 글쓰기 아카이브</p>
     </div>
     <div class="links links--section">
-
-      <!-- Velog Showcase -->
-      <div class="platform-showcase" data-platform="velog">
-        <div class="platform-showcase__accent"></div>
-        <div class="platform-showcase__body">
-          <div class="platform-showcase__top">
-            <div class="platform-showcase__icon icon--velog">
-              <i class="fa-solid fa-code"></i>
-            </div>
-            <div class="platform-showcase__info">
-              <h3 class="platform-showcase__title">Velog</h3>
-              <p class="platform-showcase__tagline">개발 블로그 & 기술 포스트</p>
-            </div>
-          </div>
-          <div class="platform-showcase__content" id="velog-items">
-            <div class="featured-item featured-item--loading"><div class="featured-item__thumb"></div><div class="featured-item__label">로딩 중...</div></div>
-            <div class="featured-item featured-item--loading"><div class="featured-item__thumb"></div><div class="featured-item__label">로딩 중...</div></div>
-            <div class="featured-item featured-item--loading"><div class="featured-item__thumb"></div><div class="featured-item__label">로딩 중...</div></div>
-          </div>
-          <a class="platform-showcase__cta" href="https://velog.io/@hyungyugod/posts" target="_blank" rel="noopener">
-            모든 포스트 보기 <i class="fa-solid fa-arrow-right"></i>
-          </a>
-        </div>
-      </div>
 
       <!-- Brunch Showcase -->
       <div class="platform-showcase" data-platform="brunch">
@@ -256,30 +316,6 @@
           </div>
           <a class="platform-showcase__cta" href="https://brunch.co.kr/@hyungyugood" target="_blank" rel="noopener">
             모든 글 보기 <i class="fa-solid fa-arrow-right"></i>
-          </a>
-        </div>
-      </div>
-
-      <!-- GitHub Showcase -->
-      <div class="platform-showcase" data-platform="github">
-        <div class="platform-showcase__accent"></div>
-        <div class="platform-showcase__body">
-          <div class="platform-showcase__top">
-            <div class="platform-showcase__icon icon--github">
-              <i class="fa-brands fa-github"></i>
-            </div>
-            <div class="platform-showcase__info">
-              <h3 class="platform-showcase__title">GitHub</h3>
-              <p class="platform-showcase__tagline">Projects & open source</p>
-            </div>
-          </div>
-          <div class="platform-showcase__content" id="github-items">
-            <div class="featured-item featured-item--loading"><div class="featured-item__thumb"></div><div class="featured-item__label">로딩 중...</div></div>
-            <div class="featured-item featured-item--loading"><div class="featured-item__thumb"></div><div class="featured-item__label">로딩 중...</div></div>
-            <div class="featured-item featured-item--loading"><div class="featured-item__thumb"></div><div class="featured-item__label">로딩 중...</div></div>
-          </div>
-          <a class="platform-showcase__cta" href="https://github.com/hyungyugod" target="_blank" rel="noopener">
-            GitHub 프로필 보기 <i class="fa-solid fa-arrow-right"></i>
           </a>
         </div>
       </div>
@@ -549,6 +585,6 @@
       </div>
     </div>
   </div>
-  <script src="/assets/js/main.js" defer></script>
+  <script src="/assets/js/main.js?v=20260601-2" defer></script>
 </body>
 </html>

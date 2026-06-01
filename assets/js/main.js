@@ -67,20 +67,25 @@ async function fetchGitHub() {
     if (!repos.length) throw new Error('No repos');
 
     container.innerHTML = repos.map(repo => {
-      const lang = esc(repo.language || '');
-      const abbr = lang ? lang.substring(0, 2).toUpperCase() : '</>';
+      const langRaw = typeof repo.language === 'string' && repo.language ? repo.language : 'Code';
+      const lang = esc(langRaw);
+      const abbr = esc(langRaw.substring(0, 2).toUpperCase() || 'GH');
       const name = esc(repo.name);
-      const stars = esc(repo.stargazers_count);
+      const stars = esc(repo.stargazers_count ?? 0);
       const href = safeUrl(repo.html_url);
+      const ariaLabel = esc(`${repo.name || 'Repository'} GitHub 저장소 열기`);
 
-      return `<a class="featured-item" href="${href}" target="_blank" rel="noopener">
+      return `<a class="featured-item" href="${href}" target="_blank" rel="noopener" aria-label="${ariaLabel}">
         <svg class="featured-item__thumb" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-          <rect width="200" height="200" fill="#0d1117"/>
-          <text x="100" y="90" text-anchor="middle" font-family="Inter,sans-serif" font-size="40" font-weight="800" fill="#30363d">${abbr}</text>
-          <text x="100" y="114" text-anchor="middle" font-family="Inter,sans-serif" font-size="11" fill="#58a6ff" opacity="0.7">${lang || 'Code'}</text>
-          <text x="100" y="148" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#8b949e">★ ${stars}</text>
+          <rect class="featured-item__fallback-bg" width="200" height="200"/>
+          <text class="featured-item__fallback-mark" x="100" y="94" text-anchor="middle" font-family="Inter,sans-serif" font-size="40" font-weight="800">${abbr}</text>
+          <text class="featured-item__fallback-accent--github" x="100" y="122" text-anchor="middle" font-family="Inter,sans-serif" font-size="11" opacity="0.82">${lang}</text>
         </svg>
         <div class="featured-item__label">${name}</div>
+        <div class="featured-item__meta">
+          <span class="featured-item__source featured-item__source--github">GitHub</span>
+          <span class="featured-item__detail">${lang} · ${stars} stars</span>
+        </div>
       </a>`;
     }).join('');
   } catch (e) {
@@ -132,17 +137,29 @@ async function fetchVelog() {
         || item.querySelector('content')?.getAttribute('url')
         || '';
 
-      const thumbHtml = imgUrl
-        ? `<img class="featured-item__thumb" src="${esc(safeUrl(imgUrl))}" alt="" loading="lazy">`
+      const safeImgUrl = safeUrl(imgUrl);
+      const pubDateRaw = item.querySelector('pubDate')?.textContent?.trim() || '';
+      const pubDate = pubDateRaw ? new Date(pubDateRaw) : null;
+      const published = pubDate && !Number.isNaN(pubDate.valueOf())
+        ? pubDate.toISOString().slice(0, 10)
+        : 'Recent post';
+      const ariaLabel = esc(`${item.querySelector('title')?.textContent?.trim() || 'Velog post'} Velog 포스트 열기`);
+
+      const thumbHtml = safeImgUrl !== '#'
+        ? `<img class="featured-item__thumb" src="${esc(safeImgUrl)}" alt="" loading="lazy">`
         : `<svg class="featured-item__thumb" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-            <rect width="200" height="200" fill="#0a1a14"/>
-            <text x="100" y="97" text-anchor="middle" font-family="Inter,sans-serif" font-size="52" font-weight="800" fill="#20c997" opacity="0.18">V</text>
-            <text x="100" y="118" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#20c997" opacity="0.3">velog</text>
+            <rect class="featured-item__fallback-bg" width="200" height="200"/>
+            <text class="featured-item__fallback-accent--velog" x="100" y="100" text-anchor="middle" font-family="Inter,sans-serif" font-size="52" font-weight="800" opacity="0.32">V</text>
+            <text class="featured-item__fallback-accent--velog" x="100" y="122" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" opacity="0.55">velog</text>
           </svg>`;
 
-      return `<a class="featured-item" href="${href}" target="_blank" rel="noopener">
+      return `<a class="featured-item" href="${href}" target="_blank" rel="noopener" aria-label="${ariaLabel}">
         ${thumbHtml}
         <div class="featured-item__label">${title}</div>
+        <div class="featured-item__meta">
+          <span class="featured-item__source featured-item__source--velog">Velog</span>
+          <span class="featured-item__detail">${esc(published)}</span>
+        </div>
       </a>`;
     }).join('');
   } catch (e) {
@@ -393,7 +410,7 @@ function initTyping() {
 // -------------------------------------------------------
 
 function initScrollReveal() {
-  const targets = document.querySelectorAll('.link-card, .social-card, .section-label, .platform-showcase, .game-showcase, .category-title');
+  const targets = document.querySelectorAll('.link-card, .social-card, .section-label, .platform-showcase, .game-showcase, .category-title, .focus-card, .focus-board__title, .focus-board__lede');
 
   // prefers-reduced-motion 시 즉시 표시
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
@@ -426,7 +443,7 @@ function applyFilter(sections, filter) {
   sections.forEach(sec => {
     if (filter === 'all' || sec.dataset.category === filter) {
       sec.classList.remove('is-hidden');
-      sec.querySelectorAll('.link-card, .social-card, .section-label, .platform-showcase, .game-showcase, .category-title')
+      sec.querySelectorAll('.link-card, .social-card, .section-label, .platform-showcase, .game-showcase, .category-title, .focus-card, .focus-board__title, .focus-board__lede')
          .forEach(el => el.classList.add('is-visible'));
     } else {
       sec.classList.add('is-hidden');
@@ -451,7 +468,8 @@ function initCategoryFilter() {
     const active = nav.querySelector('.category-nav__btn.is-active');
     if (!active) return;
     indicator.style.width = active.offsetWidth + 'px';
-    indicator.style.transform = 'translateX(' + active.offsetLeft + 'px)';
+    indicator.style.height = active.offsetHeight + 'px';
+    indicator.style.transform = 'translate(' + active.offsetLeft + 'px, ' + active.offsetTop + 'px)';
     nav.classList.add('is-ready');
   }
 
@@ -478,6 +496,11 @@ function initCategoryFilter() {
       btn.classList.add('is-active');
       btn.setAttribute('aria-selected', 'true');
       updateIndicator();
+      btn.scrollIntoView({
+        behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+        block: 'nearest',
+        inline: 'center'
+      });
 
       // 페이드 전환
       const visible = Array.from(sections).filter(s => !s.classList.contains('is-hidden'));
