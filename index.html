@@ -28,7 +28,7 @@
   <!-- Font Awesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
-  <link rel="stylesheet" href="/assets/css/style.css?v=20260601-2">
+  <link rel="stylesheet" href="/assets/css/style.css?v=20260701-1">
   <script>if(localStorage.getItem('theme')==='light')document.documentElement.classList.add('light');</script>
 </head>
 <body>
@@ -279,6 +279,14 @@
         </svg>
         <span class="category-nav__label">Game</span>
       </button>
+      <button class="category-nav__btn" data-filter="app" type="button" role="tab" aria-selected="false">
+        <svg class="category-nav__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="6" y="2.5" width="12" height="19" rx="3"/>
+          <path d="M10 5.5h4"/>
+          <path d="M11 18.5h2"/>
+        </svg>
+        <span class="category-nav__label">Released Apps</span>
+      </button>
     </nav>
 
     <!-- Study & Writing & Dev  -->
@@ -490,6 +498,61 @@
       </div>
     </div>
 
+    <!-- Released Apps -->
+    <div class="category-section" data-category="app" id="section-app">
+      <div class="category-header">
+        <h2 class="category-title">Released Apps</h2>
+        <p class="section-label">App Store 정식 출시 iOS 앱</p>
+      </div>
+      <div class="links links--section">
+
+        <div class="link-card link-card--app">
+          <a class="link-card__header" href="https://apps.apple.com/kr/app/poppath/id6785336260" target="_blank" rel="noopener" aria-label="App Store에서 출시 앱 보기">
+            <div class="link-card__icon icon--app">
+              <i class="fa-brands fa-app-store-ios"></i>
+            </div>
+            <div class="link-card__info">
+              <div class="link-card__title">App Store</div>
+              <div class="link-card__desc">정식 출시한 iOS 앱</div>
+            </div>
+            <i class="fa-solid fa-arrow-right link-card__arrow"></i>
+          </a>
+          <div class="link-card__divider"></div>
+          <div class="link-card__items">
+
+            <a class="featured-item" href="https://apps.apple.com/kr/app/poppath/id6785336260" target="_blank" rel="noopener" aria-label="PopPath App Store에서 보기">
+              <img class="featured-item__thumb featured-item__thumb--app" src="/assets/img/app-poppath.png" alt="PopPath 앱 아이콘" width="256" height="256" loading="lazy">
+              <div class="featured-item__label">PopPath</div>
+              <div class="featured-item__meta">
+                <span class="featured-item__source featured-item__source--app">App Store</span>
+                <span class="featured-item__detail">할 일을 흐름으로 정리</span>
+              </div>
+            </a>
+
+            <a class="featured-item" href="https://apps.apple.com/kr/app/%EA%B9%80%EA%B0%84%ED%98%B8%EB%8A%94-%EC%9D%8C%EC%95%85%EB%B0%95%EC%82%AC/id6780122826" target="_blank" rel="noopener" aria-label="김간호는 음악박사 App Store에서 보기">
+              <img class="featured-item__thumb featured-item__thumb--app" src="/assets/img/app-ganho.png" alt="김간호는 음악박사 앱 아이콘" width="256" height="256" loading="lazy">
+              <div class="featured-item__label">김간호는 음악박사</div>
+              <div class="featured-item__meta">
+                <span class="featured-item__source featured-item__source--app">App Store</span>
+                <span class="featured-item__detail">리듬 액션 게임</span>
+              </div>
+            </a>
+
+            <a class="featured-item" href="https://apps.apple.com/kr/app/lumark/id6776158784" target="_blank" rel="noopener" aria-label="Lumark App Store에서 보기">
+              <img class="featured-item__thumb featured-item__thumb--app" src="/assets/img/app-lumark.png" alt="Lumark 앱 아이콘" width="256" height="256" loading="lazy">
+              <div class="featured-item__label">Lumark</div>
+              <div class="featured-item__meta">
+                <span class="featured-item__source featured-item__source--app">App Store</span>
+                <span class="featured-item__detail">읽고 밑줄 긋는 기록</span>
+              </div>
+            </a>
+
+          </div>
+        </div>
+
+      </div>
+    </div>
+
     <!-- Social -->
     <div class="category-section" data-category="social" id="section-social">
     <div class="category-header">
@@ -587,6 +650,6 @@
       </div>
     </div>
   </div>
-  <script src="/assets/js/main.js?v=20260601-2" defer></script>
+  <script src="/assets/js/main.js?v=20260701-1" defer></script>
 </body>
 </html>

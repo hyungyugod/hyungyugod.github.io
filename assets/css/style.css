@@ -63,6 +63,11 @@
   --focus-shadow: 0 8px 40px rgba(0, 0, 0, 0.32);
   --focus-inset: rgba(255, 255, 255, 0.04);
   --focus-pill-bg: rgba(255, 255, 255, 0.05);
+
+  /* App Store (Released Apps) */
+  --platform-app: #0a84ff;            /* App Store 블루 (다크 테마) */
+  --platform-app-14: rgba(10, 132, 255, 0.14);
+  --glow-app: rgba(10, 132, 255, 0.18);
 }
 
 /* ---- Light Theme Override ---- */
@@ -103,6 +108,11 @@ html.light {
   --focus-shadow: 0 8px 32px rgba(0, 0, 0, 0.10);
   --focus-inset: rgba(0, 0, 0, 0.03);
   --focus-pill-bg: rgba(0, 0, 0, 0.04);
+
+  /* App Store (Released Apps) — 라이트 대응 */
+  --platform-app: #0071e3;
+  --platform-app-14: rgba(0, 113, 227, 0.14);
+  --glow-app: rgba(0, 113, 227, 0.15);
 }
 
 body {
@@ -1437,6 +1447,7 @@ html.light .social-card:hover {
   &:has(.icon--github):hover { box-shadow: 0 6px 24px var(--glow-github); }
   &:has(.icon--melon):hover { box-shadow: 0 6px 24px var(--glow-melon); }
   &:has(.icon--soundcloud):hover { box-shadow: 0 6px 24px var(--glow-soundcloud); }
+  &:has(.icon--app):hover { box-shadow: 0 6px 24px var(--glow-app); }
 }
 
 /* ---- Platform Showcase Cards ---- */
@@ -1914,6 +1925,15 @@ html.light .game-showcase:hover {
     transition: transform 0.55s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   }
 
+  /* iOS 앱 아이콘 — 비율 기반 라운드 사각 + 은은한 테두리/그림자 */
+  & .featured-item__thumb--app {
+    /* height="256" 속성이 aspect-ratio를 무력화해 좁은 화면에서 세로로 늘어나는 것 방지 */
+    height: auto;
+    border-radius: 22.37%;
+    border: 1px solid var(--border);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  }
+
   & .featured-item__label {
     padding: 8px 10px;
     font-size: 10.5px;
@@ -1957,6 +1977,11 @@ html.light .game-showcase:hover {
   & .featured-item__source--github {
     background: color-mix(in srgb, var(--platform-github) 14%, transparent);
     color: var(--platform-github);
+  }
+
+  & .featured-item__source--app {
+    background: var(--platform-app-14);
+    color: var(--platform-app);
   }
 
   & .featured-item__detail {
@@ -2097,6 +2122,7 @@ html.light .game-showcase:hover {
 .icon--velog      { background: linear-gradient(135deg, #20c997, #12b886); color: #fff; }
 .icon--github     { background: #ececec; color: #0a0a0a; }
 .icon--naver      { background: #03C75A; color: #fff; }
+.icon--app        { background: var(--platform-app-14); color: var(--platform-app); }
 
 /* ---- Social Grid ---- */
 .social-grid {
