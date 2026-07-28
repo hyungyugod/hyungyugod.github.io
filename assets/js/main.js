@@ -50,7 +50,7 @@ function fetchWithTimeout(url, ms = 5000, opts = {}) {
  * @param {string} msg - 표시할 메시지
  */
 function showFetchError(container, msg) {
-  container.innerHTML = `<div class="fetch-error"><i class="fa-solid fa-triangle-exclamation"></i> ${esc(msg)}</div>`;
+  container.innerHTML = `<div class="fetch-error" role="status"><i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i> ${esc(msg)}</div>`;
 }
 
 // -------------------------------------------------------
@@ -320,64 +320,115 @@ function initCategoryFilter() {
     nav.classList.add('is-ready');
   }
 
-  btns.forEach(btn => {
-    // <a> 태그는 실제 링크로 이동하므로 필터 바인딩에서 제외
-    if (btn.tagName === 'A') return;
-    btn.addEventListener('click', (e) => {
-      const filter = btn.dataset.filter;
+  const reduceMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-      // 리플 이펙트
-      const ripple = document.createElement('span');
-      ripple.className = 'ripple';
-      const rect = btn.getBoundingClientRect();
-      const size = Math.max(rect.width, rect.height) * 2;
-      ripple.style.cssText = `width:${size}px;height:${size}px;left:${e.clientX - rect.left - size / 2}px;top:${e.clientY - rect.top - size / 2}px`;
-      btn.appendChild(ripple);
-      ripple.addEventListener('animationend', () => ripple.remove());
+  // 전환 중 재클릭 시 이전 타이머가 새 전환의 인라인 스타일을 지워버리는 것을 막는 토큰
+  let transitionToken = 0;
 
-      // 활성 탭 업데이트 + aria-selected 갱신
-      btns.forEach(b => {
-        b.classList.remove('is-active');
-        b.setAttribute('aria-selected', 'false');
-      });
-      btn.classList.add('is-active');
-      btn.setAttribute('aria-selected', 'true');
-      updateIndicator();
-      btn.scrollIntoView({
-        behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
-        block: 'nearest',
-        inline: 'center'
-      });
+  /**
+   * 클릭 지점에서 퍼지는 리플 생성 — 포인터 좌표가 있을 때만
+   * @param {HTMLElement} btn - 리플을 붙일 버튼
+   * @param {MouseEvent} e - 클릭 이벤트
+   */
+  function addRipple(btn, e) {
+    // 키보드로 활성화된 click은 detail이 0이다. 좌표를 믿으면 리플이 엉뚱한 데 찍힌다
+    if (!e || e.detail === 0) return;
+    if (reduceMotion()) return;
 
-      // 페이드 전환
-      const visible = Array.from(sections).filter(s => !s.classList.contains('is-hidden'));
+    const ripple = document.createElement('span');
+    ripple.className = 'ripple';
+    const rect = btn.getBoundingClientRect();
+    const size = Math.max(rect.width, rect.height) * 2;
+    ripple.style.cssText = `width:${size}px;height:${size}px;left:${e.clientX - rect.left - size / 2}px;top:${e.clientY - rect.top - size / 2}px`;
+    btn.appendChild(ripple);
+    ripple.addEventListener('animationend', () => ripple.remove());
+  }
 
-      if (!visible.length || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-        applyFilter(sections, filter);
-        return;
-      }
-
-      visible.forEach(sec => {
-        sec.style.opacity = '0';
-        sec.style.transform = 'translateY(-10px)';
-        sec.style.transition = 'opacity 0.18s ease, transform 0.18s ease';
-      });
-
-      setTimeout(() => {
-        visible.forEach(sec => {
-          sec.style.opacity = '';
-          sec.style.transform = '';
-          sec.style.transition = '';
-        });
-        applyFilter(sections, filter);
-      }, 200);
+  /**
+   * 카테고리 선택 — 라디오 상태 · roving tabindex · 인디케이터 · 섹션 필터를 갱신
+   * @param {HTMLElement} btn - 선택할 버튼
+   */
+  function select(btn) {
+    btns.forEach(b => {
+      const on = b === btn;
+      b.classList.toggle('is-active', on);
+      b.setAttribute('aria-checked', String(on));
+      // roving tabindex: 선택된 항목만 Tab 순서에 남긴다 (라디오그룹 규약)
+      b.tabIndex = on ? 0 : -1;
     });
+
+    updateIndicator();
+    btn.scrollIntoView({
+      behavior: reduceMotion() ? 'auto' : 'smooth',
+      block: 'nearest',
+      inline: 'center'
+    });
+
+    const filter = btn.dataset.filter;
+    const visible = Array.from(sections).filter(s => !s.classList.contains('is-hidden'));
+
+    if (!visible.length || reduceMotion()) {
+      applyFilter(sections, filter);
+      return;
+    }
+
+    const token = ++transitionToken;
+    visible.forEach(sec => {
+      sec.style.opacity = '0';
+      sec.style.transform = 'translateY(-10px)';
+      sec.style.transition = 'opacity 0.18s ease, transform 0.18s ease';
+    });
+
+    setTimeout(() => {
+      if (token !== transitionToken) return;  // 더 최근 전환이 시작됨
+      visible.forEach(sec => {
+        sec.style.opacity = '';
+        sec.style.transform = '';
+        sec.style.transition = '';
+      });
+      applyFilter(sections, filter);
+    }, 200);
+  }
+
+  btns.forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      addRipple(btn, e);
+      select(btn);
+    });
+  });
+
+  // 방향키 / Home / End 로 이동 — 라디오그룹은 이동과 동시에 선택된다
+  nav.addEventListener('keydown', (e) => {
+    const list = Array.from(btns);
+    const current = list.indexOf(document.activeElement);
+    if (current === -1) return;
+
+    let next;
+    switch (e.key) {
+      case 'ArrowRight':
+      case 'ArrowDown': next = (current + 1) % list.length; break;
+      case 'ArrowLeft':
+      case 'ArrowUp':   next = (current - 1 + list.length) % list.length; break;
+      case 'Home':      next = 0; break;
+      case 'End':       next = list.length - 1; break;
+      default: return;
+    }
+
+    e.preventDefault();
+    list[next].focus();
+    select(list[next]);
   });
 
   // 초기 인디케이터 정렬 (레이아웃 안정 후 이중 호출)
   requestAnimationFrame(updateIndicator);
   window.addEventListener('load', updateIndicator);
-  window.addEventListener('resize', updateIndicator);
+
+  // resize는 연속 발화하므로 프레임 단위로 합친다
+  let resizeFrame = 0;
+  window.addEventListener('resize', () => {
+    cancelAnimationFrame(resizeFrame);
+    resizeFrame = requestAnimationFrame(updateIndicator);
+  });
 }
 
 // -------------------------------------------------------
@@ -397,7 +448,10 @@ function initThemeToggle() {
 
   btn.addEventListener('click', () => {
     const isLight = root.classList.toggle('light');
-    localStorage.setItem(STORAGE_KEY, isLight ? 'light' : 'dark');
+    // 사파리 개인정보 보호 모드 등에서 setItem이 던진다. 전환 자체는 막지 않는다
+    try {
+      localStorage.setItem(STORAGE_KEY, isLight ? 'light' : 'dark');
+    } catch (e) { /* 저장 불가 — 이번 세션에만 적용 */ }
   });
 }
 
@@ -530,18 +584,30 @@ function initMouseParallax() {
 
   heroBg.style.transform = 'scale(1.08)';
   let targetX = 0, targetY = 0, currentX = 0, currentY = 0;
+  let running = false;
+
+  // 목표값에 수렴하면 루프를 멈춘다. 그러지 않으면 마우스가 멈춰 있어도
+  // 페이지가 열려 있는 내내 매 프레임 style을 쓰게 된다
+  function tick() {
+    currentX += (targetX - currentX) * 0.07;
+    currentY += (targetY - currentY) * 0.07;
+    heroBg.style.transform = `scale(1.08) translate(${currentX}px, ${currentY}px)`;
+
+    if (Math.abs(targetX - currentX) < 0.01 && Math.abs(targetY - currentY) < 0.01) {
+      running = false;
+      return;
+    }
+    requestAnimationFrame(tick);
+  }
 
   document.addEventListener('mousemove', (e) => {
     targetX = (e.clientX / window.innerWidth - 0.5) * 18;
     targetY = (e.clientY / window.innerHeight - 0.5) * 18;
+    if (!running) {
+      running = true;
+      requestAnimationFrame(tick);
+    }
   }, { passive: true });
-
-  (function tick() {
-    currentX += (targetX - currentX) * 0.07;
-    currentY += (targetY - currentY) * 0.07;
-    heroBg.style.transform = `scale(1.08) translate(${currentX}px, ${currentY}px)`;
-    requestAnimationFrame(tick);
-  })();
 }
 
 // -------------------------------------------------------

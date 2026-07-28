@@ -54,26 +54,48 @@ SCSS는 `&--variant`를 `.block--variant`로 **문자열 연결**하지만, CSS 
 ## 2. 색상 체계 — CSS Custom Properties
 
 모든 색상은 `:root` 변수를 사용한다. 하드코딩 금지.
-새 색상이 필요하면 `:root` 블록 하단에 변수를 추가한다.
+새 색상이 필요하면 `:root`와 `html.light` **양쪽**에 추가한다. 한쪽만 넣으면 반대 테마에서 값이 샌다.
 
 **배경:**
 `--bg: #0f0e15` · `--bg-dark: #09080f` · `--bg-card: rgba(23,21,30,0.82)` · `--bg-card-hover: rgba(30,28,40,0.9)`
 
-**브랜드 (코럴 핑크):**
-`--brand: #ff7b7b` · `--brand-light: #ff9b9b`
-투명도 변형: `--brand-04`(0.04) ~ `--brand-60`(0.60) — 총 10단계
+**브랜드 (더스티 로즈):**
+`--brand: #c4847a` · `--brand-light: #d4a49c` (라이트 테마: `#b07068` / `#c48a82`)
+투명도 변형: `--brand-04` `-06` `-08` `-10` `-12` `-14` `-20` `-25` `-35` `-40` `-60` — 11단계
 
 **텍스트:**
-`--text: #eee` · `--text-muted: #aaa` · `--text-dim: #555`
+`--text: #eee` · `--text-muted: #aaa` · `--text-dim: #808080` (라이트: `#1a1a2e` / `#555` / `#6b6b6b`)
+
+### ⚠️ 브랜드 색을 텍스트에 쓸 때는 `--brand-text`
+
+`--brand-light`는 **그라디언트의 밝은 끝단**이다. 라이트 테마에서 이걸 글자색으로 쓰면
+밝은 배경 위 밝은 글자가 되어 대비가 2.6:1까지 떨어진다.
+
+```css
+color: var(--brand-text);    /* ✅ 글자 */
+background: linear-gradient(135deg, var(--brand-light), var(--brand));   /* ✅ 배경 */
+color: var(--brand-light);   /* ❌ 라이트 테마에서 AA 실패 */
+```
+
+다크 테마에서는 `--brand-text`와 `--brand-light`가 같은 값이라 겉모습이 바뀌지 않는다.
+라이트 테마에서만 `#8a574f`로 어두워진다.
+
+**플랫폼 배지 색도 마찬가지다.** `--platform-velog` / `--platform-github` / `--platform-app`은
+다크용 원색이 밝은 배경에서 2.2:1까지 떨어지므로 `html.light`에 어두운 값을 따로 둔다.
+배지 배경이 **같은 색의 14% 틴트**라 그 위에서 4.5:1을 넘어야 한다는 점을 잊지 말 것.
 
 **보더:**
 `--border: rgba(255,255,255,0.07)` · `--border-hover: rgba(255,255,255,0.14)`
 
 **공용 토큰:**
-`--radius: 16px` · `--radius-sm: 10px` · `--font: 'Inter', 'Noto Sans KR', ...` · `--transition: 0.38s cubic-bezier(0.25,0.46,0.45,0.94)`
+`--radius: 10px` · `--radius-sm: 6px` · `--radius-lg: 16px` · `--font: 'Inter', 'Noto Sans KR', ...` · `--font-serif: 'Cormorant Garamond', ...` · `--transition: 0.55s cubic-bezier(0.25,0.46,0.45,0.94)` · `--spring-bounce` · `--ease-out-expo`
 
 **플랫폼 아이콘 색상:**
-SoundCloud(`#ff5500→#ff7700`) · Instagram(`#833AB4→#E1306C→#F77737`) · Instagram2(`#405DE6→#5851DB→#833AB4`) · Melon(`#00cd3c→#00a832`) · Brunch(`#111`/`#ddd`) · Velog(`#20c997→#12b886`) · GitHub(`#ececec`/`#0a0a0a`) · Naver(`#03C75A`)
+SoundCloud(`#ff5500→#ff7700`) · Instagram(`#833AB4→#E1306C→#F77737`) · Instagram2(`#405DE6→#5851DB→#833AB4`) · Melon(`#00cd3c→#00a832`) · Brunch(`#111`/`#ddd`) · Velog(`#20c997→#12b886`) · GitHub(`#ececec`/`#0a0a0a`) · Naver(`#03C75A`) · App Store(`--platform-app`)
+
+**호버 글로우:** `--glow-velog` `--glow-brunch` `--glow-github` `--glow-melon` `--glow-soundcloud` `--glow-instagram` `--glow-naver` `--glow-app`
+
+> `assets/css/game.css`는 이 변수들을 그대로 상속해서 쓴다. `:root` 변수를 지울 때는 `style.css`뿐 아니라 **`game.css`의 `var()` 참조도 함께 확인**해야 한다.
 
 ---
 
@@ -153,6 +175,27 @@ block__element--modifier
   /* 새 플랫폼을 추가하면 :root에 --glow-* 를 선언하고 이 목록에 한 줄 추가 */
 }
 ```
+
+---
+
+## 5-1. 이미지 — `width`/`height` 속성과 `aspect-ratio`는 짝으로 쓴다
+
+`<img>`에 `width`/`height` 속성을 붙이면 (CLS 방지용으로 붙여야 한다) 그 값이
+**presentational hint로 `height` 속성에 반영**된다. CSS가 `height`를 명시하지 않으면
+`aspect-ratio`는 무시되고 이미지가 원본 비율의 픽셀 높이로 늘어난다.
+
+```css
+.thumb {
+  width: 100%;
+  height: auto;        /* ← 이게 없으면 아래 aspect-ratio가 무력화된다 */
+  aspect-ratio: 1;
+}
+```
+
+실제로 이걸 빠뜨려 모달 사진이 352×838px로 늘어났고, 모달이 1120px가 되면서
+닫기 버튼이 화면 밖(y = -75px)으로 밀려나 클릭 불가가 된 적이 있다.
+
+**규칙: `<img>`에 치수 속성을 추가하면, 그 이미지를 그리는 CSS에 `height: auto`가 있는지 반드시 확인한다.**
 
 ---
 

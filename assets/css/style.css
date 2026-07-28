@@ -7,9 +7,13 @@
   --bg-card-hover: rgba(30, 28, 40, 0.9);
   --brand: #c4847a;
   --brand-light: #d4a49c;
+  /* 브랜드 톤 '텍스트' 전용. --brand-light는 그라디언트의 밝은 끝단이라
+     라이트 테마에서 본문 색으로 쓰면 대비가 2.6:1까지 떨어진다 */
+  --brand-text: #d4a49c;
   --brand-04: rgba(196,132,122,0.04);
   --brand-06: rgba(196,132,122,0.06);
   --brand-08: rgba(196,132,122,0.08);
+  --brand-10: rgba(196,132,122,0.10);
   --brand-12: rgba(196,132,122,0.12);
   --brand-14: rgba(196,132,122,0.14);
   --brand-20: rgba(196,132,122,0.20);
@@ -19,14 +23,14 @@
   --brand-60: rgba(196,132,122,0.60);
   --text: #eee;
   --text-muted: #aaa;
-  --text-dim: #555;
+  --text-dim: #808080;        /* #555는 배경 대비 2.6:1로 WCAG AA 미달이었다 */
   --border: rgba(255,255,255,0.07);
   --border-hover: rgba(255,255,255,0.14);
   --radius: 10px;
   --radius-sm: 6px;
+  --radius-lg: 16px;          /* game.css가 참조 */
   --font: 'Inter', 'Noto Sans KR', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --transition: 0.55s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-  --brand-btn-text: rgba(212,164,156,0.85);
   --spring-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
   --glow-velog: rgba(32, 201, 151, 0.18);
   --glow-brunch: rgba(100, 100, 100, 0.15);
@@ -34,8 +38,6 @@
   --glow-melon: rgba(0, 205, 60, 0.18);
   --glow-soundcloud: rgba(255, 85, 0, 0.18);
   --glow-instagram: rgba(131, 58, 180, 0.18);
-  --orbit-card-bg: rgba(23, 21, 30, 0.72);
-  --orbit-card-border: rgba(255,255,255,0.08);
   --font-serif: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
   --hero-name-size: 80px;
   --hero-name-size-mobile: 52px;
@@ -43,13 +45,9 @@
   --hero-entrance-duration: 0.7s;
 
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
-  --nav-height: 64px;
-  --section-max-width: 1200px;
 
   --platform-velog: #20c997;
-  --platform-brunch: #999;
   --platform-github: #58a6ff;
-  --platform-brunch-30: rgba(153, 153, 153, 0.3);
 
   /* Action pill (.profile__action) */
   --focus-pill-bg: rgba(255, 255, 255, 0.05);
@@ -78,9 +76,11 @@ html.light {
   --bg-card-hover: rgba(255, 255, 255, 0.95);
   --brand: #b07068;
   --brand-light: #c48a82;
+  --brand-text: #8a574f;      /* 밝은 배경에서 AA(5.1:1)를 만족하는 브랜드 톤 */
   --brand-04: rgba(176,112,104,0.04);
   --brand-06: rgba(176,112,104,0.06);
   --brand-08: rgba(176,112,104,0.08);
+  --brand-10: rgba(176,112,104,0.10);
   --brand-12: rgba(176,112,104,0.12);
   --brand-14: rgba(176,112,104,0.14);
   --brand-20: rgba(176,112,104,0.20);
@@ -90,25 +90,25 @@ html.light {
   --brand-60: rgba(176,112,104,0.60);
   --text: #1a1a2e;
   --text-muted: #555;
-  --text-dim: #999;
+  --text-dim: #6b6b6b;        /* #999는 배경 대비 2.6:1로 WCAG AA 미달이었다 */
   --border: rgba(0,0,0,0.08);
   --border-hover: rgba(0,0,0,0.16);
-  --brand-btn-text: var(--brand);
   --glow-velog: rgba(32, 201, 151, 0.15);
   --glow-brunch: rgba(100, 100, 100, 0.10);
   --glow-github: rgba(10, 10, 10, 0.12);
   --glow-melon: rgba(0, 205, 60, 0.15);
   --glow-soundcloud: rgba(255, 85, 0, 0.15);
   --glow-instagram: rgba(131, 58, 180, 0.15);
-  --orbit-card-bg: rgba(255, 255, 255, 0.72);
-  --orbit-card-border: rgba(0,0,0,0.08);
-  --platform-brunch: #555;
-  --platform-brunch-30: rgba(85, 85, 85, 0.3);
   --focus-pill-bg: rgba(0, 0, 0, 0.04);
   --glow-naver: rgba(3, 199, 90, 0.15);
 
+  /* 플랫폼 배지 텍스트 — 다크용 원색은 밝은 배경에서 2.2:1까지 떨어진다.
+     배지 배경이 같은 색의 14% 틴트라 그 위에서 AA를 넘도록 더 어둡게 잡았다 */
+  --platform-velog: #095f46;
+  --platform-github: #0a4da8;
+
   /* App Store (Released Apps) — 라이트 대응 */
-  --platform-app: #0071e3;
+  --platform-app: #0a47a4;    /* #0071e3은 14% 틴트 배지 위에서 3.4:1 */
   --platform-app-14: rgba(0, 113, 227, 0.14);
   --glow-app: rgba(0, 113, 227, 0.15);
 }
@@ -224,7 +224,7 @@ html.light .profile__name {
 }
 
 html.light .profile__bio-quote strong {
-  color: var(--brand);
+  color: var(--brand-text);
 }
 
 html.light .icon--brunch {
@@ -322,8 +322,10 @@ html.light .link-card:hover {
 
   & .profile__halo {
     position: absolute;
-    width: 340px;
-    height: 340px;
+    /* halo-pulse가 scale(1.08)까지 키우므로 340px 고정이면 좁은 화면에서 뷰포트를 넘어
+       가로 스크롤이 생긴다. 76vw면 확대 후에도 항상 화면 안에 머문다 */
+    width: min(340px, 76vw);
+    height: min(340px, 76vw);
     top: 0;
     left: 50%;
     transform: translate(-50%, -60%);
@@ -400,7 +402,7 @@ html.light .link-card:hover {
     font-weight: 700;
     letter-spacing: 2.4px;
     text-transform: uppercase;
-    color: var(--brand-light);
+    color: var(--brand-text);
   }
 
   & .profile__avatar-wrap:hover + .profile__hint,
@@ -416,7 +418,7 @@ html.light .link-card:hover {
     letter-spacing: -1.5px;
     line-height: 1;
     margin-bottom: 10px;
-    color: var(--brand-light);
+    color: var(--brand-text);
     background:
       linear-gradient(120deg, transparent 30%, rgba(255,255,255,0.25) 50%, transparent 70%),
       linear-gradient(135deg, #fff 50%, var(--brand-light) 100%);
@@ -494,7 +496,7 @@ html.light .link-card:hover {
   }
 
   & .profile__action--primary {
-    color: var(--brand-light);
+    color: var(--brand-text);
     background: var(--brand-08);
     border-color: var(--brand-25);
   }
@@ -574,7 +576,7 @@ html.light .link-card:hover {
   & .profile__motto-back-text {
     font-size: 11px;
     font-weight: 500;
-    color: var(--brand-light);
+    color: var(--brand-text);
     letter-spacing: 0.3px;
     text-align: center;
     padding: 8px;
@@ -631,7 +633,7 @@ html.light .link-card:hover {
       font-family: var(--font-serif);
       font-weight: 600;
       font-style: normal;
-      color: var(--brand-light);
+      color: var(--brand-text);
     }
   }
 
@@ -657,13 +659,13 @@ html.light .link-card:hover {
     text-transform: uppercase;
 
     & .typing {
-      color: var(--brand-light);
+      color: var(--brand-text);
       display: inline-block;
       min-width: 1ch;
     }
 
     & .typing-cursor {
-      color: var(--brand-light);
+      color: var(--brand-text);
       font-weight: 300;
       animation: blink-caret 0.7s step-end infinite;
     }
@@ -747,7 +749,7 @@ html.light .link-card:hover {
   bottom: clamp(20px, 4vh, 40px);
   left: 50%;
   transform: translateX(-50%);
-  color: var(--brand-light);
+  color: var(--brand-text);
   font-size: 16px;
   opacity: 0.5;
   animation: scroll-bounce 2s ease-in-out infinite;
@@ -861,7 +863,7 @@ html.light .link-card:hover {
     }
 
     &.is-active {
-      color: var(--brand-light);
+      color: var(--brand-text);
 
       & .category-nav__icon {
         stroke-width: 2.2;
@@ -1140,7 +1142,7 @@ html.light .link-card:hover {
   /* 피처 행 — 프리뷰 3개 대신 16:10 커버 1개 */
   &.link-card--feature {
     & .link-card__items { grid-template-columns: 1fr; }
-    & .featured-item__thumb { aspect-ratio: 16 / 10; }
+    & .featured-item__thumb { height: auto; aspect-ratio: 16 / 10; }
     & .featured-item__label { font-size: 12px; }
     & .featured-item::before { display: none; }
   }
@@ -1221,6 +1223,9 @@ html.light .link-card:hover {
 
   & .featured-item__thumb {
     width: 100%;
+    /* height:auto가 없으면 <img>의 height 속성이 presentational hint로 살아남아
+       aspect-ratio를 무력화한다 (352px 폭에 900px 높이 같은 사고) */
+    height: auto;
     aspect-ratio: 1;
     object-fit: cover;
     display: block;
@@ -1268,7 +1273,7 @@ html.light .link-card:hover {
     padding: 0 8px;
     border-radius: 999px;
     background: var(--brand-08);
-    color: var(--brand-light);
+    color: var(--brand-text);
     line-height: 1;
   }
 
@@ -1426,7 +1431,7 @@ html.light .link-card:hover {
 .icon--github     { background: #ececec; color: #0a0a0a; }
 .icon--naver      { background: #03C75A; color: #fff; }
 .icon--app        { background: var(--platform-app-14); color: var(--platform-app); }
-.icon--game       { background: var(--brand-12); color: var(--brand-light); border: 1px solid var(--brand-20); }
+.icon--game       { background: var(--brand-12); color: var(--brand-text); border: 1px solid var(--brand-20); }
 
 /* ---- Footer ---- */
 .footer {
@@ -1661,6 +1666,7 @@ html.light .link-card:hover {
 
   & .modal-photo {
     width: 100%;
+    height: auto;              /* height 속성 hint가 aspect-ratio를 덮지 않도록 */
     aspect-ratio: 1;
     object-fit: cover;
     object-position: center top;

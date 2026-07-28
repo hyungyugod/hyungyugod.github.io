@@ -10,15 +10,22 @@
 / (루트)
 ├── index.html              ← 메인 페이지
 ├── assets/
-│   ├── css/style.css       ← 스타일 단일 파일 (~1900줄)
-│   ├── js/main.js          ← 스크립트 단일 파일 (~610줄)
+│   ├── css/style.css       ← 메인 페이지 스타일 전부 (~1900줄)
+│   ├── css/game.css        ← 게임 전용 스타일 (style.css 변수를 상속)
+│   ├── js/main.js          ← 메인 페이지 스크립트 전부 (~640줄)
+│   ├── js/game.js          ← 게임 로직 (게임 페이지에서만 로드)
 │   └── img/                ← 이미지 에셋
 ├── pages/
 │   └── game.html           ← 미니게임 서브페이지
 ├── docs/                   ← 이 문서들 (Claude가 필요할 때 읽음)
 ├── tests/ui-check.js       ← Playwright 스모크 테스트 (npm run ui-check)
+├── robots.txt · sitemap.xml · CNAME
 └── favicon.ico
 ```
+
+**메인 페이지는 `index.html` + `style.css` + `main.js` 3개 파일이 전부다.**
+게임은 별도 페이지라 `game.css` / `game.js`로 분리되어 있으며, 이것이 유일한 예외다.
+게임 파일들은 `style.css`의 `:root` 변수를 상속해 쓰므로 변수를 지울 때 함께 확인해야 한다.
 
 ### 파일 접근 권한
 
@@ -29,11 +36,12 @@
 | `assets/js/main.js` | O |
 | `assets/img/*` | 읽기만 |
 | `pages/*.html` | O (서브페이지 생성 시) |
+| `assets/css/game.css`, `assets/js/game.js` | O (게임 페이지 작업 시) |
 | `tests/ui-check.js` | O (셀렉터가 낡았을 때) |
 
 ### 핵심 제약
 
-- 새 CSS/JS 파일을 만들지 않는다. **단일 파일 구조를 유지**한다.
+- 메인 페이지에는 새 CSS/JS 파일을 만들지 않는다. **3파일 구조를 유지**한다.
 - 외부 라이브러리/프레임워크를 추가하지 않는다 (바닐라 JS, 네이티브 CSS).
 - 페이지 본문은 **단일 컬럼 링크트리**다. 새 콘텐츠는 `.link-card` 3티어 중 하나로 만든다. 새 카드 컴포넌트를 만들지 않는다.
 
@@ -63,7 +71,7 @@
 | 컴포넌트 | HTML 클래스 | JS 함수 |
 |---|---|---|
 | 프로필 섹션 | `.profile` | `initTyping()` `initMottoReveal()` `initNameShine()` |
-| 카테고리 탭 | `.category-nav` | `initCategoryFilter()` |
+| 카테고리 필터 | `.category-nav` (radiogroup) | `initCategoryFilter()` |
 | 프로필 모달 | `.modal-backdrop` | `initModal()` |
 | 테마 토글 | `.theme-toggle` `.js-theme-toggle` | `initThemeToggle()` |
 | 스크롤 진행바 | `.scroll-progress` | `initScrollProgress()` |
@@ -84,7 +92,7 @@
 
 `.category-section` 요소에 `data-category` 속성을 부여하여 탭 필터링:
 
-| 탭 라벨 | data-filter / data-category | 섹션 id |
+| 버튼 라벨 | data-filter / data-category | 섹션 id |
 |---|---|---|
 | All | `all` (전체 표시) | — |
 | Study & Writing & Dev | `writing` | `#section-writing` |
@@ -93,8 +101,23 @@
 | Released Apps | `app` | `#section-app` |
 | Social | `social` | `#section-social` |
 
-**탭 버튼 순서와 DOM 섹션 순서는 항상 일치시킨다.** 어긋나면 All 화면에서 순서가 뒤바뀐다.
+**버튼 순서와 DOM 섹션 순서는 항상 일치시킨다.** 어긋나면 All 화면에서 순서가 뒤바뀐다.
 GitHub/Velog 카드 내부 아이템만 런타임 동적 생성, 나머지는 정적 HTML.
+
+### ARIA — tabs가 아니라 radiogroup이다
+
+겉모습은 탭바지만 **`role="radiogroup"` + `role="radio"`** 를 쓴다. WAI-ARIA의 tabs 패턴은
+"선택된 탭 하나당 패널 하나"를 전제하는데, 이 필터의 **All은 5개 섹션을 동시에 보여주므로**
+tabs로 표기하면 스크린리더에 거짓말이 된다. 단일 선택 필터의 정확한 패턴은 radiogroup이다.
+
+지켜야 할 규칙:
+- 선택 상태는 `aria-checked`로 표시한다 (`aria-selected`가 아니다)
+- **roving tabindex**: 선택된 버튼만 `tabindex="0"`, 나머지는 `-1`. Tab 한 번에 그룹을 지나친다
+- 방향키/Home/End로 이동하며, 라디오 규약대로 **이동과 동시에 선택**된다
+- 섹션은 `<section aria-labelledby="title-*">` 랜드마크이며, 숨김은 `display:none`이라
+  접근성 트리에서도 사라진다 — 별도 `aria-hidden`이 필요 없다
+
+이 규칙들은 `initCategoryFilter()`의 `select()` 함수 하나에 모여 있다.
 
 ---
 
