@@ -72,20 +72,6 @@
           Profile
         </button>
       </div>
-      <div class="profile__quick-stats" aria-label="주요 활동 요약">
-        <span class="profile__stat">
-          <strong class="profile__stat-value">Velog</strong>
-          <span class="profile__stat-label">Latest writing</span>
-        </span>
-        <span class="profile__stat">
-          <strong class="profile__stat-value">GitHub</strong>
-          <span class="profile__stat-label">Latest code</span>
-        </span>
-        <span class="profile__stat">
-          <strong class="profile__stat-value">3C</strong>
-          <span class="profile__stat-label">Daily routine</span>
-        </span>
-      </div>
       <div class="profile__motto" aria-label="개인 모토">
         <div class="profile__motto-item">
           <div class="profile__motto-front">
@@ -141,101 +127,6 @@
 
   <div class="page-wrapper">
 
-    <!-- Focus Board -->
-    <section class="focus-board category-section" data-category="writing" aria-labelledby="focusBoardTitle">
-      <div class="focus-board__header">
-        <p class="section-label">Latest Work</p>
-        <h2 class="focus-board__title" id="focusBoardTitle">Writing and code, updated automatically</h2>
-        <p class="focus-board__lede">
-          Velog에는 배운 것을 정리하고, GitHub에는 최근에 손댄 프로젝트를 남깁니다. 아래 항목은 기존 RSS/API 흐름으로 자동 갱신됩니다.
-        </p>
-      </div>
-      <div class="focus-grid">
-        <article class="focus-card focus-card--velog" data-platform="velog">
-          <div class="focus-card__top">
-            <div class="focus-card__icon icon--velog">
-              <i class="fa-solid fa-code" aria-hidden="true"></i>
-            </div>
-            <div class="focus-card__info">
-              <p class="focus-card__kicker">Latest writing</p>
-              <h3 class="focus-card__title">Velog</h3>
-              <p class="focus-card__desc">개발 블로그와 학습 기록</p>
-            </div>
-          </div>
-          <div class="focus-card__items" id="velog-items">
-            <div class="featured-item featured-item--loading"><div class="featured-item__thumb"></div><div class="featured-item__label">로딩 중...</div></div>
-            <div class="featured-item featured-item--loading"><div class="featured-item__thumb"></div><div class="featured-item__label">로딩 중...</div></div>
-            <div class="featured-item featured-item--loading"><div class="featured-item__thumb"></div><div class="featured-item__label">로딩 중...</div></div>
-          </div>
-          <a class="focus-card__cta" href="https://velog.io/@hyungyugod/posts" target="_blank" rel="noopener">
-            모든 포스트 보기 <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
-          </a>
-        </article>
-
-        <article class="focus-card focus-card--github" data-platform="github">
-          <div class="focus-card__top">
-            <div class="focus-card__icon icon--github">
-              <i class="fa-brands fa-github" aria-hidden="true"></i>
-            </div>
-            <div class="focus-card__info">
-              <p class="focus-card__kicker">Latest code</p>
-              <h3 class="focus-card__title">GitHub</h3>
-              <p class="focus-card__desc">최근 push된 프로젝트</p>
-            </div>
-          </div>
-          <div class="focus-card__items" id="github-items">
-            <div class="featured-item featured-item--loading"><div class="featured-item__thumb"></div><div class="featured-item__label">로딩 중...</div></div>
-            <div class="featured-item featured-item--loading"><div class="featured-item__thumb"></div><div class="featured-item__label">로딩 중...</div></div>
-            <div class="featured-item featured-item--loading"><div class="featured-item__thumb"></div><div class="featured-item__label">로딩 중...</div></div>
-          </div>
-          <a class="focus-card__cta" href="https://github.com/hyungyugod" target="_blank" rel="noopener">
-            GitHub 프로필 보기 <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
-          </a>
-        </article>
-      </div>
-    </section>
-
-<section class="cover-band" aria-label="Selected works">
-  <a href="#section-music" data-target="music" title="afterglow · EP">
-    <img src="/assets/img/cover-afterglow.jpg" alt="afterglow" loading="lazy">
-  </a>
-  <a href="#section-writing" data-target="writing" class="cover-band__essay" title="Brunch · 자기배반과 미실현의 삶에 대하여">
-    <img src="/assets/img/cover-brunch1.jpg" alt="Brunch essay" loading="lazy">
-  </a>
-  <a href="#section-music" data-target="music" title="analogue">
-    <img src="/assets/img/cover-analogue.jpg" alt="analogue" loading="lazy">
-  </a>
-  <a href="#section-music" data-target="music" title="need">
-    <img src="/assets/img/cover-need.jpg" alt="need" loading="lazy">
-  </a>
-  <a href="#section-writing" data-target="writing" class="cover-band__essay" title="Brunch · 미술관">
-    <img src="/assets/img/cover-brunch3.jpg" alt="Brunch essay" loading="lazy">
-  </a>
-  <a href="#section-music" data-target="music" title="burn up">
-    <img src="/assets/img/cover-burnup.jpg" alt="burn up" loading="lazy">
-  </a>
-  <a href="#section-music" data-target="music" title="crocodile">
-    <img src="/assets/img/cover-crocodile.jpg" alt="crocodile" loading="lazy">
-  </a>
-  <span class="cover-band__caption">Selected works <em>음악 · 글 · 기록</em></span>
-</section>
-
-    <!-- Routine Streaks -->
-    <section class="streaks" aria-label="현재 루틴 상태">
-      <div class="streaks__header">
-        <p class="section-label">Routine</p>
-        <span class="streaks__updated" id="streaksUpdated" aria-live="polite"></span>
-      </div>
-      <div class="streaks__grid" id="streaksGrid">
-        <div class="streak-card streak-card--loading" aria-hidden="true"><div class="streak-card__skeleton"></div></div>
-        <div class="streak-card streak-card--loading" aria-hidden="true"><div class="streak-card__skeleton"></div></div>
-        <div class="streak-card streak-card--loading" aria-hidden="true"><div class="streak-card__skeleton"></div></div>
-      </div>
-      <p class="streaks__notice" role="note">
-        이 수치는 매월 19일에 업데이트됩니다. <span id="streaksNoticeDate"></span>
-      </p>
-    </section>
-
     <!-- Category Tabs -->
     <nav class="category-nav" id="categoryNav" role="tablist" aria-label="카테고리 필터">
       <span class="category-nav__indicator" aria-hidden="true"></span>
@@ -263,15 +154,6 @@
         </svg>
         <span class="category-nav__label">Music</span>
       </button>
-      <button class="category-nav__btn" data-filter="social" type="button" role="tab" aria-selected="false">
-        <svg class="category-nav__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <circle cx="9" cy="8" r="3.5"/>
-          <path d="M2.5 20c.7-3.3 3.4-5.5 6.5-5.5s5.8 2.2 6.5 5.5"/>
-          <circle cx="17" cy="7" r="2.5"/>
-          <path d="M15 13.5c2.5 0 4.5 1.6 5 4"/>
-        </svg>
-        <span class="category-nav__label">Social</span>
-      </button>
       <button class="category-nav__btn" data-filter="game" type="button" role="tab" aria-selected="false">
         <svg class="category-nav__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <path d="M6 9h4M8 7v4M15 10h.01M18 8h.01"/>
@@ -287,45 +169,90 @@
         </svg>
         <span class="category-nav__label">Released Apps</span>
       </button>
+      <button class="category-nav__btn" data-filter="social" type="button" role="tab" aria-selected="false">
+        <svg class="category-nav__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="9" cy="8" r="3.5"/>
+          <path d="M2.5 20c.7-3.3 3.4-5.5 6.5-5.5s5.8 2.2 6.5 5.5"/>
+          <circle cx="17" cy="7" r="2.5"/>
+          <path d="M15 13.5c2.5 0 4.5 1.6 5 4"/>
+        </svg>
+        <span class="category-nav__label">Social</span>
+      </button>
     </nav>
 
     <!-- Study & Writing & Dev  -->
     <div class="category-section" data-category="writing" id="section-writing">
     <div class="category-header">
       <h2 class="category-title">Study &amp; Writing &amp; Dev</h2>
-      <p class="section-label">보조 글쓰기 아카이브</p>
+      <p class="section-label">Velog · GitHub 자동 갱신 · 에세이 아카이브</p>
     </div>
-    <div class="links links--section">
+    <div class="links">
 
-      <!-- Brunch Showcase -->
-      <div class="platform-showcase" data-platform="brunch">
-        <div class="platform-showcase__accent"></div>
-        <div class="platform-showcase__body">
-          <div class="platform-showcase__top">
-            <div class="platform-showcase__icon icon--brunch">
-              <i class="fa-solid fa-pen-nib"></i>
-            </div>
-            <div class="platform-showcase__info">
-              <h3 class="platform-showcase__title">Brunch</h3>
-              <p class="platform-showcase__tagline">에세이 & 글쓰기</p>
-            </div>
+      <!-- Velog -->
+      <div class="link-card">
+        <a class="link-card__header" href="https://velog.io/@hyungyugod/posts" target="_blank" rel="noopener">
+          <div class="link-card__icon icon--velog">
+            <i class="fa-solid fa-code" aria-hidden="true"></i>
           </div>
-          <div class="platform-showcase__content">
-            <a class="featured-item" href="https://brunch.co.kr/@hyungyugood/20" target="_blank" rel="noopener">
-              <img class="featured-item__thumb" src="/assets/img/cover-brunch1.jpg" alt="자기배반과 미실현의 삶에 대하여" loading="lazy">
-              <div class="featured-item__label">자기배반과 미실현의 삶에 대하여</div>
-            </a>
-            <a class="featured-item" href="https://brunch.co.kr/@hyungyugood/19" target="_blank" rel="noopener">
-              <img class="featured-item__thumb" src="/assets/img/cover-brunch2.jpg" alt="연을 띄우며" loading="lazy">
-              <div class="featured-item__label">연을 띄우며</div>
-            </a>
-            <a class="featured-item" href="https://brunch.co.kr/@hyungyugood/18" target="_blank" rel="noopener">
-              <img class="featured-item__thumb" src="/assets/img/cover-brunch3.jpg" alt="'미술관'" loading="lazy">
-              <div class="featured-item__label">미술관</div>
-            </a>
+          <div class="link-card__info">
+            <div class="link-card__title">Velog</div>
+            <div class="link-card__desc">개발 블로그 · 최근 글 자동 갱신</div>
           </div>
-          <a class="platform-showcase__cta" href="https://brunch.co.kr/@hyungyugood" target="_blank" rel="noopener">
-            모든 글 보기 <i class="fa-solid fa-arrow-right"></i>
+          <i class="fa-solid fa-arrow-right link-card__arrow" aria-hidden="true"></i>
+        </a>
+        <div class="link-card__divider"></div>
+        <div class="link-card__items" id="velog-items">
+          <div class="featured-item featured-item--loading"><div class="featured-item__thumb"></div><div class="featured-item__label">로딩 중...</div></div>
+          <div class="featured-item featured-item--loading"><div class="featured-item__thumb"></div><div class="featured-item__label">로딩 중...</div></div>
+          <div class="featured-item featured-item--loading"><div class="featured-item__thumb"></div><div class="featured-item__label">로딩 중...</div></div>
+        </div>
+      </div>
+
+      <!-- GitHub -->
+      <div class="link-card">
+        <a class="link-card__header" href="https://github.com/hyungyugod" target="_blank" rel="noopener">
+          <div class="link-card__icon icon--github">
+            <i class="fa-brands fa-github" aria-hidden="true"></i>
+          </div>
+          <div class="link-card__info">
+            <div class="link-card__title">GitHub</div>
+            <div class="link-card__desc">최근 push된 프로젝트</div>
+          </div>
+          <i class="fa-solid fa-arrow-right link-card__arrow" aria-hidden="true"></i>
+        </a>
+        <div class="link-card__divider"></div>
+        <div class="link-card__items" id="github-items">
+          <div class="featured-item featured-item--loading"><div class="featured-item__thumb"></div><div class="featured-item__label">로딩 중...</div></div>
+          <div class="featured-item featured-item--loading"><div class="featured-item__thumb"></div><div class="featured-item__label">로딩 중...</div></div>
+          <div class="featured-item featured-item--loading"><div class="featured-item__thumb"></div><div class="featured-item__label">로딩 중...</div></div>
+        </div>
+      </div>
+
+      <!-- Brunch -->
+      <div class="link-card">
+        <a class="link-card__header" href="https://brunch.co.kr/@hyungyugood" target="_blank" rel="noopener">
+          <div class="link-card__icon icon--brunch">
+            <i class="fa-solid fa-pen-nib" aria-hidden="true"></i>
+          </div>
+          <div class="link-card__info">
+            <div class="link-card__title">Brunch</div>
+            <div class="link-card__desc">에세이 &amp; 글쓰기</div>
+          </div>
+          <i class="fa-solid fa-arrow-right link-card__arrow" aria-hidden="true"></i>
+        </a>
+        <div class="link-card__divider"></div>
+        <div class="link-card__items">
+          <a class="featured-item" href="https://brunch.co.kr/@hyungyugood/20" target="_blank" rel="noopener">
+            <img class="featured-item__thumb" src="/assets/img/cover-brunch1.jpg" alt="자기배반과 미실현의 삶에 대하여" loading="lazy">
+            <div class="featured-item__label">자기배반과 미실현의 삶에 대하여</div>
+          </a>
+          <a class="featured-item" href="https://brunch.co.kr/@hyungyugood/19" target="_blank" rel="noopener">
+            <img class="featured-item__thumb" src="/assets/img/cover-brunch2.jpg" alt="연을 띄우며" loading="lazy">
+            <div class="featured-item__label">연을 띄우며</div>
+          </a>
+          <a class="featured-item" href="https://brunch.co.kr/@hyungyugood/18" target="_blank" rel="noopener">
+            <img class="featured-item__thumb" src="/assets/img/cover-brunch3.jpg" alt="'미술관'" loading="lazy">
+            <div class="featured-item__label">미술관</div>
           </a>
         </div>
       </div>
@@ -340,73 +267,19 @@
       <p class="section-label">음악 · 프로듀싱 · 릴리즈</p>
     </div>
 
-    <!-- Desktop Music Showcase (hidden on mobile) -->
-    <div class="music-showcase">
-      <div class="music-showcase__visual">
-        <img class="music-showcase__cover" id="musicCover" src="/assets/img/cover-afterglow.jpg" alt="Album Cover">
-        <div class="music-showcase__glow"></div>
-      </div>
-      <div class="music-showcase__info">
-        <div class="music-showcase__meta">
-          <span class="music-showcase__badge"><i class="fa-solid fa-headphones"></i> Music Producer</span>
-          <h3 class="music-showcase__album-title">Latest Releases</h3>
-        </div>
-        <div class="music-showcase__tracklist">
-          <a class="music-showcase__track is-active" href="https://www.melon.com/song/detail.htm?songId=600864946" target="_blank" rel="noopener" data-cover="/assets/img/cover-afterglow.jpg">
-            <span class="music-showcase__track-num">01</span>
-            <span class="music-showcase__track-name">연 (feat. 이안, SOPHiA, sumin)</span>
-            <i class="fa-solid fa-play music-showcase__track-play"></i>
-          </a>
-          <a class="music-showcase__track" href="https://www.melon.com/song/detail.htm?songId=39154106" target="_blank" rel="noopener" data-cover="/assets/img/cover-analogue.jpg">
-            <span class="music-showcase__track-num">02</span>
-            <span class="music-showcase__track-name">Oh Love! (feat. One, 이안, WORLDWIDEKINGHYUNJU, sumin)</span>
-            <i class="fa-solid fa-play music-showcase__track-play"></i>
-          </a>
-          <a class="music-showcase__track" href="https://www.melon.com/song/detail.htm?songId=600864948" target="_blank" rel="noopener" data-cover="/assets/img/cover-afterglow.jpg">
-            <span class="music-showcase__track-num">03</span>
-            <span class="music-showcase__track-name">Don't worry (feat. 김용주, 민소희)</span>
-            <i class="fa-solid fa-play music-showcase__track-play"></i>
-          </a>
-          <a class="music-showcase__track" href="https://soundcloud.com/user-928451677/need-feat-sumin" target="_blank" rel="noopener" data-cover="/assets/img/cover-need.jpg">
-            <span class="music-showcase__track-num">04</span>
-            <span class="music-showcase__track-name">Need (feat. sumin, worldwidekinghyunju)</span>
-            <i class="fa-solid fa-play music-showcase__track-play"></i>
-          </a>
-          <a class="music-showcase__track" href="https://soundcloud.com/user-928451677/prod-chill-sebs" target="_blank" rel="noopener" data-cover="/assets/img/cover-crocodile.jpg">
-            <span class="music-showcase__track-num">05</span>
-            <span class="music-showcase__track-name">악어는 하늘을 나는 꿈을 꾸었다 (Prod. Chill Sebs)</span>
-            <i class="fa-solid fa-play music-showcase__track-play"></i>
-          </a>
-          <a class="music-showcase__track" href="https://soundcloud.com/user-928451677/burn-it-up-feat-haram-prodsloth" target="_blank" rel="noopener" data-cover="/assets/img/cover-burnup.jpg">
-            <span class="music-showcase__track-num">06</span>
-            <span class="music-showcase__track-name">Burn It Up (feat. Haram, 예찬, 유혁, 정재훈, 채원, 석준)</span>
-            <i class="fa-solid fa-play music-showcase__track-play"></i>
-          </a>
-        </div>
-        <div class="music-showcase__links">
-          <a href="https://www.melon.com/artist/timeline.htm?artistId=4347369" target="_blank" rel="noopener" class="music-showcase__link-btn">
-            <i class="fa-solid fa-music"></i> Melon
-          </a>
-          <a href="https://soundcloud.com/user-928451677" target="_blank" rel="noopener" class="music-showcase__link-btn">
-            <i class="fa-brands fa-soundcloud"></i> SoundCloud
-          </a>
-        </div>
-      </div>
-    </div>
+    <div class="links">
 
-    <div class="links links--section">
-
-      <!-- Melon (먼저) -->
+      <!-- Melon -->
       <div class="link-card">
         <a class="link-card__header" href="https://www.melon.com/artist/timeline.htm?artistId=4347369" target="_blank" rel="noopener">
           <div class="link-card__icon icon--melon">
-            <i class="fa-solid fa-music"></i>
+            <i class="fa-solid fa-music" aria-hidden="true"></i>
           </div>
           <div class="link-card__info">
             <div class="link-card__title">Melon</div>
             <div class="link-card__desc">Official releases</div>
           </div>
-          <i class="fa-solid fa-arrow-right link-card__arrow"></i>
+          <i class="fa-solid fa-arrow-right link-card__arrow" aria-hidden="true"></i>
         </a>
         <div class="link-card__divider"></div>
         <div class="link-card__items">
@@ -429,13 +302,13 @@
       <div class="link-card">
         <a class="link-card__header" href="https://soundcloud.com/user-928451677?utm_source=clipboard&utm_medium=text&utm_campaign=social_sharing" target="_blank" rel="noopener">
           <div class="link-card__icon icon--soundcloud">
-            <i class="fa-brands fa-soundcloud"></i>
+            <i class="fa-brands fa-soundcloud" aria-hidden="true"></i>
           </div>
           <div class="link-card__info">
             <div class="link-card__title">SoundCloud</div>
-            <div class="link-card__desc">Original tracks & beats</div>
+            <div class="link-card__desc">Original tracks &amp; beats</div>
           </div>
-          <i class="fa-solid fa-arrow-right link-card__arrow"></i>
+          <i class="fa-solid fa-arrow-right link-card__arrow" aria-hidden="true"></i>
         </a>
         <div class="link-card__divider"></div>
         <div class="link-card__items">
@@ -463,38 +336,28 @@
         <h2 class="category-title">Game</h2>
         <p class="section-label">플레이 가능한 미니 프로젝트</p>
       </div>
-      <div class="links links--section">
-        <article class="game-showcase" data-game="pixel-nurse">
-          <div class="game-showcase__accent"></div>
-          <a class="game-showcase__thumb" href="/pages/game.html"
-             aria-label="김간호는 음악박사 게임 플레이하러 가기">
-            <img src="/assets/img/cover-game.jpg" alt="김간호는 음악박사 게임 화면 캡처" loading="lazy">
-            <span class="game-showcase__thumb-overlay" aria-hidden="true"></span>
-            <span class="game-showcase__badge">
-              <i class="fa-solid fa-gamepad" aria-hidden="true"></i> Playable
-            </span>
-          </a>
-          <div class="game-showcase__body">
-            <div class="game-showcase__top">
-              <div class="game-showcase__icon">
-                <i class="fa-solid fa-gamepad" aria-hidden="true"></i>
-              </div>
-              <div class="game-showcase__info">
-                <h3 class="game-showcase__title">김간호는 음악박사</h3>
-                <p class="game-showcase__tagline">수간호사의 F를 피해 45초 안에 음표를 모으는 김간호의 몰래 작곡 게임</p>
-              </div>
+      <div class="links">
+
+        <div class="link-card link-card--feature">
+          <a class="link-card__header" href="/pages/game.html">
+            <div class="link-card__icon icon--game">
+              <i class="fa-solid fa-gamepad" aria-hidden="true"></i>
             </div>
-            <ul class="game-showcase__meta">
-              <li><i class="fa-solid fa-clock" aria-hidden="true"></i> 45초 플레이</li>
-              <li><i class="fa-solid fa-keyboard" aria-hidden="true"></i> 키보드 · 모바일 패드</li>
-              <li><i class="fa-solid fa-layer-group" aria-hidden="true"></i> 난이도 3단계</li>
-            </ul>
-            <a class="game-showcase__cta" href="/pages/game.html"
-               aria-label="김간호는 음악박사 게임하러 가기">
-              게임하러 가기 <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+            <div class="link-card__info">
+              <div class="link-card__title">김간호는 음악박사</div>
+              <div class="link-card__desc">45초 몰래 작곡 미니게임 · 키보드 &amp; 모바일 패드</div>
+            </div>
+            <i class="fa-solid fa-arrow-right link-card__arrow" aria-hidden="true"></i>
+          </a>
+          <div class="link-card__divider"></div>
+          <div class="link-card__items">
+            <a class="featured-item" href="/pages/game.html" aria-label="김간호는 음악박사 게임 플레이하러 가기">
+              <img class="featured-item__thumb" src="/assets/img/cover-game.jpg" alt="김간호는 음악박사 게임 화면" loading="lazy">
+              <div class="featured-item__label">게임하러 가기</div>
             </a>
           </div>
-        </article>
+        </div>
+
       </div>
     </div>
 
@@ -504,18 +367,18 @@
         <h2 class="category-title">Released Apps</h2>
         <p class="section-label">App Store 정식 출시 iOS 앱</p>
       </div>
-      <div class="links links--section">
+      <div class="links">
 
         <div class="link-card link-card--app">
           <a class="link-card__header" href="https://apps.apple.com/kr/app/poppath/id6785336260" target="_blank" rel="noopener" aria-label="App Store에서 출시 앱 보기">
             <div class="link-card__icon icon--app">
-              <i class="fa-brands fa-app-store-ios"></i>
+              <i class="fa-brands fa-app-store-ios" aria-hidden="true"></i>
             </div>
             <div class="link-card__info">
               <div class="link-card__title">App Store</div>
               <div class="link-card__desc">정식 출시한 iOS 앱</div>
             </div>
-            <i class="fa-solid fa-arrow-right link-card__arrow"></i>
+            <i class="fa-solid fa-arrow-right link-card__arrow" aria-hidden="true"></i>
           </a>
           <div class="link-card__divider"></div>
           <div class="link-card__items">
@@ -559,39 +422,48 @@
       <h2 class="category-title">Social</h2>
       <p class="section-label">연결점 · 소셜 링크</p>
     </div>
-    <div class="social-grid">
+    <div class="links">
 
-      <a class="social-card social-card--instagram" href="https://www.instagram.com/hy_nxx9/" target="_blank" rel="noopener">
-        <div class="social-card__icon icon--instagram">
-          <i class="fa-brands fa-instagram"></i>
-        </div>
-        <div class="social-card__texts">
-          <div class="social-card__name">Instagram</div>
-          <div class="social-card__handle">@hy_nxx9</div>
-        </div>
-      </a>
+      <div class="link-card">
+        <a class="link-card__header" href="https://www.instagram.com/hy_nxx9/" target="_blank" rel="noopener">
+          <div class="link-card__icon icon--instagram">
+            <i class="fa-brands fa-instagram" aria-hidden="true"></i>
+          </div>
+          <div class="link-card__info">
+            <div class="link-card__title">Instagram</div>
+            <div class="link-card__desc">@hy_nxx9</div>
+          </div>
+          <i class="fa-solid fa-arrow-right link-card__arrow" aria-hidden="true"></i>
+        </a>
+      </div>
 
-      <a class="social-card social-card--instagram2" href="https://www.instagram.com/knowledge_stroll/" target="_blank" rel="noopener">
-        <div class="social-card__icon icon--instagram2">
-          <i class="fa-brands fa-instagram"></i>
-        </div>
-        <div class="social-card__texts">
-          <div class="social-card__name">지식산책</div>
-          <div class="social-card__handle">@knowledge_stroll</div>
-        </div>
-      </a>
+      <div class="link-card">
+        <a class="link-card__header" href="https://www.instagram.com/knowledge_stroll/" target="_blank" rel="noopener">
+          <div class="link-card__icon icon--instagram2">
+            <i class="fa-brands fa-instagram" aria-hidden="true"></i>
+          </div>
+          <div class="link-card__info">
+            <div class="link-card__title">지식산책</div>
+            <div class="link-card__desc">@knowledge_stroll</div>
+          </div>
+          <i class="fa-solid fa-arrow-right link-card__arrow" aria-hidden="true"></i>
+        </a>
+      </div>
 
-      <a class="social-card social-card--naver" href="https://search.naver.com/search.naver?where=nexearch&sm=tab_etc&mra=bjky&pkid=1&os=40432738&qvt=0&query=%EC%84%B1%ED%98%84%EA%B7%9C" target="_blank" rel="noopener">
-        <div class="social-card__icon icon--naver">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-            <path d="M13.6 12.47L10.27 7H7v10h3.4v-5.47L13.73 17H17V7h-3.4z"/>
-          </svg>
-        </div>
-        <div class="social-card__texts">
-          <div class="social-card__name">네이버</div>
-          <div class="social-card__handle">성현규</div>
-        </div>
-      </a>
+      <div class="link-card">
+        <a class="link-card__header" href="https://search.naver.com/search.naver?where=nexearch&sm=tab_etc&mra=bjky&pkid=1&os=40432738&qvt=0&query=%EC%84%B1%ED%98%84%EA%B7%9C" target="_blank" rel="noopener">
+          <div class="link-card__icon icon--naver">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+              <path d="M13.6 12.47L10.27 7H7v10h3.4v-5.47L13.73 17H17V7h-3.4z"/>
+            </svg>
+          </div>
+          <div class="link-card__info">
+            <div class="link-card__title">네이버</div>
+            <div class="link-card__desc">성현규</div>
+          </div>
+          <i class="fa-solid fa-arrow-right link-card__arrow" aria-hidden="true"></i>
+        </a>
+      </div>
 
     </div>
     </div>
@@ -623,26 +495,26 @@
         <div class="modal-divider"></div>
         <ul class="modal-info">
           <li>
-            <span class="modal-info__icon"><i class="fa-solid fa-graduation-cap"></i></span>
+            <span class="modal-info__icon"><i class="fa-solid fa-graduation-cap" aria-hidden="true"></i></span>
             가천대학교 간호학과
           </li>
           <li>
-            <span class="modal-info__icon"><i class="fa-solid fa-code"></i></span>
+            <span class="modal-info__icon"><i class="fa-solid fa-code" aria-hidden="true"></i></span>
             Learner. Developer. Thinker.<br>
             <span class="modal-info__sub"><a href="https://velog.io/@hyungyugod/posts" target="_blank" rel="noopener">Velog</a> · <a href="https://github.com/hyungyugod" target="_blank" rel="noopener">GitHub</a></span>
           </li>
           <li>
-            <span class="modal-info__icon"><i class="fa-solid fa-microphone-lines"></i></span>
+            <span class="modal-info__icon"><i class="fa-solid fa-microphone-lines" aria-hidden="true"></i></span>
             Music Producer<br>
             <span class="modal-info__sub"><a href="https://www.melon.com/artist/timeline.htm?artistId=4347369" target="_blank" rel="noopener">Melon</a> · <a href="https://soundcloud.com/user-928451677" target="_blank" rel="noopener">SoundCloud</a></span>
           </li>
           <li>
-            <span class="modal-info__icon"><i class="fa-solid fa-pen-nib"></i></span>
+            <span class="modal-info__icon"><i class="fa-solid fa-pen-nib" aria-hidden="true"></i></span>
             에세이 작가<br>
             <span class="modal-info__sub"><a href="https://brunch.co.kr/@hyungyugood" target="_blank" rel="noopener">Brunch</a></span>
           </li>
           <li>
-            <span class="modal-info__icon"><i class="fa-solid fa-id-card"></i></span>
+            <span class="modal-info__icon"><i class="fa-solid fa-id-card" aria-hidden="true"></i></span>
             보유 자격증<br>
             <span class="modal-info__sub">정보처리기사 · 빅데이터분석기사 · ADSP · SQLD</span>
           </li>

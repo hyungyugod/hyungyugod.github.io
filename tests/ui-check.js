@@ -184,7 +184,7 @@ async function checkCategoryFilter(page) {
 async function checkModal(page) {
   try {
     // 버튼 요소를 우선 시도 (img보다 안정적으로 클릭 가능)
-    const openBtn = page.locator('.profile__btn.js-open-profile').first();
+    const openBtn = page.locator('button.js-open-profile').first();
     await openBtn.waitFor({ timeout: 3000 });
     await openBtn.scrollIntoViewIfNeeded();
     await openBtn.click();

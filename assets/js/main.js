@@ -2,6 +2,9 @@
 // 유틸리티 함수
 // -------------------------------------------------------
 
+/** 스크롤 등장 애니메이션 대상 셀렉터 — initScrollReveal / applyFilter 공용 */
+const REVEAL_SELECTOR = '.link-card, .section-label, .category-title';
+
 /**
  * XSS 방지를 위한 HTML 이스케이프 함수
  * @param {string} str - 이스케이프할 문자열
@@ -172,161 +175,6 @@ async function fetchVelog() {
 }
 
 // -------------------------------------------------------
-// Auto-fetch: 루틴 연속일수 streak 위젯
-// Source: /data/streaks.json — 수동으로 days/updatedAt 수정 후 push
-// -------------------------------------------------------
-
-/**
- * /data/streaks.json을 읽어 3개 streak 카드를 렌더링
- * @returns {Promise<void>}
- */
-async function fetchStreaks() {
-  const grid = document.getElementById('streaksGrid');
-  if (!grid) return;
-  const updatedEl = document.getElementById('streaksUpdated');
-
-  const TONE_WHITELIST = ['diary', 'workout', 'threec'];
-  const ICON_RE = /^fa-[a-z0-9-]+$/;
-  const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
-
-  try {
-    const res = await fetchWithTimeout('/data/streaks.json', 5000, { cache: 'no-cache' });
-    if (!res.ok) throw new Error('Streaks ' + res.status);
-    const data = await res.json();
-    const items = Array.isArray(data?.streaks) ? data.streaks : [];
-    if (!items.length) throw new Error('No streaks');
-
-    grid.innerHTML = items.map(s => {
-      const tone = TONE_WHITELIST.includes(s?.tone) ? s.tone : '';
-      const toneClass = tone ? `streak-card--${tone}` : '';
-
-      const label = esc(s?.label ?? '');
-      const days = Math.max(0, Number(s?.days) || 0);
-
-      const iconRaw = typeof s?.icon === 'string' ? s.icon : '';
-      const iconClass = ICON_RE.test(iconRaw) ? iconRaw : 'fa-check';
-
-      // startDate 검증: 화이트리스트 통과 시에만 캡슐 렌더
-      const startRaw = typeof s?.startDate === 'string' ? s.startDate : '';
-      const startDate = DATE_RE.test(startRaw) ? startRaw : '';
-
-      // 단위 표기: workout만 누적 일수("일"), 그 외는 "일 연속"
-      const unit = tone === 'workout' ? '일' : '일 연속';
-
-      const ariaLabel = esc(startDate
-        ? `${s?.label ?? ''} ${days}일, ${startDate}부터`
-        : `${s?.label ?? ''} ${days}일`);
-
-      const history = Array.isArray(s?.history)
-        ? s.history.map(n => Math.max(0, Number(n) || 0)).slice(0, 6)
-        : [];
-      const historyMonths = Array.isArray(s?.historyMonths)
-        ? s.historyMonths.slice(0, 6)
-        : [];
-      const chartMax = history.length ? Math.max(...history, 1) : 1;
-      const barsHtml = history.map((v, i) => {
-        const pct = Math.max(4, Math.round((v / chartMax) * 100));
-        const m = esc(String(historyMonths[i] ?? (i + 1)));
-        return `<div class="streak-chart__bar">
-          <span class="streak-chart__bar-value">${esc(v)}</span>
-          <div class="streak-chart__bar-fill" style="height:${pct}%"></div>
-          <span class="streak-chart__bar-month">${m}</span>
-        </div>`;
-      }).join('');
-      const hasHistory = history.length > 0;
-
-      return `<div class="streak-card ${toneClass} streak-card--flippable" aria-label="${ariaLabel}" role="button" tabindex="0" aria-expanded="false">
-        <button class="streak-card__flip-btn" type="button" aria-label="${label} 그래프 보기" tabindex="-1">
-          <i class="fa-solid fa-chart-column" aria-hidden="true"></i>
-        </button>
-        <div class="streak-card__flipper">
-          <div class="streak-card__face streak-card__face--front">
-            <div class="streak-card__top">
-              <span class="streak-card__icon"><i class="fa-solid ${esc(iconClass)}"></i></span>
-              <span class="streak-card__label">${label}</span>
-            </div>
-            <div class="streak-card__value">
-              <span class="streak-card__days">${days}</span>
-              <span class="streak-card__unit">${unit}</span>
-            </div>
-            ${startDate
-              ? `<span class="streak-card__since">
-                   <i class="fa-regular fa-calendar streak-card__since-icon" aria-hidden="true"></i>
-                   Since ${esc(startDate)}
-                 </span>`
-              : ''}
-          </div>
-          <div class="streak-card__face streak-card__face--back" aria-hidden="true">
-            ${hasHistory
-              ? `<div class="streak-chart">
-                   <div class="streak-chart__header">
-                     <span class="streak-chart__title">${label}</span>
-                     <span class="streak-chart__sub">최근 6개월</span>
-                   </div>
-                   <div class="streak-chart__bars">${barsHtml}</div>
-                 </div>`
-              : `<div class="streak-chart streak-chart--empty">데이터 준비 중</div>`}
-          </div>
-        </div>
-      </div>`;
-    }).join('');
-
-    bindStreakFlip(grid);
-
-    // updatedAt 표시 (헤더 + 안내문 날짜 태그)
-    const u = typeof data?.updatedAt === 'string' && DATE_RE.test(data.updatedAt)
-      ? data.updatedAt : '';
-    if (updatedEl) {
-      updatedEl.textContent = u ? `업데이트 ${u}` : '';
-    }
-    const noticeDateEl = document.getElementById('streaksNoticeDate');
-    if (noticeDateEl) {
-      noticeDateEl.textContent = '';
-      if (u) {
-        const tag = document.createElement('span');
-        tag.className = 'streaks__notice-tag';
-        tag.textContent = u;
-        noticeDateEl.appendChild(tag);
-        noticeDateEl.appendChild(document.createTextNode('까지의 데이터입니다.'));
-      }
-    }
-  } catch (e) {
-    console.warn('Streaks fetch failed:', e);
-    const msg = e.name === 'AbortError' ? '응답 시간 초과' : '루틴 데이터를 불러오지 못했어요';
-    showFetchError(grid, msg);
-    if (updatedEl) updatedEl.textContent = '';
-  }
-}
-
-/**
- * streak 카드 클릭/키보드 입력 시 앞뒤 플립 토글
- * @param {HTMLElement} grid
- */
-function bindStreakFlip(grid) {
-  const cards = grid.querySelectorAll('.streak-card--flippable');
-  cards.forEach(card => {
-    const front = card.querySelector('.streak-card__face--front');
-    const back  = card.querySelector('.streak-card__face--back');
-    if (!front || !back) return;
-
-    const toggle = () => {
-      const isFlipped = card.classList.toggle('is-flipped');
-      card.setAttribute('aria-expanded', String(isFlipped));
-      front.setAttribute('aria-hidden', String(isFlipped));
-      back.setAttribute('aria-hidden', String(!isFlipped));
-    };
-
-    card.addEventListener('click', toggle);
-    card.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        toggle();
-      }
-    });
-  });
-}
-
-// -------------------------------------------------------
 // 초기화
 // -------------------------------------------------------
 
@@ -342,7 +190,6 @@ const safeInit = (fn, name) => {
 document.addEventListener('DOMContentLoaded', () => {
   safeInit(fetchGitHub, 'fetchGitHub');
   safeInit(fetchVelog, 'fetchVelog');
-  safeInit(fetchStreaks, 'fetchStreaks');
   safeInit(initModal, 'initModal');
   safeInit(initCategoryFilter, 'initCategoryFilter');
   safeInit(initThemeToggle, 'initThemeToggle');
@@ -353,7 +200,6 @@ document.addEventListener('DOMContentLoaded', () => {
   safeInit(initHeroParallax, 'initHeroParallax');
   safeInit(initNameShine, 'initNameShine');
   safeInit(initMottoReveal, 'initMottoReveal');
-  safeInit(initMusicShowcase, 'initMusicShowcase');
 });
 
 // -------------------------------------------------------
@@ -410,7 +256,7 @@ function initTyping() {
 // -------------------------------------------------------
 
 function initScrollReveal() {
-  const targets = document.querySelectorAll('.link-card, .social-card, .section-label, .platform-showcase, .game-showcase, .category-title, .focus-card, .focus-board__title, .focus-board__lede');
+  const targets = document.querySelectorAll(REVEAL_SELECTOR);
 
   // prefers-reduced-motion 시 즉시 표시
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
@@ -443,8 +289,7 @@ function applyFilter(sections, filter) {
   sections.forEach(sec => {
     if (filter === 'all' || sec.dataset.category === filter) {
       sec.classList.remove('is-hidden');
-      sec.querySelectorAll('.link-card, .social-card, .section-label, .platform-showcase, .game-showcase, .category-title, .focus-card, .focus-board__title, .focus-board__lede')
-         .forEach(el => el.classList.add('is-visible'));
+      sec.querySelectorAll(REVEAL_SELECTOR).forEach(el => el.classList.add('is-visible'));
     } else {
       sec.classList.add('is-hidden');
     }
@@ -743,43 +588,6 @@ function initNameShine() {
 // 3C 모토 카드 순차 등장
 // -------------------------------------------------------
 
-/**
- * 모토 카드를 시차를 두고 순차적으로 등장시킴
- */
-// -------------------------------------------------------
-// 뮤직 쇼케이스 (데스크탑): 트랙 호버 시 커버 전환
-// -------------------------------------------------------
-
-function initMusicShowcase() {
-  const cover = document.getElementById('musicCover');
-  if (!cover) return;
-
-  const tracks = document.querySelectorAll('.music-showcase__track');
-  if (!tracks.length) return;
-
-  tracks.forEach(track => {
-    track.addEventListener('mouseenter', () => {
-      const src = track.dataset.cover;
-      if (src && cover.src !== src) {
-        cover.style.opacity = '0.6';
-        cover.style.transform = 'scale(1.05)';
-        setTimeout(() => {
-          cover.src = src;
-          cover.style.opacity = '1';
-          cover.style.transform = 'scale(1)';
-        }, 200);
-      }
-
-      tracks.forEach(t => t.classList.remove('is-active'));
-      track.classList.add('is-active');
-    });
-  });
-}
-
-// -------------------------------------------------------
-// 3C 모토 카드 순차 등장
-// -------------------------------------------------------
-
 function initMottoReveal() {
   const items = document.querySelectorAll('.profile__motto-item');
   if (!items.length) return;
@@ -797,98 +605,3 @@ function initMottoReveal() {
   });
 }
 
-
-/* ============================================================
-   Cover band — click to scroll to target section
-   + auto-activate matching category filter if one is filtered.
-   Append to assets/js/main.js
-   ============================================================ */
-(function () {
-  const band = document.querySelector('.cover-band');
-  if (!band) return;
-
-  const links = band.querySelectorAll('a[data-target]');
-  const nav = document.getElementById('categoryNav');
-
-  function activateCategory(target) {
-    if (!nav) return;
-    const activeBtn = nav.querySelector('.category-nav__btn.is-active');
-    if (!activeBtn) return;
-    const activeFilter = activeBtn.dataset.filter;
-    // if user is viewing "all" or already on the target, do nothing
-    if (activeFilter === 'all' || activeFilter === target) return;
-    // otherwise flip to "all" so the target section is visible
-    const allBtn = nav.querySelector('.category-nav__btn[data-filter="all"]');
-    if (allBtn) allBtn.click();
-  }
-
-  function scrollTo(target) {
-    activateCategory(target);
-    requestAnimationFrame(() => {
-      setTimeout(() => {
-        const el = document.getElementById('section-' + target);
-        if (!el) return;
-        const y = el.getBoundingClientRect().top + window.pageYOffset - 24;
-        window.scrollTo({ top: y, behavior: 'smooth' });
-      }, 40);
-    });
-  }
-
-  links.forEach(a => {
-    a.addEventListener('click', e => {
-      e.preventDefault();
-      scrollTo(a.dataset.target);
-    });
-  });
-})();
-
-/* ============================================================
-   Streaks: mark longest + render sparkline
-   Works with the existing streak renderer in main.js — this
-   runs AFTER the first render via MutationObserver.
-   ============================================================ */
-(function () {
-  const grid = document.getElementById('streaksGrid');
-  if (!grid) return;
-
-  // Map card index → kind for sparkline coloring. Adjust if card order differs.
-  const KIND_BY_INDEX = ['diary', 'workout', 'threec'];
-
-  // Mock 6-month history per kind. Replace with real data source when available.
-  const HISTORY = {
-    diary:   [12, 18, 22, 28, 30, 31],
-    workout: [26, 24, 15,  8, 23, 16],
-    threec:  [ 0,  0,  0,  4, 18, 21],
-  };
-
-  function enhance() {
-    const cards = grid.querySelectorAll('.streak-card:not(.streak-card--loading):not([data-enhanced])');
-    if (!cards.length) return;
-
-    cards.forEach((c, i) => {
-      c.dataset.enhanced = '1';
-      const kind = KIND_BY_INDEX[i] || 'threec';
-      c.setAttribute('data-kind', kind);
-
-      // Sparkline
-      if (!c.querySelector('.streak-card__spark')) {
-        const hist = HISTORY[kind] || [];
-        const max = Math.max(1, ...hist);
-        const spark = document.createElement('div');
-        spark.className = 'streak-card__spark';
-        spark.setAttribute('aria-hidden', 'true');
-        hist.forEach(v => {
-          const bar = document.createElement('div');
-          bar.className = 'streak-card__spark-bar';
-          bar.style.height = Math.max(8, (v / max) * 100) + '%';
-          spark.appendChild(bar);
-        });
-        c.appendChild(spark);
-      }
-    });
-  }
-
-  // Run now and on future renders
-  enhance();
-  new MutationObserver(enhance).observe(grid, { childList: true, subtree: true });
-})();
