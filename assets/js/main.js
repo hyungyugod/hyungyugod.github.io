@@ -20,13 +20,15 @@ function esc(str) {
 
 /**
  * URL 검증 함수 — http/https 스킴만 허용
+ * 원본 문자열이 아닌 정규화된 u.href를 반환한다. 원본을 그대로 돌려주면
+ * 따옴표 등이 살아남아 속성 밖으로 탈출할 수 있다.
  * @param {string} url - 검증할 URL
- * @returns {string} 유효하면 원래 URL, 아니면 '#'
+ * @returns {string} 유효하면 정규화된 URL, 아니면 '#'
  */
 function safeUrl(url) {
   try {
     const u = new URL(url);
-    return (u.protocol === 'https:' || u.protocol === 'http:') ? url : '#';
+    return (u.protocol === 'https:' || u.protocol === 'http:') ? u.href : '#';
   } catch { return '#'; }
 }
 
@@ -78,7 +80,7 @@ async function fetchGitHub() {
       const href = safeUrl(repo.html_url);
       const ariaLabel = esc(`${repo.name || 'Repository'} GitHub 저장소 열기`);
 
-      return `<a class="featured-item" href="${href}" target="_blank" rel="noopener" aria-label="${ariaLabel}">
+      return `<a class="featured-item" href="${esc(href)}" target="_blank" rel="noopener" aria-label="${ariaLabel}">
         <svg class="featured-item__thumb" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
           <rect class="featured-item__fallback-bg" width="200" height="200"/>
           <text class="featured-item__fallback-mark" x="100" y="94" text-anchor="middle" font-family="Inter,sans-serif" font-size="40" font-weight="800">${abbr}</text>
@@ -156,7 +158,7 @@ async function fetchVelog() {
             <text class="featured-item__fallback-accent--velog" x="100" y="122" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" opacity="0.55">velog</text>
           </svg>`;
 
-      return `<a class="featured-item" href="${href}" target="_blank" rel="noopener" aria-label="${ariaLabel}">
+      return `<a class="featured-item" href="${esc(href)}" target="_blank" rel="noopener" aria-label="${ariaLabel}">
         ${thumbHtml}
         <div class="featured-item__label">${title}</div>
         <div class="featured-item__meta">
@@ -460,7 +462,16 @@ function initModal() {
     }, 500);
   };
 
-  document.querySelectorAll('.js-open-profile').forEach(el => el.addEventListener('click', open));
+  document.querySelectorAll('.js-open-profile').forEach(el => {
+    el.addEventListener('click', open);
+
+    // <img> 등 네이티브 버튼이 아닌 트리거는 Enter/Space를 직접 처리해야 한다
+    if (el.tagName !== 'BUTTON') {
+      el.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); }
+      });
+    }
+  });
   backdrop.querySelector('.modal-overlay').addEventListener('click', close);
   backdrop.querySelector('.modal-close').addEventListener('click', close);
 

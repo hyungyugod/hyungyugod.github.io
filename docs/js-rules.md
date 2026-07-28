@@ -70,7 +70,7 @@ async function fetchSomething() {
     container.innerHTML = data.map(item => {
       const title = esc(item.title);
       const href = safeUrl(item.url);
-      return `<a class="featured-item" href="${href}" target="_blank" rel="noopener">
+      return `<a class="featured-item" href="${esc(href)}" target="_blank" rel="noopener">
         <div class="featured-item__label">${title}</div>
       </a>`;
     }).join('');
@@ -88,7 +88,23 @@ async function fetchSomething() {
 | 함수 | 용도 | 필수 사용 시점 |
 |---|---|---|
 | `esc(str)` | HTML 특수문자 이스케이프 | 외부 데이터 → innerHTML 삽입 시 |
-| `safeUrl(url)` | http/https만 허용 | 외부 URL → href 삽입 시 |
+| `safeUrl(url)` | http/https 스킴 검증 + URL 정규화 | 외부 URL → href/src 삽입 시 |
+
+### `safeUrl`은 `esc`를 대신하지 않는다
+
+`safeUrl()`은 **스킴만 검사**한다. `javascript:`는 막지만, 통과한 http/https URL 안에 무엇이 들어 있는지는 보장하지 않는다.
+따라서 속성에 넣을 때는 **반드시 `esc()`를 한 번 더 통과**시킨다.
+
+```js
+const href = safeUrl(item.url);
+`<a href="${esc(href)}">`   // ✅ 두 겹
+`<a href="${href}">`        // ❌ 속성 탈출 가능
+```
+
+`safeUrl`이 원본 문자열이 아니라 `u.href`(정규화 결과)를 돌려주는 것도 같은 이유다.
+정규화가 따옴표를 `%22`로 바꿔주지만, 그 한 겹에만 의존하지 않는다.
+
+**규칙: 외부에서 온 값이 innerHTML 템플릿에 들어가면 — 속성이든 텍스트든 — 예외 없이 `esc()`를 거친다.**
 
 ---
 
@@ -112,13 +128,15 @@ async function fetchSomething() {
 
 ## 8. 초기화 패턴
 
+모든 초기화는 `safeInit()`으로 감싼다. 한 기능이 던진 예외가 뒤따르는 초기화를 멈추지 않게 하기 위함이다.
+
 ```js
 document.addEventListener('DOMContentLoaded', () => {
-  fetchGitHub();
-  fetchVelog();
-  initModal();
-  initCategoryFilter();
-  // ← 새 기능은 여기에 추가
+  safeInit(fetchGitHub, 'fetchGitHub');
+  safeInit(fetchVelog, 'fetchVelog');
+  safeInit(initModal, 'initModal');
+  safeInit(initCategoryFilter, 'initCategoryFilter');
+  // ← 새 기능은 여기에 추가 (직접 호출하지 말고 safeInit으로)
 });
 ```
 
@@ -127,10 +145,11 @@ document.addEventListener('DOMContentLoaded', () => {
 ## 9. 코드 배치 순서
 
 ```
-1. 유틸리티 함수 (esc, safeUrl, fetchWithTimeout, showFetchError)
-2. Auto-fetch 함수 (fetchGitHub, fetchVelog, ...)
-3. DOMContentLoaded 초기화 블록
-4. 기능별 init 함수 (initCategoryFilter, initModal, ...)
+1. 공용 상수 (REVEAL_SELECTOR)
+2. 유틸리티 함수 (esc, safeUrl, fetchWithTimeout, showFetchError, safeInit)
+3. Auto-fetch 함수 (fetchGitHub, fetchVelog, ...)
+4. DOMContentLoaded 초기화 블록
+5. 기능별 init 함수 (initCategoryFilter, initModal, ...)
 ```
 
 ---
@@ -149,6 +168,25 @@ element.classList.remove('is-hidden');
 
 - 모달: 포커스 트랩 (Tab/Shift+Tab 순환) + Escape 닫기 + 포커스 복귀
 - 포커스 선택자: `'a[href],button:not([disabled]),input,textarea,select,[tabindex]:not([tabindex="-1"])'`
+
+### 버튼이 아닌 요소를 클릭 트리거로 쓸 때
+
+`<img>`·`<div>`에 `tabindex="0"`만 붙이면 포커스는 가지만 **Enter/Space로는 눌리지 않는다.**
+`<button>`이 아닌 트리거는 세 가지가 전부 필요하다:
+
+```html
+<img class="js-open-profile" role="button" tabindex="0" aria-label="프로필 열기">
+```
+```js
+el.addEventListener('click', open);
+if (el.tagName !== 'BUTTON') {
+  el.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); }
+  });
+}
+```
+
+가능하면 처음부터 `<button>`을 쓰는 편이 낫다. 위 처리가 전부 공짜로 딸려온다.
 
 ---
 

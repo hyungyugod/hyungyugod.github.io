@@ -8,12 +8,15 @@
 
 ```
 / (루트)
-├── index.html              ← 메인 (유일한) 페이지
+├── index.html              ← 메인 페이지
 ├── assets/
-│   ├── css/style.css       ← 스타일 단일 파일 (~1100줄)
-│   ├── js/main.js          ← 스크립트 단일 파일 (~360줄)
+│   ├── css/style.css       ← 스타일 단일 파일 (~1900줄)
+│   ├── js/main.js          ← 스크립트 단일 파일 (~610줄)
 │   └── img/                ← 이미지 에셋
-├── pages/                  ← 향후 서브페이지 (현재 비어 있음)
+├── pages/
+│   └── game.html           ← 미니게임 서브페이지
+├── docs/                   ← 이 문서들 (Claude가 필요할 때 읽음)
+├── tests/ui-check.js       ← Playwright 스모크 테스트 (npm run ui-check)
 └── favicon.ico
 ```
 
@@ -26,32 +29,54 @@
 | `assets/js/main.js` | O |
 | `assets/img/*` | 읽기만 |
 | `pages/*.html` | O (서브페이지 생성 시) |
+| `tests/ui-check.js` | O (셀렉터가 낡았을 때) |
 
 ### 핵심 제약
 
 - 새 CSS/JS 파일을 만들지 않는다. **단일 파일 구조를 유지**한다.
 - 외부 라이브러리/프레임워크를 추가하지 않는다 (바닐라 JS, 네이티브 CSS).
+- 페이지 본문은 **단일 컬럼 링크트리**다. 새 콘텐츠는 `.link-card` 3티어 중 하나로 만든다. 새 카드 컴포넌트를 만들지 않는다.
 
 ---
 
 ## 2. 컴포넌트 목록
 
-| 컴포넌트 | HTML 클래스 | JS 함수 | 설명 |
+본문은 `.link-card` **한 종류**로 통일되어 있다. 아래 10개 행이 전부다.
+
+| 행 | 티어 | 클래스 / ID | JS 함수 |
 |---|---|---|---|
-| 프로필 섹션 | `.profile` | — | 아바타, 이름, 소개, 버튼 |
-| 카테고리 탭 | `.category-nav` | `initCategoryFilter()` | All/Writing/Music/Social 필터 |
-| Velog 카드 | `.link-card` `#velog-items` | `fetchVelog()` | RSS → 최근 3개 포스트 |
-| Brunch 카드 | `.link-card` | — | 정적 3개 아이템 |
-| GitHub 카드 | `.link-card` `#github-items` | `fetchGitHub()` | API → 최근 3개 레포 |
-| Melon 카드 | `.link-card` | — | 정적 3개 아이템 |
-| SoundCloud 카드 | `.link-card` | — | 정적 3개 아이템 |
-| 소셜 그리드 | `.social-grid` | — | Instagram, 지식산책, 네이버 |
-| 프로필 모달 | `.modal-backdrop` | `initModal()` | 사진, 학력, 자격, 활동 |
-| 푸터 | `.footer` | — | 소셜 아이콘 + 저작권 |
+| Velog | A | `.link-card` `#velog-items` | `fetchVelog()` — RSS 최근 3개 |
+| GitHub | A | `.link-card` `#github-items` | `fetchGitHub()` — API 최근 3개 |
+| Brunch | A | `.link-card` | — (정적 3개) |
+| Melon | A | `.link-card` | — (정적 3개) |
+| SoundCloud | A | `.link-card` | — (정적 3개) |
+| App Store | A | `.link-card` | — (정적 3개) |
+| Game | B | `.link-card.link-card--feature` | — (내부 링크) |
+| Instagram | C | `.link-card` | — |
+| 지식산책 | C | `.link-card` | — |
+| 네이버 | C | `.link-card` | — |
+
+티어 정의는 `css-rules.md` §4 참조. 새 링크는 셋 중 하나를 고르는 것이지 새 컴포넌트를 만드는 게 아니다.
+
+### 그 외 컴포넌트
+
+| 컴포넌트 | HTML 클래스 | JS 함수 |
+|---|---|---|
+| 프로필 섹션 | `.profile` | `initTyping()` `initMottoReveal()` `initNameShine()` |
+| 카테고리 탭 | `.category-nav` | `initCategoryFilter()` |
+| 프로필 모달 | `.modal-backdrop` | `initModal()` |
+| 테마 토글 | `.theme-toggle` `.js-theme-toggle` | `initThemeToggle()` |
+| 스크롤 진행바 | `.scroll-progress` | `initScrollProgress()` |
+| 푸터 | `.footer` | — |
 
 ### 유틸리티 함수
 
-`esc()` · `safeUrl()` · `fetchWithTimeout()` · `showFetchError()`
+`esc()` · `safeUrl()` · `fetchWithTimeout()` · `showFetchError()` · `safeInit()`
+
+### 공용 상수
+
+`REVEAL_SELECTOR` — 스크롤 등장 애니메이션 대상. `initScrollReveal()`과 `applyFilter()`가 공유한다.
+등장 애니메이션이 필요한 새 컴포넌트를 만들면 여기에 추가해야 한다.
 
 ---
 
@@ -59,25 +84,41 @@
 
 `.category-section` 요소에 `data-category` 속성을 부여하여 탭 필터링:
 
-| 탭 | data-category |
-|---|---|
-| All | 전체 표시 |
-| Study & Dev | `study` |
-| Music | `music` |
-| Social | `social` |
+| 탭 라벨 | data-filter / data-category | 섹션 id |
+|---|---|---|
+| All | `all` (전체 표시) | — |
+| Study & Writing & Dev | `writing` | `#section-writing` |
+| Music | `music` | `#section-music` |
+| Game | `game` | `#section-game` |
+| Released Apps | `app` | `#section-app` |
+| Social | `social` | `#section-social` |
 
-GitHub/Velog 카드는 런타임에 동적 생성, 나머지는 정적 HTML.
+**탭 버튼 순서와 DOM 섹션 순서는 항상 일치시킨다.** 어긋나면 All 화면에서 순서가 뒤바뀐다.
+GitHub/Velog 카드 내부 아이템만 런타임 동적 생성, 나머지는 정적 HTML.
 
 ---
 
 ## 4. 테마 시스템
 
-`<html>` 태그의 `data-theme` 속성으로 전환:
-- `data-theme="light"` — 라이트 모드
-- `data-theme="dark"` — 다크 모드
+`<html>` 태그의 **`light` 클래스**로 전환한다 (`data-theme` 속성이 아니다).
 
-`:root`와 `[data-theme="dark"]` 블록에 CSS 변수로 구현.
-`localStorage`에 사용자 선택을 저장하여 유지.
+- 클래스 없음 → 다크 (기본)
+- `<html class="light">` → 라이트
+
+```css
+:root      { --bg: #0f0e15; }   /* 다크 = 기본값 */
+html.light { --bg: #faf9fb; }   /* 라이트 = 오버라이드 */
+```
+
+```js
+const isLight = root.classList.toggle('light');   // initThemeToggle()
+```
+
+`localStorage`의 `theme` 키에 저장하며, `index.html` `<head>`의 인라인 스크립트가
+스타일시트보다 먼저 클래스를 붙여 **첫 페인트 깜빡임을 막는다.** 이 스크립트는 지우면 안 된다.
+
+새 색상을 추가할 때는 `:root`와 `html.light` **양쪽 모두**에 선언한다.
+한쪽만 넣으면 반대 테마에서 값이 새어나온다.
 
 ---
 
@@ -90,32 +131,39 @@ GitHub/Velog 카드는 런타임에 동적 생성, 나머지는 정적 HTML.
 - [ ] 수정할 영역의 주변 코드 파악
 
 ### HTML 작업
-- [ ] 기존 컴포넌트와 일관된 구조 사용
+- [ ] 새 링크는 `.link-card` 3티어 중 하나로 (새 카드 컴포넌트 금지)
 - [ ] BEM 클래스명 + `js-` 후크 클래스 (필요 시)
 - [ ] 동적 컨테이너에 고유 `id` 부여
 - [ ] `target="_blank"` 외부 링크에 `rel="noopener"` 포함
-- [ ] 접근성 속성 (`aria-label`, `role`, `tabindex` 등)
+- [ ] 장식용 `<i>` / `<svg>`에 `aria-hidden="true"`
+- [ ] 버튼이 아닌 클릭 트리거에는 `role="button"` + `tabindex="0"` + `aria-label` + keydown 핸들러
+- [ ] 새 섹션을 추가하면 카테고리 탭도 같은 순서로 추가
 
 ### CSS 작업
-- [ ] 색상은 CSS 변수 사용 (새 색상은 `:root`에 추가)
-- [ ] CSS 네이티브 중첩 `&` 문법
+- [ ] 색상은 CSS 변수 사용 (새 색상은 `:root`와 `html.light` **양쪽**에 추가)
+- [ ] 여백·아이콘 크기는 `--card-*` / `--stack-gap` 토큰 사용 (px 하드코딩 금지)
+- [ ] CSS 네이티브 중첩 `&` 문법 — 모디파이어는 `&.block--variant` (`&--variant`는 무효)
 - [ ] 호버: `translateY` + `box-shadow` + `border-color` 조합
 - [ ] 트랜지션: `var(--transition)`
 - [ ] 글래스모피즘: `backdrop-filter` + `-webkit-` 접두사
 - [ ] 간격: `gap` 속성 사용
-- [ ] `@media (max-width: 520px)` 반응형 대응
 - [ ] `@media (prefers-reduced-motion: reduce)` 접근성 대응
+- [ ] 컴포넌트를 지웠다면 `html.light` 오버라이드와 `:root` 전용 변수도 함께 삭제
 
 ### JS 작업
 - [ ] `function init기능명()` 또는 `async function fetch기능명()` 패턴
-- [ ] `DOMContentLoaded` 블록에 호출 추가
+- [ ] `DOMContentLoaded` 블록에 `safeInit()`으로 등록
 - [ ] 가드 클래스 (`if (!el) return;`)
-- [ ] 외부 데이터: `esc()` + `safeUrl()` 필수
+- [ ] 외부 데이터: `esc()` 필수. URL은 `safeUrl()` **후에도** `esc()`
 - [ ] API: `fetchWithTimeout()` + `try/catch/finally`
 - [ ] 에러: `console.warn()` + `showFetchError()`
 - [ ] JSDoc 주석 + 섹션 구분선
-- [ ] 코드 배치 순서 준수
+- [ ] 등장 애니메이션이 필요하면 `REVEAL_SELECTOR`에 추가
 
 ### 작업 후
 - [ ] 3개 파일 간 클래스명/ID 일관성 확인
+- [ ] 삭제한 컴포넌트의 문자열이 3파일에 0건인지 grep
+- [ ] 정의 없이 참조되는 `var(--*)`가 없는지 확인
+- [ ] `npm run ui-check` 통과 (셀렉터가 낡았으면 테스트도 함께 수정)
+- [ ] 다크·라이트 양 테마 확인
 - [ ] 모바일 520px 이하 대응 확인

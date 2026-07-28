@@ -19,8 +19,11 @@ All code lives in three files:
 | File | Role |
 |---|---|
 | `index.html` | Single HTML page. Category filtering shows/hides sections with JS. |
-| `assets/css/style.css` | All styling (~1100 lines). CSS custom properties for dark/light theming. BEM naming. |
-| `assets/js/main.js` | All client-side logic (~360 lines). Standalone functions in `DOMContentLoaded`. |
+| `assets/css/style.css` | All styling (~1900 lines). CSS custom properties for dark/light theming. BEM naming. |
+| `assets/js/main.js` | All client-side logic (~610 lines). Standalone functions in `DOMContentLoaded`. |
+
+The page body is a **single-column linktree**: every link is a `.link-card` in one of three
+tiers. Add new content by picking a tier, not by building a new card component.
 
 ## Reference Docs
 

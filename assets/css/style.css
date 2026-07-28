@@ -1499,8 +1499,6 @@ html.light .link-card:hover {
   .hero .profile__subtitle { font-size: 12px; }
   .hero .profile__motto { max-width: 100%; }
   .hero .profile__bio { max-width: 100%; }
-  .hero__scroll-hint { bottom: 24px; }
-  .hero__scroll-arrow { width: 32px; height: 32px; font-size: 12px; }
 
   .profile {
     margin-bottom: 36px;
@@ -1845,8 +1843,7 @@ html.light .link-card:hover {
   .hero .profile__motto,
   .hero .profile__bio { animation: none; opacity: 1; transform: none; }
   .hero .profile__hint { animation: none; opacity: 0.45; transform: none; }
-  .hero__scroll-hint { animation: none; opacity: 1; }
-  .hero__scroll-arrow { animation: none; opacity: 0.6; }
+  .scroll-hint { animation: none; }
 }
 
 /* ---- Scroll Progress Bar ---- */

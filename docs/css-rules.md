@@ -18,18 +18,36 @@ SCSS가 아닌 **CSS 네이티브 중첩 `&` 문법**을 사용합니다.
     &:hover { color: var(--brand); }
   }
 
-  &--variant { background: var(--bg-card); }
+  &.block--variant { background: var(--bg-card); }  /* 모디파이어는 전체 이름 */
   &.is-active { border-color: var(--brand-40); }
   &::after { content: ''; position: absolute; }
 }
 
 /* 금지 */
 .block {
-  .child { }           /* & 없이 중첩 */
+  &--variant { }        /* SCSS식 문자열 연결 — 네이티브 중첩에서 무효 */
+  .child { }            /* & 없이 중첩 */
   $color: red;          /* SCSS 변수 */
   @include mixin();     /* SCSS mixin */
 }
 ```
+
+### ⚠️ `&--variant`는 동작하지 않는다
+
+SCSS는 `&--variant`를 `.block--variant`로 **문자열 연결**하지만, CSS 네이티브 중첩에는 그런 기능이 없다.
+`&`는 부모 셀렉터를 가리키는 값일 뿐이라 뒤에 문자를 붙일 수 없고, 규칙 전체가 조용히 무시된다.
+빌드 에러도 콘솔 경고도 없어서 **눈으로는 절대 발견되지 않는다.**
+
+```css
+.featured-item {
+  &--loading { opacity: 0.4; }   /* ❌ 적용 안 됨. 에러도 안 남 */
+  &.featured-item--loading { opacity: 0.4; }  /* ✅ */
+}
+```
+
+실제로 이 함정 때문에 로딩 스켈레톤이 오랫동안 적용되지 않은 채 원문 텍스트("로딩 중...")를 노출했다.
+**모디파이어를 중첩할 때는 `&.block--variant`처럼 블록 이름을 전부 적는다.**
+헷갈리면 중첩하지 말고 최상위에 `.block--variant { }`로 따로 쓴다.
 
 ---
 
@@ -65,20 +83,51 @@ SoundCloud(`#ff5500→#ff7700`) · Instagram(`#833AB4→#E1306C→#F77737`) · I
 block__element--modifier
 ```
 
-- **Block**: `.link-card`, `.social-card`, `.profile`, `.modal-backdrop`, `.category-nav`, `.footer`
-- **Element**: `__header`, `__icon`, `__title`, `__desc`, `__arrow`, `__thumb`, `__label`, `__info`, `__divider`, `__items`
-- **Modifier**: `--loading`, `--section`, `--instagram`, `--naver`
-- **상태 클래스**: `is-` 접두사 → `is-active`, `is-hidden`, `is-open`
-- **JS 후크**: `js-` 접두사 → `js-open-profile` (스타일 적용 금지, JS 전용 셀렉터)
+- **Block**: `.link-card`, `.featured-item`, `.profile`, `.modal-backdrop`, `.category-nav`, `.category-section`, `.links`, `.footer`
+- **Element**: `__header`, `__icon`, `__title`, `__desc`, `__arrow`, `__thumb`, `__label`, `__info`, `__divider`, `__items`, `__meta`, `__source`, `__detail`
+- **Modifier**: `--feature`(피처 행), `--loading`(스켈레톤), `--app`(앱 아이콘 썸네일)
+- **아이콘 모디파이어**: `.icon--velog` `--github` `--brunch` `--melon` `--soundcloud` `--app` `--game` `--instagram` `--instagram2` `--naver`
+- **상태 클래스**: `is-` 접두사 → `is-active`, `is-hidden`, `is-open`, `is-visible`, `is-closing`
+- **JS 후크**: `js-` 접두사 → `js-open-profile`, `js-theme-toggle` (스타일 적용 금지, JS 전용 셀렉터)
 
 ---
 
 ## 4. 레이아웃
 
+전체 페이지는 **단일 컬럼 링크트리**다. 모든 콘텐츠가 `.link-card` 한 종류의 셸을 공유하며,
+카드는 `.links` 안에 세로로만 쌓인다. 카드끼리 가로로 나란히 놓지 않는다.
+
 - **Flexbox**: 1차원 레이아웃 (프로필, 네비, 카드 헤더, 푸터)
-- **Grid**: 다열 레이아웃 (`repeat(3,1fr)` — 카드 아이템, 소셜 그리드)
-- **max-width**: `680px` (`.page-wrapper`)
+- **Grid**: 카드 내부 프리뷰 아이템 (`repeat(3,1fr)`, 피처 행만 `1fr`)
+- **max-width**: `.page-wrapper` 기본 `680px` → `@media (min-width:900px)`에서 `760px`
 - **간격**: `gap` 속성만 사용 (margin 간격 조절 지양)
+
+### 링크트리 토큰
+
+카드의 여백·아이콘 크기는 전부 `:root` 토큰으로 제어한다. 컴포넌트에 px를 직접 쓰지 않는다.
+
+| 토큰 | 데스크톱 | 모바일(≤520px) | 용도 |
+|---|---|---|---|
+| `--card-gap` | 14px | 12px | 카드 사이 세로 간격 |
+| `--card-pad-x` | 24px | 18px | 헤더/아이템 좌우 패딩 |
+| `--card-pad-y` | 20px | 16px | 헤더 상하 패딩 |
+| `--card-items-gap` | 10px | 8px | 프리뷰 썸네일 사이 간격 |
+| `--card-icon` | 44px | 40px | 아이콘 정사각 크기 |
+| `--card-icon-radius` | 12px | 10px | 아이콘 라운드 |
+| `--stack-gap` | 40px | 28px | 섹션 사이 세로 간격 |
+
+모바일 대응은 **`:root` 재정의 한 블록**으로 끝낸다. 컴포넌트마다 520px 오버라이드를 새로 쓰지 않는다.
+
+### 카드 3티어
+
+| 티어 | 구성 | 적용 |
+|---|---|---|
+| A. 프리뷰 행 | `__header` + `__divider` + `__items`(정사각 썸네일 3개) | Velog, GitHub, Brunch, Melon, SoundCloud, App Store |
+| B. 피처 행 | 위와 같되 `.link-card--feature` (16:10 커버 1개) | Game |
+| C. 단독 행 | `__header`만 | Instagram, 지식산책, 네이버 |
+
+`__header`는 세 티어 모두 `[아이콘] [제목/설명] [→]`로 동일하다.
+새 링크를 추가할 때는 셋 중 하나를 고르는 것이지, 새 컴포넌트를 만드는 것이 아니다.
 
 ---
 
@@ -92,10 +141,18 @@ block__element--modifier
 | 대상 | 호버 효과 |
 |---|---|
 | 카드 | `translateY(-2px)` + `box-shadow: 0 8px 40px rgba(0,0,0,0.35)` + 보더/배경 변경 |
-| 소셜카드 | `translateY(-3px)` + `box-shadow: 0 10px 40px rgba(0,0,0,0.4)` |
 | 아이콘 | `scale(1.06~1.08)` |
 | 화살표 | `translateX(4px)` + `color: var(--brand)` |
 | 푸터 링크 | `translateY(-2px)` + `color: var(--brand)` |
+
+카드별 개성은 **호버 글로우 색**으로만 낸다. 크기·간격·이징은 전부 동일하게 유지한다.
+
+```css
+.link-card {
+  &:has(.icon--velog):hover { box-shadow: 0 6px 24px var(--glow-velog); }
+  /* 새 플랫폼을 추가하면 :root에 --glow-* 를 선언하고 이 목록에 한 줄 추가 */
+}
+```
 
 ---
 
@@ -117,22 +174,27 @@ backdrop-filter: blur(24px) saturate(1.2);
 
 ## 7. 애니메이션
 
-- **입장**: `opacity:0` + `animation: fadeInUp 0.45s ease-out forwards` + `nth-child` 순차 딜레이 (~0.06s 간격)
+- **입장**: `opacity:0` + `.is-visible` 토글 (JS `initScrollReveal`) + `nth-child` 순차 딜레이
 - **스켈레톤**: `shimmer-sweep`(2s) + `pulse-glow`(2.2s)
-- 새 `@keyframes`는 기존 블록 근처(483~491줄 부근)에 배치
+- 새 `@keyframes`는 그 애니메이션을 쓰는 컴포넌트 블록 바로 아래에 배치한다 (파일 곳곳에 분산되어 있음)
+
+`initScrollReveal`과 `applyFilter`가 공유하는 대상 셀렉터는 `main.js`의 `REVEAL_SELECTOR` 상수 하나다.
+등장 애니메이션을 받을 새 컴포넌트를 만들면 **그 상수에 추가**해야 한다.
 
 ---
 
 ## 8. 반응형
 
-- `@media (max-width: 520px)` — **단일 브레이크포인트**
-  - 소셜 그리드: 3열 → 1열 (수평 레이아웃)
-  - 프로필 축소 (이름 34px, 아바타 96px)
-  - 카드 패딩/간격 축소, 모달 `max-width: 92vw`
+- `@media (max-width: 520px)` — **모바일 기준 브레이크포인트**
+  - 맨 위 `:root` 블록에서 `--card-*` / `--stack-gap` 토큰을 재정의한다 (컴포넌트별 오버라이드 대신)
+  - 프로필 축소, 모달 `max-width: 92vw`
+- `@media (min-width: 521px)` — 카테고리 탭바가 6개를 한 줄에 담도록 컬럼 폭을 넘어 확장
+- `@media (min-width: 900px)` — 데스크톱: 히어로 높이, `.page-wrapper` 760px
 - `@media (prefers-reduced-motion: reduce)` — 접근성
-  - 모든 애니메이션/트랜지션 비활성화
+  - `*` 규칙으로 모든 애니메이션/트랜지션을 사실상 0으로 만든 뒤, 개별 컴포넌트의 `opacity`/`transform` 잔상을 정리
 
-새 컴포넌트는 **두 미디어쿼리 모두** 대응해야 한다.
+새 컴포넌트는 **520px와 reduced-motion 두 가지는 반드시** 대응해야 한다.
+토큰만 써서 만들었다면 520px 대응은 자동으로 끝난다.
 
 ---
 
