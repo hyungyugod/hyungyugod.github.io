@@ -1242,16 +1242,16 @@ html.light .link-card:hover {
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
   }
 
+  /* 곡 제목은 자르지 않는다 — feat./prod. 크레딧이 붙은 음악 카드는 좁은 폭에서
+     5줄까지 가고, 3줄 클램프에 걸리면 아래가 잘려 나갔다. 그리드 행이 stretch라
+     같은 행의 카드들은 가장 긴 제목 높이에 맞춰 그대로 정렬된다. */
   & .featured-item__label {
     padding: 8px 10px;
     font-size: 10.5px;
     font-weight: 500;
     line-height: 1.4;
     color: var(--text-muted);
-    display: -webkit-box;
-    -webkit-line-clamp: 3;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
+    overflow-wrap: anywhere;
   }
 
   & .featured-item__meta {
