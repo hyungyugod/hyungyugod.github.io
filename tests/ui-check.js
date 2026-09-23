@@ -281,8 +281,12 @@ async function run() {
 
   // 콘솔 에러 수집
   const consoleErrors = [];
+  // Cloudflare Web Analytics 비콘은 등록 도메인(hgfolio.com)에서만 허용되어
+  // localhost에서는 항상 CORS/403을 낸다. 사이트 결함이 아니므로 제외한다.
+  const isAnalyticsNoise = (msg) =>
+    /cloudflareinsights/.test(msg.text()) || /cloudflareinsights/.test(msg.location()?.url || '');
   page.on('console', (msg) => {
-    if (msg.type() === 'error') consoleErrors.push(msg.text());
+    if (msg.type() === 'error' && !isAnalyticsNoise(msg)) consoleErrors.push(msg.text());
   });
   page.on('pageerror', (err) => consoleErrors.push(err.message));
 

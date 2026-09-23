@@ -1086,19 +1086,15 @@ html.light .modal-close {
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
   }
 
-  /* 아래 여백은 margin으로 — overflow:hidden은 padding 경계에서 자르므로
-     padding-bottom이 있으면 line-clamp 3번째 줄 윗부분이 비쳐 보인다 */
+  /* 곡 제목은 자르지 않는다 — feat./prod. 크레딧이 붙은 음악 카드는 좁은 폭에서
+     5줄까지 가고, 3줄 클램프에 걸리면 아래가 잘려 나갔다. 그리드 행이 stretch라
+     같은 행의 카드들은 가장 긴 제목 높이에 맞춰 그대로 정렬된다. */
   & .featured-item__label {
-    padding: 8px 10px 0;
-    margin-bottom: 8px;
+    padding: 8px 10px;
     font-size: 12px;
     font-weight: 500;
     line-height: 1.4;
     color: var(--text-muted);
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
     overflow-wrap: anywhere;
   }
 
@@ -1377,7 +1373,7 @@ html.light .modal-close {
   }
 
   .featured-item {
-    & .featured-item__label { padding: 6px 8px 0; margin-bottom: 6px; font-size: 11px; }
+    & .featured-item__label { padding: 6px 8px; font-size: 11px; }
     & .featured-item__meta  { padding: 0 8px 8px; font-size: 10px; }
   }
 
