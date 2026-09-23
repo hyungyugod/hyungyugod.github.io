@@ -198,10 +198,8 @@ document.addEventListener('DOMContentLoaded', () => {
   safeInit(initTyping, 'initTyping');
   safeInit(initScrollReveal, 'initScrollReveal');
   safeInit(initScrollProgress, 'initScrollProgress');
-  safeInit(initMouseParallax, 'initMouseParallax');
-  safeInit(initHeroParallax, 'initHeroParallax');
   safeInit(initNameShine, 'initNameShine');
-  safeInit(initMottoReveal, 'initMottoReveal');
+  safeInit(initCardSpotlight, 'initCardSpotlight');
 });
 
 // -------------------------------------------------------
@@ -299,7 +297,7 @@ function applyFilter(sections, filter) {
 }
 
 /**
- * 카테고리 탭 클릭 시 리플 이펙트 + 페이드 전환 + 섹션 필터 초기화
+ * 페이드 전환 + 섹션 필터 초기화
  */
 function initCategoryFilter() {
   const nav = document.getElementById('categoryNav');
@@ -324,25 +322,6 @@ function initCategoryFilter() {
 
   // 전환 중 재클릭 시 이전 타이머가 새 전환의 인라인 스타일을 지워버리는 것을 막는 토큰
   let transitionToken = 0;
-
-  /**
-   * 클릭 지점에서 퍼지는 리플 생성 — 포인터 좌표가 있을 때만
-   * @param {HTMLElement} btn - 리플을 붙일 버튼
-   * @param {MouseEvent} e - 클릭 이벤트
-   */
-  function addRipple(btn, e) {
-    // 키보드로 활성화된 click은 detail이 0이다. 좌표를 믿으면 리플이 엉뚱한 데 찍힌다
-    if (!e || e.detail === 0) return;
-    if (reduceMotion()) return;
-
-    const ripple = document.createElement('span');
-    ripple.className = 'ripple';
-    const rect = btn.getBoundingClientRect();
-    const size = Math.max(rect.width, rect.height) * 2;
-    ripple.style.cssText = `width:${size}px;height:${size}px;left:${e.clientX - rect.left - size / 2}px;top:${e.clientY - rect.top - size / 2}px`;
-    btn.appendChild(ripple);
-    ripple.addEventListener('animationend', () => ripple.remove());
-  }
 
   /**
    * 카테고리 선택 — 라디오 상태 · roving tabindex · 인디케이터 · 섹션 필터를 갱신
@@ -391,10 +370,7 @@ function initCategoryFilter() {
   }
 
   btns.forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      addRipple(btn, e);
-      select(btn);
-    });
+    btn.addEventListener('click', () => select(btn));
   });
 
   // 방향키 / Home / End 로 이동 — 라디오그룹은 이동과 동시에 선택된다
@@ -570,70 +546,6 @@ function initScrollProgress() {
 }
 
 // -------------------------------------------------------
-// 히어로 마우스 패럴랙스
-// -------------------------------------------------------
-
-/**
- * 마우스 움직임에 따라 히어로 배경을 미세하게 이동시키는 패럴랙스 효과
- */
-function initMouseParallax() {
-  const heroBg = document.querySelector('.hero-bg');
-  if (!heroBg) return;
-  if (window.matchMedia('(hover: none)').matches) return;
-  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-
-  heroBg.style.transform = 'scale(1.08)';
-  let targetX = 0, targetY = 0, currentX = 0, currentY = 0;
-  let running = false;
-
-  // 목표값에 수렴하면 루프를 멈춘다. 그러지 않으면 마우스가 멈춰 있어도
-  // 페이지가 열려 있는 내내 매 프레임 style을 쓰게 된다
-  function tick() {
-    currentX += (targetX - currentX) * 0.07;
-    currentY += (targetY - currentY) * 0.07;
-    heroBg.style.transform = `scale(1.08) translate(${currentX}px, ${currentY}px)`;
-
-    if (Math.abs(targetX - currentX) < 0.01 && Math.abs(targetY - currentY) < 0.01) {
-      running = false;
-      return;
-    }
-    requestAnimationFrame(tick);
-  }
-
-  document.addEventListener('mousemove', (e) => {
-    targetX = (e.clientX / window.innerWidth - 0.5) * 18;
-    targetY = (e.clientY / window.innerHeight - 0.5) * 18;
-    if (!running) {
-      running = true;
-      requestAnimationFrame(tick);
-    }
-  }, { passive: true });
-}
-
-// -------------------------------------------------------
-// 히어로 스크롤 힌트 페이드
-// -------------------------------------------------------
-
-/**
- * 스크롤 시 히어로 하단 scroll-hint를 페이드아웃
- * (프로필 본체는 불투명 상태로 유지되어 섹션과 함께 자연스럽게 밀려남)
- */
-function initHeroParallax() {
-  const hero = document.getElementById('hero');
-  if (!hero) return;
-  const scrollHint = hero.querySelector('.scroll-hint');
-  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-
-  window.addEventListener('scroll', () => {
-    // 스크롤 힌트: 100px 이상 스크롤 시 페이드아웃
-    if (scrollHint) {
-      scrollHint.style.opacity = window.scrollY > 100 ? '0' : '0.5';
-    }
-  }, { passive: true });
-}
-
-
-// -------------------------------------------------------
 // HG 타이틀 마우스 반응 광택
 // -------------------------------------------------------
 
@@ -662,23 +574,34 @@ function initNameShine() {
 }
 
 // -------------------------------------------------------
-// 3C 모토 카드 순차 등장
+// 링크 카드 포인터 스포트라이트
 // -------------------------------------------------------
 
-function initMottoReveal() {
-  const items = document.querySelectorAll('.profile__motto-item');
-  if (!items.length) return;
+/**
+ * 카드 위 포인터 좌표를 --spot-x / --spot-y로 넘겨 플랫폼 색 스포트라이트가 따라오게 함
+ * 이벤트는 .page-wrapper 한 곳에 위임하고, 좌표 기록은 프레임당 한 번으로 제한한다
+ */
+function initCardSpotlight() {
+  const root = document.querySelector('.page-wrapper');
+  if (!root) return;
+  if (window.matchMedia('(hover: none)').matches) return;
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
-  // prefers-reduced-motion 시 즉시 표시
-  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    items.forEach(item => item.classList.add('is-visible'));
-    return;
-  }
-
-  items.forEach((item, i) => {
-    setTimeout(() => {
-      item.classList.add('is-visible');
-    }, i * 150);
-  });
+  let frame = 0;
+  let last = null;
+  // pointermove는 연속 발화하므로 프레임 단위로 합친다
+  root.addEventListener('pointermove', (e) => {
+    if (e.pointerType === 'touch') return;
+    last = e;
+    if (frame) return;
+    frame = requestAnimationFrame(() => {
+      frame = 0;
+      const card = last.target.closest('.link-card');
+      if (!card) return;
+      const rect = card.getBoundingClientRect();
+      card.style.setProperty('--spot-x', `${last.clientX - rect.left}px`);
+      card.style.setProperty('--spot-y', `${last.clientY - rect.top}px`);
+    });
+  }, { passive: true });
 }
 

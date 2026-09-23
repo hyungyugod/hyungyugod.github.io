@@ -41,7 +41,7 @@
   <!-- Font Awesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
-  <link rel="stylesheet" href="/assets/css/style.css?v=20260728-1">
+  <link rel="stylesheet" href="/assets/css/style.css?v=20260923-1">
   <!-- FOUC 방지 테마 복원. 개인정보 보호 모드에서 localStorage 접근이 던질 수 있다 -->
   <script>try{if(localStorage.getItem('theme')==='light')document.documentElement.classList.add('light');}catch(e){}</script>
 </head>
@@ -49,23 +49,21 @@
 
 
   <div class="scroll-progress" id="scrollProgress"></div>
-  <div class="hero-bg">
-  </div>
+
+  <!-- Theme Toggle — .hero(z-index 컨텍스트) 밖에 두어야 fixed 토글이 갇히지 않는다 -->
+  <button class="theme-toggle js-theme-toggle" type="button" aria-label="테마 전환">
+    <i class="fa-solid fa-sun theme-toggle__icon theme-toggle__icon--light" aria-hidden="true"></i>
+    <i class="fa-solid fa-moon theme-toggle__icon theme-toggle__icon--dark" aria-hidden="true"></i>
+  </button>
+
+  <div class="hero-bg" aria-hidden="true"></div>
 
   <section class="hero" id="hero">
-    <!-- Theme Toggle -->
-    <button class="theme-toggle js-theme-toggle" type="button" aria-label="테마 전환">
-      <i class="fa-solid fa-sun theme-toggle__icon theme-toggle__icon--light"></i>
-      <i class="fa-solid fa-moon theme-toggle__icon theme-toggle__icon--dark"></i>
-    </button>
-
     <!-- Profile -->
     <section class="profile">
-      <div class="profile__halo" aria-hidden="true"></div>
       <div class="profile__avatar-wrap">
         <img class="profile__avatar js-open-profile" id="profileAvatar" src="/assets/img/15.jpg" alt="HG" role="button" tabindex="0" aria-label="프로필 열기" width="768" height="512">
       </div>
-      <span class="profile__hint" aria-hidden="true">프로필 확인</span>
       <p class="profile__eyebrow">Velog &amp; GitHub 중심의 작업 기록</p>
       <h1 class="profile__name">HG</h1>
       <p class="profile__subtitle">Developer <span class="profile__dot">·</span> Producer <span class="profile__dot">·</span> Writer</p>
@@ -135,8 +133,6 @@
       </div>
 
     </section>
-
-    <div class="scroll-hint" aria-hidden="true"><i class="fa-solid fa-chevron-down"></i></div>
   </section>
 
   <div class="page-wrapper">
@@ -314,7 +310,7 @@
 
       <!-- SoundCloud -->
       <div class="link-card">
-        <a class="link-card__header" href="https://soundcloud.com/user-928451677?utm_source=clipboard&utm_medium=text&utm_campaign=social_sharing" target="_blank" rel="noopener">
+        <a class="link-card__header" href="https://soundcloud.com/user-928451677" target="_blank" rel="noopener">
           <div class="link-card__icon icon--soundcloud">
             <i class="fa-brands fa-soundcloud" aria-hidden="true"></i>
           </div>
@@ -326,17 +322,20 @@
         </a>
         <div class="link-card__divider"></div>
         <div class="link-card__items">
-          <a class="featured-item" href="https://soundcloud.com/user-928451677/need-feat-sumin" target="_blank" rel="noopener">
-            <img class="featured-item__thumb" src="/assets/img/cover-need.jpg" alt="Need" loading="lazy" width="500" height="500">
-            <div class="featured-item__label">Need (feat. sumin, worldwidekinghyunju)</div>
+          <a class="featured-item" href="https://soundcloud.com/user-928451677/sets/iou" target="_blank" rel="noopener" aria-label="IOU EP SoundCloud에서 듣기">
+            <img class="featured-item__thumb" src="/assets/img/cover-iou.jpg" alt="IOU EP 커버" loading="lazy" width="500" height="500">
+            <div class="featured-item__label">IOU</div>
+            <div class="featured-item__meta">
+              <span class="featured-item__source">EP</span>
+            </div>
           </a>
-          <a class="featured-item" href="https://soundcloud.com/user-928451677/prod-chill-sebs" target="_blank" rel="noopener">
-            <img class="featured-item__thumb" src="/assets/img/cover-crocodile.jpg" alt="악어는 하늘을 나는 꿈을 꾸었다" loading="lazy" width="500" height="500">
-            <div class="featured-item__label">악어는 하늘을 나는 꿈을 꾸었다 (Prod. Chill Sebs)</div>
+          <a class="featured-item" href="https://soundcloud.com/user-928451677/hold-me-tight-feat-hoon-minsu" target="_blank" rel="noopener">
+            <img class="featured-item__thumb" src="/assets/img/cover-holdmetight.jpg" alt="Hold me tight" loading="lazy" width="500" height="500">
+            <div class="featured-item__label">Hold me tight (feat. hoon, MINSU, 성경, Zoogami) (pd. eeryskies., HG)</div>
           </a>
-          <a class="featured-item" href="https://soundcloud.com/user-928451677/burn-it-up-feat-haram-prodsloth" target="_blank" rel="noopener">
-            <img class="featured-item__thumb" src="/assets/img/cover-burnup.jpg" alt="Burn It Up" loading="lazy" width="500" height="500">
-            <div class="featured-item__label">Burn It Up (feat. Haram, 예찬, 유혁, 정재훈, 채원, 석준) (Prod.SLOTH)</div>
+          <a class="featured-item" href="https://soundcloud.com/user-928451677/halis-feat-minsu-hoon-pd" target="_blank" rel="noopener">
+            <img class="featured-item__thumb" src="/assets/img/cover-halis.jpg" alt="HALIS" loading="lazy" width="500" height="500">
+            <div class="featured-item__label">HALIS (feat. MINSU, hoon, 주경, 성경) (pd. GAXILLIC, HG)</div>
           </a>
         </div>
       </div>
@@ -383,7 +382,7 @@
       </div>
       <div class="links">
 
-        <div class="link-card link-card--app">
+        <div class="link-card">
           <a class="link-card__header" href="https://apps.apple.com/kr/app/poppath/id6785336260" target="_blank" rel="noopener" aria-label="App Store에서 출시 앱 보기">
             <div class="link-card__icon icon--app">
               <i class="fa-brands fa-app-store-ios" aria-hidden="true"></i>
@@ -485,10 +484,10 @@
     <!-- Footer -->
     <footer class="footer">
       <div class="footer__social">
-        <a href="mailto:hyungyugod@naver.com" title="Email" aria-label="이메일 보내기"><i class="fa-solid fa-envelope"></i></a>
-        <a href="https://soundcloud.com/user-928451677" target="_blank" rel="noopener" title="SoundCloud" aria-label="SoundCloud 프로필"><i class="fa-brands fa-soundcloud"></i></a>
-        <a href="https://www.instagram.com/hy_nxx9/" target="_blank" rel="noopener" title="Instagram" aria-label="Instagram 프로필"><i class="fa-brands fa-instagram"></i></a>
-        <a href="https://github.com/hyungyugod" target="_blank" rel="noopener" title="GitHub" aria-label="GitHub 프로필"><i class="fa-brands fa-github"></i></a>
+        <a href="mailto:hyungyugod@naver.com" title="Email" aria-label="이메일 보내기"><i class="fa-solid fa-envelope" aria-hidden="true"></i></a>
+        <a href="https://soundcloud.com/user-928451677" target="_blank" rel="noopener" title="SoundCloud" aria-label="SoundCloud 프로필"><i class="fa-brands fa-soundcloud" aria-hidden="true"></i></a>
+        <a href="https://www.instagram.com/hy_nxx9/" target="_blank" rel="noopener" title="Instagram" aria-label="Instagram 프로필"><i class="fa-brands fa-instagram" aria-hidden="true"></i></a>
+        <a href="https://github.com/hyungyugod" target="_blank" rel="noopener" title="GitHub" aria-label="GitHub 프로필"><i class="fa-brands fa-github" aria-hidden="true"></i></a>
       </div>
       <p class="footer__text">&copy; 2026 HyunGyu Sung</p>
     </footer>
@@ -499,7 +498,7 @@
   <div class="modal-backdrop" id="profileModal" role="dialog" aria-modal="true" aria-label="프로필">
     <div class="modal-overlay"></div>
     <div class="modal-box">
-      <button class="modal-close" aria-label="닫기"><i class="fa-solid fa-xmark"></i></button>
+      <button class="modal-close" type="button" aria-label="닫기"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
       <div class="modal-photo-wrap">
         <img class="modal-photo" src="/assets/img/imgi_x.jpg" alt="성현규" width="720" height="900">
       </div>
@@ -536,6 +535,6 @@
       </div>
     </div>
   </div>
-  <script src="/assets/js/main.js?v=20260728-1" defer></script>
+  <script src="/assets/js/main.js?v=20260923-1" defer></script>
 </body>
 </html>

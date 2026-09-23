@@ -70,7 +70,8 @@
 
 | 컴포넌트 | HTML 클래스 | JS 함수 |
 |---|---|---|
-| 프로필 섹션 | `.profile` | `initTyping()` `initMottoReveal()` `initNameShine()` |
+| 프로필 섹션 | `.profile` | `initTyping()` `initNameShine()` |
+| 카드 스포트라이트 | `.link-card::after` (`--spot-x/y`) | `initCardSpotlight()` |
 | 카테고리 필터 | `.category-nav` (radiogroup) | `initCategoryFilter()` |
 | 프로필 모달 | `.modal-backdrop` | `initModal()` |
 | 테마 토글 | `.theme-toggle` `.js-theme-toggle` | `initThemeToggle()` |

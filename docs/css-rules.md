@@ -162,17 +162,19 @@ block__element--modifier
 
 | 대상 | 호버 효과 |
 |---|---|
-| 카드 | `translateY(-2px)` + `box-shadow: 0 8px 40px rgba(0,0,0,0.35)` + 보더/배경 변경 |
-| 아이콘 | `scale(1.06~1.08)` |
+| 카드 | `translateY(-2px)` + `box-shadow: var(--shadow-card-hover), 0 6px 24px var(--card-glow)` + 보더/배경 변경 + 포인터 스포트라이트 |
+| 썸네일 | `translateY(-2px)` + `var(--shadow-item-hover)`, 이미지 `scale(1.04)` |
 | 화살표 | `translateX(4px)` + `color: var(--brand)` |
-| 푸터 링크 | `translateY(-2px)` + `color: var(--brand)` |
+| 푸터 링크 | 40px 원형 타깃, `translateY(-2px)` + `color: var(--brand-text)` |
 
 카드별 개성은 **호버 글로우 색**으로만 낸다. 크기·간격·이징은 전부 동일하게 유지한다.
 
 ```css
 .link-card {
-  &:has(.icon--velog):hover { box-shadow: 0 6px 24px var(--glow-velog); }
-  /* 새 플랫폼을 추가하면 :root에 --glow-* 를 선언하고 이 목록에 한 줄 추가 */
+  --card-glow: var(--brand-14);
+  &:has(.icon--velog) { --card-glow: var(--glow-velog); }
+  /* 새 플랫폼을 추가하면 :root에 --glow-* 를 선언하고 이 목록에 한 줄 추가.
+     hover 그림자와 포인터 스포트라이트(::after)가 같은 --card-glow를 쓴다 */
 }
 ```
 
@@ -218,6 +220,7 @@ backdrop-filter: blur(24px) saturate(1.2);
 ## 7. 애니메이션
 
 - **입장**: `opacity:0` + `.is-visible` 토글 (JS `initScrollReveal`) + `nth-child` 순차 딜레이
+- **link-card**는 `card-rise` keyframes (fill-mode `backwards`) — `transition-delay`로 순차를 내면 hover 반응까지 늦어지고, `both`/`forwards`는 hover lift를 막는다
 - **스켈레톤**: `shimmer-sweep`(2s) + `pulse-glow`(2.2s)
 - 새 `@keyframes`는 그 애니메이션을 쓰는 컴포넌트 블록 바로 아래에 배치한다 (파일 곳곳에 분산되어 있음)
 
