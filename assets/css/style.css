@@ -28,7 +28,7 @@
   --border-hover: rgba(255,255,255,0.14);
   --radius: 10px;
   --radius-sm: 6px;
-  --radius-lg: 16px;          /* game.css가 참조 */
+  --radius-lg: 16px;          /* 프로필 모달 박스 */
   --font: 'Inter', 'Noto Sans KR', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --transition: 0.55s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   --spring-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -65,6 +65,7 @@
   --card-icon: 44px;         /* 아이콘 정사각 크기 */
   --card-icon-radius: 12px;  /* 아이콘 라운드 */
   --stack-gap: 40px;         /* 섹션 사이 세로 간격 */
+  --embed-h: 300px;          /* 임베드 행(B 티어) 플레이어 높이 — SoundCloud visual 원문 값 */
   --glow-naver: rgba(3, 199, 90, 0.18);
 
   /* Quiet Glass */
@@ -794,12 +795,16 @@ html.light .modal-close {
   }
 }
 
-/* 6개 탭 합계(802px)가 링크 컬럼(≤760px)보다 넓다.
-   컬럼 밖으로 확장시켜 알약 1행을 유지하되, 뷰포트를 넘지 않도록 상한을 둔다.
-   상한에 걸리는 좁은 폭에서는 기존 가로 스크롤 동작이 그대로 유지된다. */
+/* 데스크톱에서는 탭 알약을 링크 컬럼 폭에 묶지 않는다. 탭이 늘어 컬럼보다 넓어지면
+   컬럼 밖으로 확장해 1행을 유지하고, 뷰포트를 넘지 않도록 상한만 둔다.
+   상한에 걸리는 좁은 폭에서는 기존 가로 스크롤 동작이 그대로 유지된다.
+   가운데 정렬은 left 50% + translateX(-50%)가 맡는다. auto 마진을 남겨 두면 알약이
+   컬럼보다 좁을 때 한 번 더 밀려 오른쪽으로 치우친다 (5개 탭에서 32px) */
 @media (min-width: 521px) {
   .category-nav {
     max-width: calc(100vw - 32px);
+    margin-left: 0;
+    margin-right: 0;
     left: 50%;
     transform: translateX(-50%);
   }
@@ -911,7 +916,6 @@ html.light .modal-close {
   &:has(.icon--soundcloud) { --card-glow: var(--glow-soundcloud); }
   &:has(.icon--app)        { --card-glow: var(--glow-app); }
   &:has(.icon--instagram)  { --card-glow: var(--glow-instagram); }
-  &:has(.icon--instagram2) { --card-glow: var(--glow-instagram); }
   &:has(.icon--naver)      { --card-glow: var(--glow-naver); }
 
   /* 등장은 keyframes로 — transition-delay가 hover 반응까지 늦추지 않도록.
@@ -1029,10 +1033,24 @@ html.light .modal-close {
     z-index: 1;
   }
 
-  /* 피처 행 — 프리뷰 3개 대신 16:10 커버 1개 */
-  &.link-card--feature {
-    & .link-card__items { grid-template-columns: 1fr; }
-    & .featured-item__thumb { height: auto; aspect-ratio: 16 / 10; }
+  /* B 티어: 임베드 행 — 본문이 재생 위젯인 카드. 썸네일 그리드 대신 세로 스택 */
+  &.link-card--embed {
+    & .link-card__items {
+      grid-template-columns: 1fr;
+      gap: var(--card-pad-y);
+    }
+
+    /* 위젯 위에서 카드가 들썩이지 않게 리프트만 끈다 (글로우·스포트라이트·화살표는 유지) */
+    &:hover { transform: none; }
+  }
+
+  /* 앱 행: 앱이 2개라 3열 그리드의 한 칸 폭은 그대로 두고 가운데로 모은다.
+     앱이 다시 3개가 되면 이 규칙을 지우면 기본 3열로 돌아간다 */
+  &.link-card--app {
+    & .link-card__items {
+      grid-template-columns: repeat(2, calc((100% - 2 * var(--card-items-gap)) / 3));
+      justify-content: center;
+    }
   }
 }
 
@@ -1212,7 +1230,7 @@ html.light .modal-close {
         display: block;
         height: 8px;
         border-radius: 4px;
-        background: rgba(255,255,255,0.04);
+        background: var(--border);   /* 흰색 고정값은 라이트 테마에서 보이지 않았다 */
         position: relative;
         overflow: hidden;
       }
@@ -1243,6 +1261,101 @@ html.light .modal-close {
   }
 }
 
+/* ---- Embed Items (B 티어 본문) ----
+   iframe은 링크로 감쌀 수 없고 움직여서도 안 된다. 그래서 .featured-item과
+   다른 블록으로 분리해 hover 변형·카운터 배지가 구조적으로 붙지 않게 했다. */
+.embed-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+
+  & .embed-item__frame {
+    display: block;
+    width: 100%;
+    height: var(--embed-h);
+    border: 0;
+    border-radius: var(--radius-sm);
+    /* 로딩 전·lazy 대기 중 빈 판: 카드 톤 위에 코럴 빛이 한쪽에서 스미는 정지 그라디언트 */
+    background:
+      linear-gradient(135deg, var(--brand-08), transparent 55%),
+      var(--bg-item);
+    box-shadow: 0 0 0 1px var(--border);
+    transition: box-shadow var(--transition);
+  }
+
+  & .embed-item__caption {
+    min-width: 0;
+  }
+
+  & .embed-item__link {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    min-width: 0;
+    padding: 2px;
+    border-radius: var(--radius-sm);
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 12px;
+    line-height: 1.4;
+    transition: color var(--transition);
+  }
+
+  & .embed-item__index {
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.6px;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-dim);
+    transition: color var(--transition);
+  }
+
+  & .embed-item__title {
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    color: var(--text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+  }
+
+  & .embed-item__by {
+    color: var(--text-dim);
+    font-weight: 500;
+
+    &::before {
+      content: "·";
+      margin-right: 8px;
+    }
+  }
+
+  & .embed-item__arrow {
+    margin-left: auto;
+    font-size: 10.5px;
+    color: var(--text-dim);
+    transition: color var(--transition), transform var(--transition);
+  }
+
+  /* "지금 이 앨범" — 포인터가 판이나 캡션에 닿거나 포커스가 들어오면 링과 번호만 켜진다 */
+  &:hover,
+  &:focus-within {
+    & .embed-item__frame { box-shadow: 0 0 0 1px var(--brand-35); }
+    & .embed-item__index { color: var(--brand-text); }
+  }
+
+  & .embed-item__link:hover,
+  & .embed-item__link:focus-visible {
+    color: var(--brand-text);
+
+    & .embed-item__arrow {
+      color: var(--brand);
+      transform: translate(2px, -2px);
+    }
+  }
+}
+
 @keyframes shimmer-sweep {
   0%   { background-position: 250% 0; }
   100% { background-position: -250% 0; }
@@ -1264,14 +1377,12 @@ html.light .modal-close {
 /* ---- Platform Icon Colors ---- */
 .icon--soundcloud { background: linear-gradient(135deg, #ff5500, #ff7700); color: #fff; }
 .icon--instagram  { background: linear-gradient(135deg, #833AB4, #E1306C, #F77737); color: #fff; }
-.icon--instagram2 { background: linear-gradient(135deg, #405DE6, #5851DB, #833AB4); color: #fff; }
 .icon--melon      { background: linear-gradient(135deg, #00cd3c, #00a832); color: #fff; }
 .icon--brunch     { background: #111; color: #ddd; border: 1px solid rgba(255,255,255,0.1); }
 .icon--velog      { background: linear-gradient(135deg, #20c997, #12b886); color: #fff; }
 .icon--github     { background: #ececec; color: #0a0a0a; }
 .icon--naver      { background: #03C75A; color: #fff; }
 .icon--app        { background: var(--platform-app-14); color: var(--platform-app); }
-.icon--game       { background: var(--brand-12); color: var(--brand-text); border: 1px solid var(--brand-20); }
 
 /* ---- Footer ---- */
 .footer {
@@ -1329,6 +1440,7 @@ html.light .modal-close {
     --card-icon: 40px;
     --card-icon-radius: 10px;
     --stack-gap: 28px;
+    --embed-h: 260px;
   }
 
   /* 토큰으로 표현되지 않는 모바일 전용 값 (축소된 아이콘 박스에 맞춘 글리프/간격) */
@@ -1415,12 +1527,19 @@ html.light .modal-close {
   justify-content: center;
   padding: 24px;
   opacity: 0;
+  /* 닫힌 모달은 보이지 않을 뿐 아니라 Tab 순서와 스크린리더에서도 빠져야 한다.
+     visibility는 페이드아웃이 끝난 뒤(0.38s)에 꺼지고, 열릴 때는 즉시 켜진다 */
+  visibility: hidden;
   pointer-events: none;
-  transition: opacity 0.38s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  transition:
+    opacity 0.38s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+    visibility 0s linear 0.38s;
 
   &.is-open {
     opacity: 1;
+    visibility: visible;
     pointer-events: auto;
+    transition-delay: 0s;
 
     & .modal-box {
       transform: scale(1) translateY(0);
@@ -1565,6 +1684,11 @@ html.light .modal-close {
         width: 14px;
       }
 
+      /* 라벨과 보조 줄을 한 덩어리로 — li가 flex 행이라 감싸지 않으면 <br>이 무시되고 둘이 옆으로 나란히 선다 */
+      & .modal-info__text {
+        min-width: 0;
+      }
+
       & .modal-info__sub {
         font-size: 11px;
         color: var(--text-dim);
@@ -1636,18 +1760,18 @@ html.light .modal-close {
     }
   }
 
-  /* 모달 닫기 애니메이션 */
+  /* 모달 닫기 애니메이션 — 오버레이만이 아니라 backdrop 전체를 내린다.
+     오버레이만 0으로 보내면 클래스가 빠지는 순간 오버레이가 1로 되돌아와
+     어두운 막이 한 번 더 번쩍인 뒤에야 사라진다 */
   &.is-closing {
+    opacity: 0;
+    transition: opacity 0.25s ease-in;
+
     & .modal-box {
       transform: scale(0.95) translateY(12px);
       opacity: 0;
       transition-timing-function: ease-in;
       transition-duration: 0.25s;
-    }
-
-    & .modal-overlay {
-      opacity: 0;
-      transition: opacity 0.25s ease-in;
     }
   }
 }
@@ -1669,6 +1793,8 @@ html.light .modal-close {
   .profile .profile__action:hover,
   .link-card .featured-item:hover,
   .footer .footer__social a:hover { transform: none; }
+  .embed-item .embed-item__link:hover .embed-item__arrow,
+  .embed-item .embed-item__link:focus-visible .embed-item__arrow { transform: none; }
 
   .hero .profile__avatar-wrap,
   .hero .profile__eyebrow,

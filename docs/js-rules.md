@@ -55,7 +55,7 @@ document.querySelectorAll('.js-trigger').forEach(el => el.addEventListener('clic
 
 ## 5. 비동기 처리
 
-**`async/await` + `fetchWithTimeout()` + `try/catch/finally`** 패턴 고정.
+**`async/await` + `fetchWithTimeout()` + `try/catch`** 패턴 고정. `finally`는 정리할 것이 실제로 있을 때만 쓴다 (빈 블록 금지).
 
 ```js
 async function fetchSomething() {
@@ -77,7 +77,7 @@ async function fetchSomething() {
   } catch (e) {
     console.warn('Fetch failed:', e);
     showFetchError(container, e.name === 'AbortError' ? '응답 시간 초과' : '불러오기 실패 — 새로고침 해보세요');
-  } finally { }
+  }
 }
 ```
 
@@ -87,7 +87,7 @@ async function fetchSomething() {
 
 | 함수 | 용도 | 필수 사용 시점 |
 |---|---|---|
-| `esc(str)` | HTML 특수문자 이스케이프 | 외부 데이터 → innerHTML 삽입 시 |
+| `esc(str)` | HTML 특수문자 이스케이프 (`& < > " '`) | 외부 데이터 → innerHTML 삽입 시 |
 | `safeUrl(url)` | http/https 스킴 검증 + URL 정규화 | 외부 URL → href/src 삽입 시 |
 
 ### `safeUrl`은 `esc`를 대신하지 않는다
@@ -105,6 +105,41 @@ const href = safeUrl(item.url);
 정규화가 따옴표를 `%22`로 바꿔주지만, 그 한 겹에만 의존하지 않는다.
 
 **규칙: 외부에서 온 값이 innerHTML 템플릿에 들어가면 — 속성이든 텍스트든 — 예외 없이 `esc()`를 거친다.**
+
+### CSP — 페이지가 불러올 수 있는 출처 목록
+
+`index.html` `<head>`의 `<meta http-equiv="Content-Security-Policy">`가 스크립트·스타일·폰트·이미지·
+API·iframe의 출처를 못 박는다. `esc()`가 한 군데서 빠지더라도 주입된 인라인 스크립트와 `on*` 핸들러는
+실행되지 않는다 — 두 번째 방어선이다.
+
+| 추가하는 것 | 손볼 지시어 |
+|---|---|
+| 외부 스크립트 | `script-src` |
+| 외부 스타일시트 / 웹폰트 | `style-src` / `font-src` |
+| `fetch()` 대상 API | `connect-src` |
+| iframe 임베드 | `frame-src` |
+
+- 출처를 넣지 않으면 **조용히 차단**된다. 콘솔에 `Refused to …` 오류가 뜨므로 `npm run ui-check`의 콘솔 에러 검사가 잡는다.
+- `<head>`의 인라인 테마 스크립트는 `'sha256-…'` 해시로 허용돼 있다. 내용을 한 글자라도 바꾸면 해시를 다시 계산해 메타에 넣는다
+  (스크립트 안에 따옴표가 있어 셸에 붙여 넣는 방식은 깨진다 — 파일에서 직접 읽는다):
+  ```bash
+  python3 -c "import hashlib,base64,re;s=open('index.html',encoding='utf-8').read();print(base64.b64encode(hashlib.sha256(re.search(r'<script>(.*?)</script>',s,re.S).group(1).encode()).digest()).decode())"
+  ```
+- `style="…"` 속성과 `<style>` 태그는 차단된다. JS에서 `el.style.x = …`로 값을 쓰는 것은 허용된다.
+- `'unsafe-inline'` · `'unsafe-eval'`을 추가해서 해결하지 않는다.
+
+### SRI — CDN 파일 무결성
+
+Font Awesome `<link>`에는 `integrity="sha512-…"`가 붙어 있다. CDN 파일이 바뀌면 브라우저가 로드를 거부한다.
+버전을 올릴 때는 `https://api.cdnjs.com/libraries/font-awesome/<버전>?fields=sri`의 값으로 해시를 함께 바꾼다.
+
+### 외부 중계 서비스는 믿지 않는다
+
+Velog RSS는 CORS를 허용하지 않아 공개 중계 서비스(rss2json, codetabs)를 거친다. 이 서비스들은
+**응답을 마음대로 바꿀 수 있는 제3자**이고 자주 멈춘다. 그래서:
+- 응답 값은 전부 `esc()` / `safeUrl()`을 거친다 (제목·링크·이미지·날짜 예외 없음)
+- 소스마다 `{title, link, image, date}`로 정규화하는 로더 함수를 두고, `fetchVelog()`가 순서대로 시도한다
+- 새 소스를 추가하면 로더 함수 하나 + `connect-src` 출처 하나를 더한다
 
 ---
 
@@ -166,7 +201,8 @@ element.classList.remove('is-hidden');
 
 ## 11. 접근성
 
-- 모달: 포커스 트랩 (Tab/Shift+Tab 순환) + Escape 닫기 + 포커스 복귀
+- 모달: 포커스 트랩 (Tab/Shift+Tab 순환) + Escape 닫기 + **모달을 연 트리거로** 포커스 복귀
+- 닫힌 모달은 CSS `visibility: hidden`으로 Tab 순서와 스크린리더에서 빠진다. `opacity: 0`만으로는 안 보이는 링크에 포커스가 들어간다
 - 포커스 선택자: `'a[href],button:not([disabled]),input,textarea,select,[tabindex]:not([tabindex="-1"])'`
 
 ### 버튼이 아닌 요소를 클릭 트리거로 쓸 때

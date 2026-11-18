@@ -74,22 +74,19 @@ async function saveScreenshot(page, name) {
 // 체크 함수들
 // ---------------------------------------------------------------------------
 
-/** 테마 토글: 다크 → 라이트 → 다크 (데스크탑에서는 네비바 버튼 사용) */
+/** 테마 토글: 다크 → 라이트 → 다크, theme-color 메타가 사이트 테마를 따라가는지 */
 async function checkThemeToggle(page) {
   try {
-    // 데스크탑(1280px)에서는 네비바 테마 버튼, 모바일에서는 기존 버튼
-    let btn = page.locator('.js-theme-toggle-desktop').first();
-    const desktopVisible = await btn.isVisible().catch(() => false);
-    if (!desktopVisible) {
-      btn = page.locator('.js-theme-toggle').first();
-    }
+    const btn = page.locator('.js-theme-toggle').first();
     await btn.waitFor({ timeout: 3000 });
+    const themeColor = () => page.evaluate(() => document.querySelector('meta[name="theme-color"]')?.content);
 
     await btn.click();
     await page.waitForFunction(
       () => document.documentElement.classList.contains('light'),
       { timeout: 2000 }
     );
+    const lightColor = await themeColor();
     await saveScreenshot(page, 'theme-light');
 
     await btn.click();
@@ -97,68 +94,56 @@ async function checkThemeToggle(page) {
       () => !document.documentElement.classList.contains('light'),
       { timeout: 2000 }
     );
+    const darkColor = await themeColor();
     await saveScreenshot(page, 'theme-dark');
 
-    return { name: '테마 토글', passed: true, detail: '다크→라이트→다크 전환 정상' };
+    if (!lightColor || lightColor === darkColor) {
+      return { name: '테마 토글', passed: false, detail: `theme-color가 테마를 따라가지 않음 (${lightColor} / ${darkColor})` };
+    }
+    return { name: '테마 토글', passed: true, detail: `다크→라이트→다크 전환 정상, theme-color ${lightColor} ↔ ${darkColor}` };
   } catch (e) {
     return { name: '테마 토글', passed: false, detail: e.message.split('\n')[0] };
   }
 }
 
-/** 카테고리 필터: writing / music / social / all */
+/** 카테고리 필터: 탭과 섹션이 1:1인지, 탭마다 해당 섹션만 남는지, all에서 전부 돌아오는지 */
 async function checkCategoryFilter(page) {
-  const filters = ['writing', 'music', 'social'];
   const results = [];
 
-  // 데스크탑(900px+)에서는 카테고리 탭이 숨겨지고 모든 섹션이 표시됨
-  const catNavVisible = await page.locator('#categoryNav').isVisible().catch(() => false);
-  if (!catNavVisible) {
-    // 데스크탑 모드: 네비바 링크로 대체. 모든 섹션이 표시되는지 확인
-    const allVisible = await page.evaluate(() => {
-      const sections = document.querySelectorAll('[data-category]');
-      return Array.from(sections).every(s => !s.classList.contains('is-hidden'));
-    });
-    results.push({
-      name: '데스크탑 네비바 — 모든 섹션 표시',
-      passed: allVisible,
-      detail: allVisible ? '3개 섹션 모두 표시 확인' : '일부 섹션 숨겨짐',
-    });
-
-    // 네비바 링크 존재 확인
-    const navLinks = await page.locator('.desktop-nav__link').count();
-    results.push({
-      name: '데스크탑 네비바 — 링크 수',
-      passed: navLinks === 3,
-      detail: `${navLinks}개 링크 확인`,
-    });
-
-    await saveScreenshot(page, 'filter-writing');
-    return results;
-  }
-
   try {
+    const { filters, categories } = await page.evaluate(() => ({
+      filters: Array.from(document.querySelectorAll('.category-nav__btn'))
+        .map((b) => b.dataset.filter)
+        .filter((f) => f !== 'all'),
+      categories: Array.from(document.querySelectorAll('.category-section')).map((s) => s.dataset.category),
+    }));
+
+    // 탭만 있고 섹션이 없는(또는 그 반대) 카테고리는 죽은 탭이 된다
+    const matched = filters.join(',') === categories.join(',');
+    results.push({
+      name: '카테고리 탭 ↔ 섹션',
+      passed: matched,
+      detail: matched ? `${filters.length}개 카테고리 일치 (${filters.join(', ')})` : `탭 [${filters}] / 섹션 [${categories}]`,
+    });
+
     for (const cat of filters) {
       const btn = page.locator(`[data-filter="${cat}"]`).first();
       await btn.waitFor({ timeout: 3000 });
       await btn.click();
       await wait(300);
 
-      // 해당 카테고리 외 섹션에 is-hidden 존재 여부
-      const hiddenCount = await page.evaluate((category) => {
-        const sections = document.querySelectorAll('[data-category]');
-        let count = 0;
-        sections.forEach((s) => {
-          if (s.dataset.category !== category && s.classList.contains('is-hidden')) count++;
-        });
-        return count;
-      }, cat);
-
-      if (hiddenCount === 0) {
-        results.push({ name: `카테고리 필터 (${cat})`, passed: false, detail: `클릭 후 다른 섹션에 is-hidden 없음` });
-      } else {
-        if (cat === 'writing') await saveScreenshot(page, 'filter-writing');
-        results.push({ name: `카테고리 필터 (${cat})`, passed: true, detail: `${hiddenCount}개 섹션 숨김 확인` });
-      }
+      const shown = await page.evaluate(() =>
+        Array.from(document.querySelectorAll('.category-section'))
+          .filter((s) => !s.classList.contains('is-hidden'))
+          .map((s) => s.dataset.category)
+      );
+      const onlyTarget = shown.length === 1 && shown[0] === cat;
+      if (cat === filters[0]) await saveScreenshot(page, `filter-${cat}`);
+      results.push({
+        name: `카테고리 필터 (${cat})`,
+        passed: onlyTarget,
+        detail: onlyTarget ? '해당 섹션만 표시' : `표시된 섹션: [${shown}]`,
+      });
     }
 
     // all 복귀
@@ -166,7 +151,7 @@ async function checkCategoryFilter(page) {
     await allBtn.click();
     await wait(300);
     const stillHidden = await page.evaluate(() => {
-      return document.querySelectorAll('[data-category].is-hidden').length;
+      return document.querySelectorAll('.category-section.is-hidden').length;
     });
     results.push({
       name: '카테고리 필터 (all)',
@@ -180,9 +165,14 @@ async function checkCategoryFilter(page) {
   return results;
 }
 
-/** 프로필 모달 열기/닫기 */
+/** 프로필 모달 열기/닫기 — 닫힌 모달이 포커스·스크린리더에서 빠지는지까지 확인 */
 async function checkModal(page) {
+  const modalVisibility = () =>
+    page.evaluate(() => getComputedStyle(document.getElementById('profileModal')).visibility);
+
   try {
+    const closedBefore = await modalVisibility();
+
     // 버튼 요소를 우선 시도 (img보다 안정적으로 클릭 가능)
     const openBtn = page.locator('button.js-open-profile').first();
     await openBtn.waitFor({ timeout: 3000 });
@@ -198,10 +188,22 @@ async function checkModal(page) {
       () => !document.getElementById('profileModal')?.classList.contains('is-open'),
       { timeout: 2000 }
     );
+    // visibility는 페이드아웃(0.38s) 뒤에 꺼진다
+    await page.waitForFunction(
+      () => getComputedStyle(document.getElementById('profileModal')).visibility === 'hidden',
+      { timeout: 2000 }
+    ).catch(() => {});
+    const closedAfter = await modalVisibility();
+    const hiddenWhenClosed = closedBefore === 'hidden' && closedAfter === 'hidden';
 
     return [
       { name: '프로필 모달 열기', passed: true, detail: '#profileModal.is-open 추가 확인' },
       { name: '프로필 모달 닫기', passed: true, detail: 'is-open 클래스 정상 제거' },
+      {
+        name: '닫힌 모달 숨김',
+        passed: hiddenWhenClosed,
+        detail: hiddenWhenClosed ? 'visibility: hidden — Tab 순서에서 제외' : `visibility 열기 전 ${closedBefore} / 닫은 뒤 ${closedAfter}`,
+      },
     ];
   } catch (e) {
     return [{ name: '프로필 모달', passed: false, detail: e.message.split('\n')[0] }];

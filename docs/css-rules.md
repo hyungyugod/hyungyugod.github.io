@@ -57,7 +57,7 @@ SCSS는 `&--variant`를 `.block--variant`로 **문자열 연결**하지만, CSS 
 새 색상이 필요하면 `:root`와 `html.light` **양쪽**에 추가한다. 한쪽만 넣으면 반대 테마에서 값이 샌다.
 
 **배경:**
-`--bg: #0f0e15` · `--bg-dark: #09080f` · `--bg-card: rgba(23,21,30,0.82)` · `--bg-card-hover: rgba(30,28,40,0.9)`
+`--bg: #0f0e15` · `--bg-dark: #09080f` · `--bg-card: rgba(23,21,30,0.82)` · `--bg-card-hover: rgba(30,28,40,0.9)` · `--bg-item: #09080f` (카드 안 아이템·임베드 빈 판)
 
 **브랜드 (더스티 로즈):**
 `--brand: #c4847a` · `--brand-light: #d4a49c` (라이트 테마: `#b07068` / `#c48a82`)
@@ -91,11 +91,9 @@ color: var(--brand-light);   /* ❌ 라이트 테마에서 AA 실패 */
 `--radius: 10px` · `--radius-sm: 6px` · `--radius-lg: 16px` · `--font: 'Inter', 'Noto Sans KR', ...` · `--font-serif: 'Cormorant Garamond', ...` · `--transition: 0.55s cubic-bezier(0.25,0.46,0.45,0.94)` · `--spring-bounce` · `--ease-out-expo`
 
 **플랫폼 아이콘 색상:**
-SoundCloud(`#ff5500→#ff7700`) · Instagram(`#833AB4→#E1306C→#F77737`) · Instagram2(`#405DE6→#5851DB→#833AB4`) · Melon(`#00cd3c→#00a832`) · Brunch(`#111`/`#ddd`) · Velog(`#20c997→#12b886`) · GitHub(`#ececec`/`#0a0a0a`) · Naver(`#03C75A`) · App Store(`--platform-app`)
+SoundCloud(`#ff5500→#ff7700`) · Instagram(`#833AB4→#E1306C→#F77737`) · Melon(`#00cd3c→#00a832`) · Brunch(`#111`/`#ddd`) · Velog(`#20c997→#12b886`) · GitHub(`#ececec`/`#0a0a0a`) · Naver(`#03C75A`) · App Store(`--platform-app`)
 
 **호버 글로우:** `--glow-velog` `--glow-brunch` `--glow-github` `--glow-melon` `--glow-soundcloud` `--glow-instagram` `--glow-naver` `--glow-app`
-
-> `assets/css/game.css`는 이 변수들을 그대로 상속해서 쓴다. `:root` 변수를 지울 때는 `style.css`뿐 아니라 **`game.css`의 `var()` 참조도 함께 확인**해야 한다.
 
 ---
 
@@ -105,10 +103,10 @@ SoundCloud(`#ff5500→#ff7700`) · Instagram(`#833AB4→#E1306C→#F77737`) · I
 block__element--modifier
 ```
 
-- **Block**: `.link-card`, `.featured-item`, `.profile`, `.modal-backdrop`, `.category-nav`, `.category-section`, `.links`, `.footer`
-- **Element**: `__header`, `__icon`, `__title`, `__desc`, `__arrow`, `__thumb`, `__label`, `__info`, `__divider`, `__items`, `__meta`, `__source`, `__detail`
-- **Modifier**: `--feature`(피처 행), `--loading`(스켈레톤), `--app`(앱 아이콘 썸네일)
-- **아이콘 모디파이어**: `.icon--velog` `--github` `--brunch` `--melon` `--soundcloud` `--app` `--game` `--instagram` `--instagram2` `--naver`
+- **Block**: `.link-card`, `.featured-item`, `.embed-item`, `.profile`, `.modal-backdrop`, `.category-nav`, `.category-section`, `.links`, `.footer`
+- **Element**: `__header`, `__icon`, `__title`, `__desc`, `__arrow`, `__thumb`, `__label`, `__info`, `__divider`, `__items`, `__meta`, `__source`, `__detail`, `__frame`, `__caption`, `__link`, `__index`, `__by`
+- **Modifier**: `--embed`(임베드 행), `--loading`(스켈레톤), `--app`(앱 2개 가운데 정렬(`.link-card--app`) · 앱 아이콘 썸네일(`__thumb--app`))
+- **아이콘 모디파이어**: `.icon--velog` `--github` `--brunch` `--melon` `--soundcloud` `--app` `--instagram` `--naver`
 - **상태 클래스**: `is-` 접두사 → `is-active`, `is-hidden`, `is-open`, `is-visible`, `is-closing`
 - **JS 후크**: `js-` 접두사 → `js-open-profile`, `js-theme-toggle` (스타일 적용 금지, JS 전용 셀렉터)
 
@@ -120,7 +118,7 @@ block__element--modifier
 카드는 `.links` 안에 세로로만 쌓인다. 카드끼리 가로로 나란히 놓지 않는다.
 
 - **Flexbox**: 1차원 레이아웃 (프로필, 네비, 카드 헤더, 푸터)
-- **Grid**: 카드 내부 프리뷰 아이템 (`repeat(3,1fr)`, 피처 행만 `1fr`)
+- **Grid**: 카드 내부 프리뷰 아이템 (`repeat(3,1fr)`, 임베드 행 `1fr`, 앱 행 `repeat(2, calc((100% - 2*gap)/3))` + `justify-content:center`)
 - **max-width**: `.page-wrapper` 기본 `680px` → `@media (min-width:900px)`에서 `760px`
 - **간격**: `gap` 속성만 사용 (margin 간격 조절 지양)
 
@@ -137,6 +135,7 @@ block__element--modifier
 | `--card-icon` | 44px | 40px | 아이콘 정사각 크기 |
 | `--card-icon-radius` | 12px | 10px | 아이콘 라운드 |
 | `--stack-gap` | 40px | 28px | 섹션 사이 세로 간격 |
+| `--embed-h` | 300px | 260px | 임베드 행 플레이어 높이 |
 
 모바일 대응은 **`:root` 재정의 한 블록**으로 끝낸다. 컴포넌트마다 520px 오버라이드를 새로 쓰지 않는다.
 
@@ -144,9 +143,14 @@ block__element--modifier
 
 | 티어 | 구성 | 적용 |
 |---|---|---|
-| A. 프리뷰 행 | `__header` + `__divider` + `__items`(정사각 썸네일 3개) | Velog, GitHub, Brunch, Melon, SoundCloud, App Store |
-| B. 피처 행 | 위와 같되 `.link-card--feature` (16:10 커버 1개) | Game |
-| C. 단독 행 | `__header`만 | Instagram, 지식산책, 네이버 |
+| A. 프리뷰 행 | `__header` + `__divider` + `__items`(정사각 썸네일 3개). 앱은 `.link-card--app`로 2개를 같은 타일 크기로 가운데 정렬 | Velog, GitHub, Brunch, Melon, App Store |
+| B. 임베드 행 | 위와 같되 `.link-card--embed`, `__items` 안에 `.embed-item`(iframe + 캡션 링크) 세로 스택. 카드 hover 리프트 없음 | SoundCloud |
+| C. 단독 행 | `__header`만 | 지식산책, 네이버 |
+
+iframe 규칙:
+- iframe은 `title` 필수 · `loading="lazy"`
+- `width/height/frameborder/scrolling` 속성 금지 (크기·테두리는 CSS)
+- 자동재생 금지 (`auto_play=false`)
 
 `__header`는 세 티어 모두 `[아이콘] [제목/설명] [→]`로 동일하다.
 새 링크를 추가할 때는 셋 중 하나를 고르는 것이지, 새 컴포넌트를 만드는 것이 아니다.
@@ -164,7 +168,7 @@ block__element--modifier
 |---|---|
 | 카드 | `translateY(-2px)` + `box-shadow: var(--shadow-card-hover), 0 6px 24px var(--card-glow)` + 보더/배경 변경 + 포인터 스포트라이트 |
 | 썸네일 | `translateY(-2px)` + `var(--shadow-item-hover)`, 이미지 `scale(1.04)` |
-| 화살표 | `translateX(4px)` + `color: var(--brand)` |
+| 화살표 | `translateX(3px)` + `color: var(--brand)` |
 | 푸터 링크 | 40px 원형 타깃, `translateY(-2px)` + `color: var(--brand-text)` |
 
 카드별 개성은 **호버 글로우 색**으로만 낸다. 크기·간격·이징은 전부 동일하게 유지한다.
@@ -234,7 +238,7 @@ backdrop-filter: blur(24px) saturate(1.2);
 - `@media (max-width: 520px)` — **모바일 기준 브레이크포인트**
   - 맨 위 `:root` 블록에서 `--card-*` / `--stack-gap` 토큰을 재정의한다 (컴포넌트별 오버라이드 대신)
   - 프로필 축소, 모달 `max-width: 92vw`
-- `@media (min-width: 521px)` — 카테고리 탭바가 6개를 한 줄에 담도록 컬럼 폭을 넘어 확장
+- `@media (min-width: 521px)` — 카테고리 탭 알약을 컬럼 폭에 묶지 않고 `left: 50%` + `translateX(-50%)`로 가운데 정렬 (auto 마진을 남기면 알약이 컬럼보다 좁을 때 오른쪽으로 치우친다)
 - `@media (min-width: 900px)` — 데스크톱: 히어로 높이, `.page-wrapper` 760px
 - `@media (prefers-reduced-motion: reduce)` — 접근성
   - `*` 규칙으로 모든 애니메이션/트랜지션을 사실상 0으로 만든 뒤, 개별 컴포넌트의 `opacity`/`transform` 잔상을 정리

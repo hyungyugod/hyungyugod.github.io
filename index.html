@@ -3,10 +3,13 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- CSP — 이 페이지가 불러올 수 있는 출처를 못 박아 둔다. 외부 리소스(스크립트·스타일·폰트·API·임베드)를
+       추가하면 해당 지시어에 출처를 함께 넣어야 한다. 규칙은 docs/js-rules.md §6 -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://static.cloudflareinsights.com 'sha256-xJ4EaEOHv88Cq0Hl3MvhAkMISahtSOv8y7wf/1fUnVM='; style-src 'self' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: https:; connect-src 'self' https://api.github.com https://api.rss2json.com https://api.codetabs.com https://cloudflareinsights.com; frame-src https://w.soundcloud.com; object-src 'none'; base-uri 'self'; form-action 'none'">
   <title>HGFOLIO — 성현규 (HG)</title>
   <meta name="description" content="성현규(HG)의 작업 기록. 개발 · 음악 프로듀싱 · 글쓰기 — Velog, GitHub, Brunch, Melon, SoundCloud와 App Store에 출시한 iOS 앱을 한곳에 모았습니다.">
-  <meta name="theme-color" content="#0f0e15" media="(prefers-color-scheme: dark)">
-  <meta name="theme-color" content="#faf9fb" media="(prefers-color-scheme: light)">
+  <!-- 기본은 다크. 라이트로 바뀌면 initThemeToggle()이 값을 맞춘다 (OS 설정이 아니라 사이트 테마 기준) -->
+  <meta name="theme-color" content="#0f0e15">
 
   <link rel="canonical" href="https://hgfolio.com/">
   <link rel="icon" href="/favicon.ico">
@@ -38,11 +41,12 @@
   <!-- Fonts: only used weights -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700;800;900&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
-  <!-- Font Awesome -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <!-- Font Awesome — integrity(SRI)로 CDN 파일이 바뀌면 로드를 거부한다. 버전을 올리면 해시도 함께 바꿀 것 -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer">
 
-  <link rel="stylesheet" href="/assets/css/style.css?v=20260923-1">
-  <!-- FOUC 방지 테마 복원. 개인정보 보호 모드에서 localStorage 접근이 던질 수 있다 -->
+  <link rel="stylesheet" href="/assets/css/style.css?v=20261118-1">
+  <!-- FOUC 방지 테마 복원. 개인정보 보호 모드에서 localStorage 접근이 던질 수 있다.
+       이 스크립트를 한 글자라도 고치면 위 CSP의 sha256 해시를 다시 계산해야 실행된다 -->
   <script>try{if(localStorage.getItem('theme')==='light')document.documentElement.classList.add('light');}catch(e){}</script>
 </head>
 <body>
@@ -70,7 +74,7 @@
       <p class="profile__statement">
         쓰면서 배우고, 코드로 확인하며, 최근 작업을 계속 공개합니다.
       </p>
-      <div class="profile__actions" aria-label="주요 링크">
+      <div class="profile__actions" role="group" aria-label="주요 링크">
         <a class="profile__action profile__action--primary" href="https://velog.io/@hyungyugod/posts" target="_blank" rel="noopener">
           <i class="fa-solid fa-code" aria-hidden="true"></i>
           Velog
@@ -84,7 +88,7 @@
           Profile
         </button>
       </div>
-      <div class="profile__motto" aria-label="개인 모토">
+      <div class="profile__motto" role="group" aria-label="개인 모토">
         <div class="profile__motto-item">
           <div class="profile__motto-front">
             <span class="profile__motto-letter" aria-hidden="true">C</span>
@@ -163,13 +167,6 @@
           <circle cx="17" cy="16" r="3"/>
         </svg>
         <span class="category-nav__label">Music</span>
-      </button>
-      <button class="category-nav__btn" data-filter="game" type="button" role="radio" aria-checked="false" tabindex="-1">
-        <svg class="category-nav__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M6 9h4M8 7v4M15 10h.01M18 8h.01"/>
-          <rect x="2.5" y="6" width="19" height="12" rx="4"/>
-        </svg>
-        <span class="category-nav__label">Game</span>
       </button>
       <button class="category-nav__btn" data-filter="app" type="button" role="radio" aria-checked="false" tabindex="-1">
         <svg class="category-nav__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -308,70 +305,73 @@
         </div>
       </div>
 
-      <!-- SoundCloud -->
-      <div class="link-card">
+      <!-- SoundCloud — B 티어(임베드 스택): 플레이리스트를 카드 안에서 바로 재생 -->
+      <div class="link-card link-card--embed">
         <a class="link-card__header" href="https://soundcloud.com/user-928451677" target="_blank" rel="noopener">
           <div class="link-card__icon icon--soundcloud">
             <i class="fa-brands fa-soundcloud" aria-hidden="true"></i>
           </div>
           <div class="link-card__info">
             <div class="link-card__title">SoundCloud</div>
-            <div class="link-card__desc">Original tracks &amp; beats</div>
+            <div class="link-card__desc">플레이리스트 3개 · 여기서 바로 재생</div>
           </div>
           <i class="fa-solid fa-arrow-right link-card__arrow" aria-hidden="true"></i>
         </a>
         <div class="link-card__divider"></div>
         <div class="link-card__items">
-          <a class="featured-item" href="https://soundcloud.com/user-928451677/sets/iou" target="_blank" rel="noopener" aria-label="IOU EP SoundCloud에서 듣기">
-            <img class="featured-item__thumb" src="/assets/img/cover-iou.jpg" alt="IOU EP 커버" loading="lazy" width="500" height="500">
-            <div class="featured-item__label">IOU</div>
-            <div class="featured-item__meta">
-              <span class="featured-item__source">EP</span>
-            </div>
-          </a>
-          <a class="featured-item" href="https://soundcloud.com/user-928451677/hold-me-tight-feat-hoon-minsu" target="_blank" rel="noopener">
-            <img class="featured-item__thumb" src="/assets/img/cover-holdmetight.jpg" alt="Hold me tight" loading="lazy" width="500" height="500">
-            <div class="featured-item__label">Hold me tight (feat. hoon, MINSU, 성경, Zoogami) (pd. eeryskies., HG)</div>
-          </a>
-          <a class="featured-item" href="https://soundcloud.com/user-928451677/halis-feat-minsu-hoon-pd" target="_blank" rel="noopener">
-            <img class="featured-item__thumb" src="/assets/img/cover-halis.jpg" alt="HALIS" loading="lazy" width="500" height="500">
-            <div class="featured-item__label">HALIS (feat. MINSU, hoon, 주경, 성경) (pd. GAXILLIC, HG)</div>
-          </a>
+
+          <figure class="embed-item">
+            <iframe class="embed-item__frame"
+              title="HI THERE — HG SoundCloud 플레이리스트"
+              src="https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/playlists/soundcloud%253Aplaylists%253A2326738125&color=%23b07068&auto_play=false&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true&visual=true"
+              loading="lazy"
+              allow="autoplay; encrypted-media"></iframe>
+            <figcaption class="embed-item__caption">
+              <a class="embed-item__link" href="https://soundcloud.com/user-928451677/sets/hi-there" target="_blank" rel="noopener" aria-label="HI THERE · HG 플레이리스트 SoundCloud에서 열기">
+                <span class="embed-item__index" aria-hidden="true">01</span>
+                <span class="embed-item__title">HI THERE</span>
+                <span class="embed-item__by">HG</span>
+                <i class="fa-solid fa-arrow-up-right-from-square embed-item__arrow" aria-hidden="true"></i>
+              </a>
+            </figcaption>
+          </figure>
+
+          <figure class="embed-item">
+            <iframe class="embed-item__frame"
+              title="LIE — HG SoundCloud 플레이리스트"
+              src="https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/playlists/soundcloud%253Aplaylists%253A2312172417&color=%23b07068&auto_play=false&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true&visual=true"
+              loading="lazy"
+              allow="autoplay; encrypted-media"></iframe>
+            <figcaption class="embed-item__caption">
+              <a class="embed-item__link" href="https://soundcloud.com/user-928451677/sets/lie" target="_blank" rel="noopener" aria-label="LIE · HG 플레이리스트 SoundCloud에서 열기">
+                <span class="embed-item__index" aria-hidden="true">02</span>
+                <span class="embed-item__title">LIE</span>
+                <span class="embed-item__by">HG</span>
+                <i class="fa-solid fa-arrow-up-right-from-square embed-item__arrow" aria-hidden="true"></i>
+              </a>
+            </figcaption>
+          </figure>
+
+          <figure class="embed-item">
+            <iframe class="embed-item__frame"
+              title="IOU — HG SoundCloud 플레이리스트"
+              src="https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/playlists/soundcloud%253Aplaylists%253A2300418450&color=%23b07068&auto_play=false&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true&visual=true"
+              loading="lazy"
+              allow="autoplay; encrypted-media"></iframe>
+            <figcaption class="embed-item__caption">
+              <a class="embed-item__link" href="https://soundcloud.com/user-928451677/sets/iou" target="_blank" rel="noopener" aria-label="IOU · HG 플레이리스트 SoundCloud에서 열기">
+                <span class="embed-item__index" aria-hidden="true">03</span>
+                <span class="embed-item__title">IOU</span>
+                <span class="embed-item__by">HG</span>
+                <i class="fa-solid fa-arrow-up-right-from-square embed-item__arrow" aria-hidden="true"></i>
+              </a>
+            </figcaption>
+          </figure>
+
         </div>
       </div>
 
     </div>
-    </section>
-
-    <!-- Game -->
-    <section class="category-section" data-category="game" id="section-game" aria-labelledby="title-game">
-      <div class="category-header">
-        <h2 class="category-title" id="title-game">Game</h2>
-        <p class="section-label">플레이 가능한 미니 프로젝트</p>
-      </div>
-      <div class="links">
-
-        <div class="link-card link-card--feature">
-          <a class="link-card__header" href="/pages/game.html">
-            <div class="link-card__icon icon--game">
-              <i class="fa-solid fa-gamepad" aria-hidden="true"></i>
-            </div>
-            <div class="link-card__info">
-              <div class="link-card__title">김간호는 음악박사</div>
-              <div class="link-card__desc">45초 몰래 작곡 미니게임 · 키보드 &amp; 모바일 패드</div>
-            </div>
-            <i class="fa-solid fa-arrow-right link-card__arrow" aria-hidden="true"></i>
-          </a>
-          <div class="link-card__divider"></div>
-          <div class="link-card__items">
-            <a class="featured-item" href="/pages/game.html" aria-label="김간호는 음악박사 게임 플레이하러 가기">
-              <img class="featured-item__thumb" src="/assets/img/cover-game.jpg" alt="김간호는 음악박사 게임 화면" loading="lazy" width="818" height="740">
-              <div class="featured-item__label">게임하러 가기</div>
-            </a>
-          </div>
-        </div>
-
-      </div>
     </section>
 
     <!-- Released Apps -->
@@ -382,7 +382,7 @@
       </div>
       <div class="links">
 
-        <div class="link-card">
+        <div class="link-card link-card--app">
           <a class="link-card__header" href="https://apps.apple.com/kr/app/poppath/id6785336260" target="_blank" rel="noopener" aria-label="App Store에서 출시 앱 보기">
             <div class="link-card__icon icon--app">
               <i class="fa-brands fa-app-store-ios" aria-hidden="true"></i>
@@ -414,15 +414,6 @@
               </div>
             </a>
 
-            <a class="featured-item" href="https://apps.apple.com/kr/app/lumark/id6776158784" target="_blank" rel="noopener" aria-label="Lumark App Store에서 보기">
-              <img class="featured-item__thumb featured-item__thumb--app" src="/assets/img/app-lumark.png" alt="Lumark 앱 아이콘" width="256" height="256" loading="lazy">
-              <div class="featured-item__label">Lumark</div>
-              <div class="featured-item__meta">
-                <span class="featured-item__source featured-item__source--app">App Store</span>
-                <span class="featured-item__detail">읽고 밑줄 긋는 기록</span>
-              </div>
-            </a>
-
           </div>
         </div>
 
@@ -438,21 +429,8 @@
     <div class="links">
 
       <div class="link-card">
-        <a class="link-card__header" href="https://www.instagram.com/hy_nxx9/" target="_blank" rel="noopener">
-          <div class="link-card__icon icon--instagram">
-            <i class="fa-brands fa-instagram" aria-hidden="true"></i>
-          </div>
-          <div class="link-card__info">
-            <div class="link-card__title">Instagram</div>
-            <div class="link-card__desc">@hy_nxx9</div>
-          </div>
-          <i class="fa-solid fa-arrow-right link-card__arrow" aria-hidden="true"></i>
-        </a>
-      </div>
-
-      <div class="link-card">
         <a class="link-card__header" href="https://www.instagram.com/knowledge_stroll/" target="_blank" rel="noopener">
-          <div class="link-card__icon icon--instagram2">
+          <div class="link-card__icon icon--instagram">
             <i class="fa-brands fa-instagram" aria-hidden="true"></i>
           </div>
           <div class="link-card__info">
@@ -486,7 +464,7 @@
       <div class="footer__social">
         <a href="mailto:hyungyugod@naver.com" title="Email" aria-label="이메일 보내기"><i class="fa-solid fa-envelope" aria-hidden="true"></i></a>
         <a href="https://soundcloud.com/user-928451677" target="_blank" rel="noopener" title="SoundCloud" aria-label="SoundCloud 프로필"><i class="fa-brands fa-soundcloud" aria-hidden="true"></i></a>
-        <a href="https://www.instagram.com/hy_nxx9/" target="_blank" rel="noopener" title="Instagram" aria-label="Instagram 프로필"><i class="fa-brands fa-instagram" aria-hidden="true"></i></a>
+        <a href="https://www.instagram.com/knowledge_stroll/" target="_blank" rel="noopener" title="Instagram · 지식산책" aria-label="지식산책 Instagram (@knowledge_stroll)"><i class="fa-brands fa-instagram" aria-hidden="true"></i></a>
         <a href="https://github.com/hyungyugod" target="_blank" rel="noopener" title="GitHub" aria-label="GitHub 프로필"><i class="fa-brands fa-github" aria-hidden="true"></i></a>
       </div>
       <p class="footer__text">&copy; 2026 HyunGyu Sung</p>
@@ -509,33 +487,43 @@
         <ul class="modal-info">
           <li>
             <span class="modal-info__icon"><i class="fa-solid fa-graduation-cap" aria-hidden="true"></i></span>
-            가천대학교 간호학과
+            <div class="modal-info__text">
+              가천대학교 간호학과
+            </div>
           </li>
           <li>
             <span class="modal-info__icon"><i class="fa-solid fa-code" aria-hidden="true"></i></span>
-            Learner. Developer. Thinker.<br>
-            <span class="modal-info__sub"><a href="https://velog.io/@hyungyugod/posts" target="_blank" rel="noopener">Velog</a> · <a href="https://github.com/hyungyugod" target="_blank" rel="noopener">GitHub</a></span>
+            <div class="modal-info__text">
+              Learner. Developer. Thinker.<br>
+              <span class="modal-info__sub"><a href="https://velog.io/@hyungyugod/posts" target="_blank" rel="noopener">Velog</a> · <a href="https://github.com/hyungyugod" target="_blank" rel="noopener">GitHub</a></span>
+            </div>
           </li>
           <li>
             <span class="modal-info__icon"><i class="fa-solid fa-microphone-lines" aria-hidden="true"></i></span>
-            Music Producer<br>
-            <span class="modal-info__sub"><a href="https://www.melon.com/artist/timeline.htm?artistId=4347369" target="_blank" rel="noopener">Melon</a> · <a href="https://soundcloud.com/user-928451677" target="_blank" rel="noopener">SoundCloud</a></span>
+            <div class="modal-info__text">
+              Music Producer<br>
+              <span class="modal-info__sub"><a href="https://www.melon.com/artist/timeline.htm?artistId=4347369" target="_blank" rel="noopener">Melon</a> · <a href="https://soundcloud.com/user-928451677" target="_blank" rel="noopener">SoundCloud</a></span>
+            </div>
           </li>
           <li>
             <span class="modal-info__icon"><i class="fa-solid fa-pen-nib" aria-hidden="true"></i></span>
-            에세이 작가<br>
-            <span class="modal-info__sub"><a href="https://brunch.co.kr/@hyungyugood" target="_blank" rel="noopener">Brunch</a></span>
+            <div class="modal-info__text">
+              에세이 작가<br>
+              <span class="modal-info__sub"><a href="https://brunch.co.kr/@hyungyugood" target="_blank" rel="noopener">Brunch</a></span>
+            </div>
           </li>
           <li>
             <span class="modal-info__icon"><i class="fa-solid fa-id-card" aria-hidden="true"></i></span>
-            보유 자격증<br>
-            <span class="modal-info__sub">정보처리기사 · 빅데이터분석기사 · ADSP · SQLD</span>
+            <div class="modal-info__text">
+              보유 자격증<br>
+              <span class="modal-info__sub">정보처리기사 · 빅데이터분석기사 · ADSP · SQLD</span>
+            </div>
           </li>
         </ul>
       </div>
     </div>
   </div>
-  <script src="/assets/js/main.js?v=20260923-1" defer></script>
+  <script src="/assets/js/main.js?v=20261118-1" defer></script>
   <!-- Cloudflare Web Analytics — cookieless, no consent banner needed -->
   <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "fcd4ca57f33545f6a0359db1e104dac6"}'></script>
 </body>

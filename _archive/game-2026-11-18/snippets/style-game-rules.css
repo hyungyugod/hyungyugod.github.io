@@ -1,0 +1,11 @@
+/* style.css 에서 게임 전용으로 쓰이던 규칙 (2026-11-18 제거 시점 원본) */
+
+/* .link-card 내부 — 피처 행(B 티어) */
+  /* 피처 행 — 프리뷰 3개 대신 16:10 커버 1개 */
+  &.link-card--feature {
+    & .link-card__items { grid-template-columns: 1fr; }
+    & .featured-item__thumb { height: auto; aspect-ratio: 16 / 10; }
+  }
+
+/* Platform Icon Colors */
+.icon--game       { background: var(--brand-12); color: var(--brand-text); border: 1px solid var(--brand-20); }

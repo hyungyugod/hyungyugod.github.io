@@ -15,7 +15,8 @@ function esc(str) {
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 /**
@@ -36,6 +37,7 @@ function safeUrl(url) {
  * 타임아웃이 적용된 fetch 헬퍼
  * @param {string} url - 요청할 URL
  * @param {number} [ms=5000] - 타임아웃 밀리초
+ * @param {RequestInit} [opts={}] - fetch에 그대로 넘길 옵션
  * @returns {Promise<Response>} fetch 응답
  */
 function fetchWithTimeout(url, ms = 5000, opts = {}) {
@@ -51,6 +53,15 @@ function fetchWithTimeout(url, ms = 5000, opts = {}) {
  */
 function showFetchError(container, msg) {
   container.innerHTML = `<div class="fetch-error" role="status"><i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i> ${esc(msg)}</div>`;
+}
+
+/**
+ * 각 init 함수를 독립 try-catch로 감싸 하나의 실패가 전체를 중단시키지 않게 함
+ * @param {Function} fn - 실행할 초기화 함수
+ * @param {string} name - 디버그용 함수 이름
+ */
+function safeInit(fn, name) {
+  try { fn(); } catch (e) { console.warn(`[${name}] init failed:`, e); }
 }
 
 // -------------------------------------------------------
@@ -69,7 +80,7 @@ async function fetchGitHub() {
     const res = await fetchWithTimeout('https://api.github.com/users/hyungyugod/repos?sort=pushed&per_page=3');
     if (!res.ok) throw new Error('GitHub ' + res.status);
     const repos = await res.json();
-    if (!repos.length) throw new Error('No repos');
+    if (!Array.isArray(repos) || !repos.length) throw new Error('No repos');
 
     container.innerHTML = repos.map(repo => {
       const langRaw = typeof repo.language === 'string' && repo.language ? repo.language : 'Code';
@@ -97,15 +108,83 @@ async function fetchGitHub() {
     console.warn('GitHub fetch failed:', e);
     const msg = e.name === 'AbortError' ? '응답 시간 초과' : '불러오기 실패 — 새로고침 해보세요';
     showFetchError(container, msg);
-  } finally {
-    // 로딩 스켈레톤은 innerHTML 교체로 자동 제거됨
   }
 }
 
 // -------------------------------------------------------
 // Auto-fetch: Velog posts (latest 3 via RSS)
-// Proxy: codetabs.com returns raw XML text
+// Velog RSS는 CORS 헤더를 주지 않아 브라우저에서 직접 읽을 수 없다.
+// 공개 중계 서비스를 순서대로 시도하고, 앞의 것이 실패하면 다음으로 넘어간다.
 // -------------------------------------------------------
+
+const VELOG_RSS = 'https://v2.velog.io/rss/@hyungyugod';
+
+/**
+ * 글 본문 HTML에서 첫 번째 이미지 주소를 꺼낸다 (썸네일 대체용)
+ * @param {string} html - RSS description HTML
+ * @returns {string} 이미지 URL, 없으면 빈 문자열
+ */
+function firstImageSrc(html) {
+  // DOMParser가 만든 문서는 비활성이다 — 스크립트가 실행되지 않고 이미지도 로드되지 않는다.
+  // 정규식과 달리 src 안의 &amp; 같은 엔티티가 풀린 값을 얻는다
+  const doc = new DOMParser().parseFromString(String(html ?? ''), 'text/html');
+  return doc.querySelector('img')?.getAttribute('src') || '';
+}
+
+/**
+ * 날짜 문자열을 YYYY-MM-DD로 줄인다
+ * @param {string} raw - RSS pubDate(RFC 822) 또는 'YYYY-MM-DD HH:mm:ss'
+ * @returns {string} 표시용 날짜, 해석할 수 없으면 'Recent post'
+ */
+function toDateLabel(raw) {
+  const text = String(raw ?? '').trim();
+  // 'YYYY-MM-DD HH:mm:ss'는 Date 파싱 결과가 브라우저마다 달라 앞 10자리를 그대로 쓴다
+  if (/^\d{4}-\d{2}-\d{2}/.test(text)) return text.slice(0, 10);
+  const date = new Date(text);
+  return text && !Number.isNaN(date.valueOf()) ? date.toISOString().slice(0, 10) : 'Recent post';
+}
+
+/**
+ * rss2json — RSS를 JSON으로 바꿔 주는 중계 서비스
+ * @returns {Promise<Array<{title: string, link: string, image: string, date: string}>>} 최신순 포스트
+ */
+async function loadVelogViaRss2Json() {
+  const res = await fetchWithTimeout('https://api.rss2json.com/v1/api.json?rss_url=' + encodeURIComponent(VELOG_RSS), 6000);
+  if (!res.ok) throw new Error('rss2json ' + res.status);
+  const data = await res.json();
+  if (data.status !== 'ok' || !Array.isArray(data.items)) throw new Error('rss2json payload');
+
+  return data.items.map(item => ({
+    title: item.title,
+    link: item.link,
+    image: item.thumbnail || firstImageSrc(item.description),
+    date: item.pubDate,
+  }));
+}
+
+/**
+ * codetabs — 원본 RSS XML을 그대로 중계하는 프록시
+ * @returns {Promise<Array<{title: string, link: string, image: string, date: string}>>} 최신순 포스트
+ */
+async function loadVelogViaCodetabs() {
+  const res = await fetchWithTimeout('https://api.codetabs.com/v1/proxy/?quest=' + encodeURIComponent(VELOG_RSS));
+  if (!res.ok) throw new Error('codetabs ' + res.status);
+  const xml = new DOMParser().parseFromString(await res.text(), 'text/xml');
+
+  return Array.from(xml.querySelectorAll('item')).map(item => {
+    // <link>의 내용이 요소 안이 아니라 형제 텍스트 노드로 들어오는 경우가 있다
+    const linkEl = item.querySelector('link');
+    return {
+      title: item.querySelector('title')?.textContent,
+      link: linkEl?.textContent?.trim() || linkEl?.nextSibling?.nodeValue?.trim(),
+      // 이미지: 본문 HTML → enclosure → media:content 순
+      image: firstImageSrc(item.querySelector('description')?.textContent)
+        || item.querySelector('enclosure')?.getAttribute('url')
+        || item.querySelector('content')?.getAttribute('url'),
+      date: item.querySelector('pubDate')?.textContent,
+    };
+  });
+}
 
 /**
  * Velog RSS에서 최근 포스트 3개를 가져와 카드로 렌더링
@@ -116,42 +195,30 @@ async function fetchVelog() {
   if (!container) return;
 
   try {
-    const rssUrl = 'https://v2.velog.io/rss/@hyungyugod';
-    const res = await fetchWithTimeout('https://api.codetabs.com/v1/proxy/?quest=' + encodeURIComponent(rssUrl));
-    if (!res.ok) throw new Error('Velog proxy ' + res.status);
+    // 무료 중계 서비스는 하나씩 멈추는 일이 잦다. 순서대로 시도해 처음 성공한 결과를 쓴다
+    let posts = [];
+    let lastError = new Error('No items');
+    for (const load of [loadVelogViaRss2Json, loadVelogViaCodetabs]) {
+      try {
+        posts = (await load()).slice(0, 3);
+        if (posts.length) break;
+        lastError = new Error('No items');
+      } catch (e) {
+        lastError = e;
+      }
+    }
+    if (!posts.length) throw lastError;
 
-    const xml = new DOMParser().parseFromString(await res.text(), 'text/xml');
-    const items = Array.from(xml.querySelectorAll('item')).slice(0, 3);
-    if (!items.length) throw new Error('No items');
+    container.innerHTML = posts.map(post => {
+      const titleRaw = String(post.title ?? '').trim();
+      const title = esc(titleRaw || 'Untitled');
+      const href = safeUrl(post.link);
+      const imgUrl = safeUrl(post.image);
+      const ariaLabel = esc(`${titleRaw || 'Velog post'} Velog 포스트 열기`);
 
-    container.innerHTML = items.map(item => {
-      const title = esc(item.querySelector('title')?.textContent?.trim() || 'Untitled');
-
-      // <link> in RSS 2.0 is a text node sibling, not element content
-      const linkEl = item.querySelector('link');
-      const rawLink = linkEl?.textContent?.trim()
-        || linkEl?.nextSibling?.nodeValue?.trim()
-        || '';
-      const href = safeUrl(rawLink);
-
-      // Image: description HTML → enclosure → media:content
-      const descHtml = item.querySelector('description')?.textContent || '';
-      const imgMatch = descHtml.match(/<img[^>]+src=["']([^"']+)["']/i);
-      const imgUrl = imgMatch?.[1]
-        || item.querySelector('enclosure')?.getAttribute('url')
-        || item.querySelector('content')?.getAttribute('url')
-        || '';
-
-      const safeImgUrl = safeUrl(imgUrl);
-      const pubDateRaw = item.querySelector('pubDate')?.textContent?.trim() || '';
-      const pubDate = pubDateRaw ? new Date(pubDateRaw) : null;
-      const published = pubDate && !Number.isNaN(pubDate.valueOf())
-        ? pubDate.toISOString().slice(0, 10)
-        : 'Recent post';
-      const ariaLabel = esc(`${item.querySelector('title')?.textContent?.trim() || 'Velog post'} Velog 포스트 열기`);
-
-      const thumbHtml = safeImgUrl !== '#'
-        ? `<img class="featured-item__thumb" src="${esc(safeImgUrl)}" alt="" loading="lazy">`
+      // CSP의 img-src가 https만 허용한다. http 썸네일은 깨진 이미지 대신 대체 썸네일로 보낸다
+      const thumbHtml = imgUrl.startsWith('https://')
+        ? `<img class="featured-item__thumb" src="${esc(imgUrl)}" alt="" loading="lazy">`
         : `<svg class="featured-item__thumb" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
             <rect class="featured-item__fallback-bg" width="200" height="200"/>
             <text class="featured-item__fallback-accent--velog" x="100" y="100" text-anchor="middle" font-family="Inter,sans-serif" font-size="52" font-weight="800" opacity="0.32">V</text>
@@ -163,7 +230,7 @@ async function fetchVelog() {
         <div class="featured-item__label">${title}</div>
         <div class="featured-item__meta">
           <span class="featured-item__source featured-item__source--velog">Velog</span>
-          <span class="featured-item__detail">${esc(published)}</span>
+          <span class="featured-item__detail">${esc(toDateLabel(post.date))}</span>
         </div>
       </a>`;
     }).join('');
@@ -171,23 +238,12 @@ async function fetchVelog() {
     console.warn('Velog fetch failed:', e);
     const msg = e.name === 'AbortError' ? '응답 시간 초과' : '불러오기 실패 — 새로고침 해보세요';
     showFetchError(container, msg);
-  } finally {
-    // 로딩 스켈레톤은 innerHTML 교체로 자동 제거됨
   }
 }
 
 // -------------------------------------------------------
 // 초기화
 // -------------------------------------------------------
-
-/**
- * 각 init 함수를 독립 try-catch로 감싸 하나의 실패가 전체를 중단시키지 않게 함
- * @param {Function} fn - 실행할 초기화 함수
- * @param {string} name - 디버그용 함수 이름
- */
-const safeInit = (fn, name) => {
-  try { fn(); } catch (e) { console.warn(`[${name}] init failed:`, e); }
-};
 
 document.addEventListener('DOMContentLoaded', () => {
   safeInit(fetchGitHub, 'fetchGitHub');
@@ -413,7 +469,7 @@ function initCategoryFilter() {
 
 /**
  * 다크/라이트 테마 전환 토글 초기화
- * localStorage에 사용자 선택을 저장하여 재방문 시 복원
+ * localStorage에 사용자 선택을 저장한다. 복원은 FOUC를 막기 위해 index.html <head>의 인라인 스크립트가 맡는다
  */
 function initThemeToggle() {
   const btn = document.querySelector('.js-theme-toggle');
@@ -422,8 +478,18 @@ function initThemeToggle() {
   const root = document.documentElement;
   const STORAGE_KEY = 'theme';
 
+  // 브라우저 UI 색(theme-color)은 OS 설정이 아니라 사이트 테마를 따라가야 한다.
+  // 색을 여기 다시 적지 않고 현재 테마의 --bg를 읽어 쓴다
+  const themeColor = document.querySelector('meta[name="theme-color"]');
+  const syncThemeColor = () => {
+    const bg = getComputedStyle(root).getPropertyValue('--bg').trim();
+    if (bg) themeColor?.setAttribute('content', bg);
+  };
+  syncThemeColor();
+
   btn.addEventListener('click', () => {
     const isLight = root.classList.toggle('light');
+    syncThemeColor();
     // 사파리 개인정보 보호 모드 등에서 setItem이 던진다. 전환 자체는 막지 않는다
     try {
       localStorage.setItem(STORAGE_KEY, isLight ? 'light' : 'dark');
@@ -453,17 +519,22 @@ function initModal() {
     return Array.from(backdrop.querySelectorAll(FOCUSABLE));
   }
 
+  // 닫힐 때 포커스를 돌려줄 요소 — 모달을 연 트리거 (아바타 또는 Profile 버튼)
+  let opener = avatar;
+
   /**
    * 모달 열기 — is-open 클래스 추가 및 포커스 이동
+   * @param {Event} e - 트리거에서 발생한 click/keydown 이벤트
    */
-  const open = () => {
+  const open = (e) => {
+    opener = e?.currentTarget ?? avatar;
     backdrop.classList.add('is-open');
     document.body.style.overflow = 'hidden';
     getFocusable()[0]?.focus();
   };
 
   /**
-   * 모달 닫기 — is-closing 애니메이션 후 is-open 클래스 제거 및 아바타로 포커스 복귀
+   * 모달 닫기 — is-closing 애니메이션 후 is-open 클래스 제거 및 트리거로 포커스 복귀
    */
   const close = () => {
     if (!backdrop.classList.contains('is-open')) return;
@@ -472,7 +543,7 @@ function initModal() {
 
     const onEnd = () => {
       backdrop.classList.remove('is-open', 'is-closing');
-      avatar?.focus();
+      opener?.focus();
     };
 
     const box = backdrop.querySelector('.modal-box');
@@ -498,7 +569,7 @@ function initModal() {
     // <img> 등 네이티브 버튼이 아닌 트리거는 Enter/Space를 직접 처리해야 한다
     if (el.tagName !== 'BUTTON') {
       el.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); }
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(e); }
       });
     }
   });

@@ -1,86 +1,110 @@
-# 자체 점검 — SoundCloud NEED → IOU EP 교체 + Quiet Glass 정비
+# 자체 점검
 
-전략: 최초 구현 (QA 이전) — SPEC 항목을 셀렉터·함수명 기준으로 1:1 적용
+전략: 최초 구현(R1) — SPEC의 마크업·CSS를 원문 그대로 이식, 범위 외 추가 없음
 
 ## SPEC 기능 체크
+- [x] H1 캐시 버스팅: style.css / main.js 쿼리 `?v=20261118-1` (2건)
+- [x] H2 Game 제거: `data-filter="game"` 탭 버튼(SVG 포함) + `#section-game` 섹션 전체 삭제. 탭 5개(all/writing/music/app/social), 섹션 4개(writing/music/app/social) 순서 일치
+- [x] H3 Lumark 제거: `#section-app`에서 Lumark `.featured-item` 삭제 → PopPath, 김간호는 음악박사 2개(순서 유지)
+- [x] H4 Instagram 정리: @hy_nxx9 카드 삭제, 지식산책 아이콘 `icon--instagram2` → `icon--instagram`, 푸터 Instagram 링크를 SPEC 문자열 그대로 교체(@knowledge_stroll, `aria-hidden` 포함). Social = 지식산책 → 네이버
+- [x] H5 SoundCloud: SPEC 최종 마크업으로 카드 전체 교체 (`.link-card--embed`, `.embed-item` ×3, HI THERE → LIE → IOU, 헤더 href의 utm 파라미터 제거, 인라인 style·width/height/frameborder/scrolling 없음)
+- [x] C1 토큰: `--embed-h: 300px` (:root, `--stack-gap` 아래) / `260px` (520px :root 재정의 블록 안). `--radius-lg` 주석만 갱신(값 유지)
+- [x] C2 잔재 삭제: `&.link-card--feature` 블록, `:has(.icon--instagram2)`, `:has(.icon--game)`, `.icon--instagram2`, `.icon--game` 삭제. 탭바 주석을 5개 탭 기준으로 수정(규칙 유지)
+- [x] C3 `.link-card--embed` (`--feature` 자리, `.is-visible:hover` 리프트 해제 포함)
+- [x] C4 `.embed-item` 블록: Featured Items 블록 끝, `@keyframes shimmer-sweep` 바로 앞에 SPEC 원문 그대로 삽입
+- [x] C5 `.link-card--app` 2칸 가운데 정렬 (C3 바로 아래, 520px 별도 규칙 없음)
+- [x] C6 reduced-motion 블록에 `.embed-item__arrow` transform 해제 2셀렉터 추가
+- [x] JS: 변경 없음 (아래 검증)
+- [x] sitemap.xml: game.html `<url>` 블록 삭제, XML well-formed 확인
+- [x] .claude/launch.json: `startPath` → `"/"`, JSON 유효 확인
+- [x] docs/components.md, docs/css-rules.md: SPEC §문서 항목대로 갱신
+- [x] 이미지 4개 삭제 완료
 
-### 기능 1: IOU EP 교체
-- [x] NEED `<a>` 블록(need-feat-sumin / cover-need.jpg) 삭제
-- [x] IOU `featured-item`을 SoundCloud `.link-card__items` 첫 자식으로 추가 (aria-label, alt "IOU EP 커버", width/height 500, `rel="noopener"`, `.featured-item__source` "EP" 배지)
-- [x] 최종 순서 IOU → 악어는 하늘을 나는 꿈을 꾸었다 → Burn It Up (Playwright로 확인)
-- [x] SoundCloud 헤더 href utm 제거 → `https://soundcloud.com/user-928451677`
-- [x] 히어로 eyebrow → `<a class="profile__eyebrow">` "New EP · IOU" 알약 (dot + arrow `aria-hidden`, aria-label 없음, `rel="noopener"`)
-- [x] `assets/img/*` 추가·삭제 없음 (cover-need.jpg 삭제는 메인 에이전트 몫, 3파일 내 `cover-need` 참조는 0건)
+## 완료 검증 체크리스트 결과
+1. `grep -n "game\|Game" index.html assets/css/style.css sitemap.xml .claude/launch.json` → **0건** (파일별 0/0/0/0)
+2. `grep -n "instagram2\|hy_nxx9\|lumark\|Lumark\|link-card--feature\|utm_source\|frameborder\|scrolling=\|ff5500" index.html assets/css/style.css` → **1건**, 허용된 `style.css:1531 .icon--soundcloud { background: linear-gradient(135deg, #ff5500, #ff7700); ... }` 뿐. index.html 0건
+3. `embed-item__frame` 3건 / iframe 블록 내 `loading="lazy"` 3건 / `allow="autoplay; encrypted-media"` 3건 / `title="… — HG SoundCloud 플레이리스트"` 3건 / `auto_play=false` 3건 / `color=%23b07068` 3건
+4. `?v=20261118-1` → **2건** (44행 CSS, 516행 JS)
+5. 정의 없는 `var(--…)` → **0건** (python 스크립트로 used − defined 비교). `--embed-h` 정의 확인. 중괄호 `{` 350 / `}` 350 균형
+6. 탭: `all writing music app social` (5개) / 섹션: `writing music app social` (4개) → 순서 일치
+7. `npm run ui-check` → **실행 불가**. Playwright 브라우저(chromium headless shell)가 이 VM에 없고 `npx playwright install` 다운로드가 네트워크에서 실패(code=1). 대신 python HTMLParser로 index.html 태그 균형 검사 → 미닫힘 0, 오류 0
+8. 이미지: 삭제 전 `grep -rn "app-lumark\|cover-holdmetight\|cover-halis\|cover-need" --include=*.html --include=*.css --include=*.js . | grep -v node_modules | grep -v _archive` → **0건** 확인 후 `assets/img/app-lumark.png`, `cover-holdmetight.jpg`, `cover-halis.jpg`, `cover-need.jpg` 4개 삭제 완료 (삭제 대기 파일 없음)
 
-### 기능 2: Quiet Glass 배경·히어로
-- [x] `.hero-bg`: animation/background-size/`& img`/`&::after` 삭제, `pointer-events:none`, brand-14 radial + bg-dark→bg linear 정적 배경. `html.light .hero-bg` 블록, `@keyframes gradient-shift` 삭제
-- [x] `.hero`: `position:relative; z-index:1`, overflow·min-height 삭제, padding `clamp(42px,6vh,84px) 24px clamp(40px,6vh,72px)`. 900px+: min-height 삭제, padding-bottom `clamp(48px,7vh,80px)`. 모바일: `padding:48px 16px 40px`만
-- [x] 테마 토글을 `.hero` 밖, `.scroll-progress` 다음(body 직계)으로 이동 — 부모 BODY 확인
-- [x] `.profile__halo`, `.profile__hint`, `.scroll-hint` 요소·CSS 삭제. `scroll-bounce`/`halo-pulse`/`dot-pulse`/`avatar-ring-breathe`/`fadeInUp` keyframes 삭제
-- [x] 아바타 링 `::before` animation → `avatar-ring-rotate`만 (hover opacity 0.9 이제 적용됨)
-- [x] JS 삭제: `initMouseParallax`, `initHeroParallax`, `initMottoReveal` 본문 + safeInit 등록
-- [x] 히어로 등장 지연: avatar 0 / eyebrow .08 / name .14 / subtitle .20 / statement .26 / actions .32 / motto-item 1·2·3 .38·.44·.50 / bio .58. `.hero .profile__motto` 컨테이너 애니메이션 삭제
-- [x] `.profile`의 `margin-bottom:0; padding-top:0` 및 모바일 `margin-bottom:36px` 삭제
-
-### 기능 3: 카드 인터랙션 재정비
-- [x] `.link-card` 등장 → `card-rise` keyframes, fill-mode `backwards`, nth-child(2/3) 0.08s/0.16s. 기존 transition-delay 3줄·기본 `translateY(24px)` 삭제. hover 시 `matrix(...,-2)` 적용 확인 (lift가 막히지 않음)
-- [x] `--card-glow` 변수화 (기본 brand-14, 9개 플랫폼 `:has`), 기존 `&:has(...):hover` 10줄 + `html.light .link-card:hover` 삭제. 라이트 테마 hover 그림자에 `rgba(255,85,0,0.15)` 글로우 확인
-- [x] hover에 `border-color: var(--border-hover)`, `background-color: var(--bg-card-hover)`, `box-shadow: var(--shadow-card-hover), 0 6px 24px var(--card-glow)`
-- [x] 카드 스포트라이트 `::after` (radial, `--spot-size`, `--spot-x/y` fallback) + `initCardSpotlight()` (page-wrapper 위임, rAF 병합, hover:none·reduced-motion·touch 가드) — hover 시 `--spot-x` 기록·`::after` opacity 1 확인
-- [x] `.link-card__desc` 13px
-- [x] `.featured-item`: `background: var(--bg-item)`, `html.light .featured-item` 삭제, counter/`::before` 번호 배지 전부 삭제(모바일·로딩·feature·reduced-motion 포함), nth-child transition-delay 삭제, hover `translateY(-2px)` + `--shadow-item-hover` + 썸네일 scale 1.04
-- [x] `__label` 12px / line-clamp 2 / `overflow-wrap:anywhere` (모바일 11px), `__meta` padding `0 10px 10px` (모바일 10px), feature 내 label 12px 재정의 삭제
-
-### 기능 4: 타이포·여백·접근성
-- [x] 모토: item opacity/transform/`.is-visible` 삭제, transition border/box-shadow만, radius `--radius`, back radius `--radius`, front/back `-webkit-backface-visibility`. word 11/10px(ls 0.8px), kr 11/10px, back-text 12/11px
-- [x] 375px 뷰포트에서 "CONFRONTATION" 10px 한 줄 수용 확인 (scrollWidth ≤ clientWidth)
-- [x] `.profile__bio` padding `var(--card-pad-y) var(--card-pad-x)`, 모바일 `24px 24px` 삭제
-- [x] `.profile__dot` brand-text + margin 0 2px, `.profile__action` pill + padding 0 18px, `--primary` brand-14/brand-40
-- [x] `html.light .profile__name`·`.modal-name`의 `#1a1a2e` → `var(--text)`
-- [x] 탭: padding 10px 16px, gap 6px, 13px, overflow hidden 삭제, 아이콘 16px, 모바일 padding 14px 16px, 521px 확장 규칙 유지
-- [x] `.category-section` transition 삭제
-- [x] `.section-label`: sans 12px/500/ls 0.2px/none, clip-path·translateY·`::before` 삭제, `.category-header` 안 재정의 삭제 (base margin/padding 0), reduced-motion `clip-path` 삭제
-- [x] `.theme-toggle` hover translateY(-1px) + `--shadow-card-hover`, 해 아이콘 `--theme-sun` (라이트 rgb(168,101,15) 확인)
-- [x] `.ripple` + `ripple-expand` + `addRipple` 삭제, 클릭은 `() => select(btn)`, JSDoc "페이드 전환 + 섹션 필터 초기화". `select()`·키보드 로직 무변경
-- [x] `.modal-box` radius `--radius-lg`, `.modal-close` `type="button"` + `<i aria-hidden>`
-- [x] 푸터: gap 8px, 40×40 원형 타깃(측정 40×40), hover brand-text/focus-pill-bg/border/translateY(-2px), filter·scale 삭제, `<i>` 4개 aria-hidden
-- [x] App Store 카드 `link-card--app` 제거
-- [x] 999px 리터럴 4곳 → `var(--radius-pill)` (남은 `999px`는 토큰 정의 1건)
-- [x] 캐시 버전 `?v=20260923-1` (css/js)
-- [x] reduced-motion: 지정 항목 삭제, `.hero .profile__motto` → `.hero .profile__motto-item`, 추가 4건 (card animation none, `::after` none, 아바타 링 none, 푸터 hover transform none) — Playwright reducedMotion 컨텍스트에서 전부 적용 확인
-
-### docs 동기화
-- [x] `docs/components.md`: 프로필 행 JS → `initTyping()` `initNameShine()`, "그 외 컴포넌트"에 카드 스포트라이트/`initCardSpotlight()` 한 줄
-- [x] `docs/css-rules.md` §5 `--card-glow` 방식 예시, §7 `card-rise` (backwards) 한 줄
-
-## SPEC "주의사항" 검증 결과
-- grep 0건 (index.html + style.css + main.js 합산): profile__halo 0, profile__hint 0, scroll-hint 0, scroll-bounce 0, halo-pulse 0, dot-pulse 0, fadeInUp 0, gradient-shift 0, avatar-ring-breathe 0, ripple 0, addRipple 0, initMouseParallax 0, initHeroParallax 0, initMottoReveal 0, feat-counter 0, link-card--app 0, need-feat-sumin 0, cover-need 0 — **전부 0건**
-- 미정의 `var(--*)`: 스크립트로 style.css 전체 대조 → 미정의는 `--spot-x`, `--spot-y`뿐이며 둘 다 fallback(`50%`, `0%`) 보유 + JS가 설정. `--card-glow`는 `.link-card` 안에서 정의. **실질 0건**
-- game.css `var()` 참조 목록에 삭제 대상 없음 (`:root` 기존 변수 삭제·값 변경 없음 — 추가만)
-- 히어로 직계 애니메이션 요소(eyebrow, motto-item)에 hover transform 없음
-- node --check main.js 통과, CSS 중괄호 균형 0
-
-## npm run ui-check
-- **10/10 통과** (테마 토글, 카테고리 필터 4종, 모달 열기/닫기, 링크카드 href, 모바일 520px, 콘솔 에러 0건) — 최종 수정 후 재실행 결과
-
-## 필수 연동 변경 (SPEC 문구 외, SPEC 기능 동작에 필요)
-1. **featured-item__label 아래 여백을 margin으로**: SPEC대로 `padding:8px 10px` + `line-clamp:2`를 적용하니 `overflow:hidden`이 padding 경계에서 잘라 3번째 줄 윗부분("sumin)", "(Prod.SLOTH)")이 비쳐 보였다(스크린샷 확인). `padding: 8px 10px 0; margin-bottom: 8px;` (모바일 `6px 8px 0` + `margin-bottom: 6px`)로 시각 간격은 같게 유지하고 누수 제거.
-2. **reduced-motion 특이도 보정**: SPEC의 `.profile__avatar-wrap::before`(0,1,1)·`.footer__social a:hover`(0,2,1)는 중첩 베이스 규칙 `.profile .profile__avatar-wrap::before`(0,2,1)·`.footer .footer__social a:hover`(0,3,1)에 져서 무효가 된다. `.profile .profile__avatar-wrap::before`, `.footer .footer__social a:hover`로 작성 (실측 ring animation `none` 확인).
-3. **모바일 탭 중복 규칙 정리**: base가 13px·아이콘 16px로 바뀌어 모바일 블록의 `font-size:13px`, `.category-nav__icon 16px`가 동일값 중복이 되어 삭제 (SPEC A17 "모바일 중복 규칙" 취지).
-4. 모바일 블록에 `.profile__motto-back-text { font-size: 11px }` 추가 — SPEC §3-2 "motto-back-text 12px(모바일 11px)" 명시분.
-
-## 하고 싶었으나 범위 외로 미구현
-- reduced-motion의 기존 `.profile__action:hover { transform:none }`도 베이스 `.profile .profile__action:hover`(0,3,0)에 져서 무효다. 기존 결함이며 SPEC에 없어 손대지 않음.
-- 1280×800 데스크톱에서 히어로 콘텐츠 높이가 885px이라 탭(y≈901)이 첫 화면 바로 아래에 걸린다. SPEC 패딩 값은 그대로 적용했고, 더 줄이려면 SPEC에 없는 간격 변경이 필요해 보류.
+JS 확인: `grep -n "game\|lumark\|instagram\|feature" assets/js/main.js` → game/lumark/instagram 0건. `feature`는 `featured-item` 클래스 문자열(83–92, 154–166행, GitHub/Velog 렌더링)만 매치 — 이번 범위와 무관, 변경 없음.
 
 ## 패턴 준수 확인
-- BEM 네이밍: 준수 — 신규 `profile__eyebrow-dot`, `profile__eyebrow-arrow` (Block__element)
-- CSS 변수 사용: 준수 — 신규 색상 토큰(`--bg-item`, `--theme-sun`, `--shadow-*`)은 `:root`/`html.light` 양쪽 정의, 새 하드코딩 색상 없음. `#1a1a2e` 2건 제거
-- CSS 네이티브 중첩: 준수 — `&:has()`, `&.is-visible:nth-child()`, `&::after`, `&:nth-child()` 모두 `&` 문법, `&--` 사용 없음
-- 반응형 520px: 대응 — 알약 10px, 모토 10/10/11px, featured 11/10px, hero padding, 탭 padding. 375px 가로 오버플로 없음
-- reduced-motion: 대응 — card-rise·스포트라이트·아바타 링·모토 항목·푸터 hover 정리, JS `initCardSpotlight`도 reduce 시 조기 반환
-- esc()/safeUrl(): 해당 없음 (신규 외부 데이터 삽입 없음, 정적 HTML). 기존 fetch 경로 무변경
-- 가드 클래스: 적용 — `initCardSpotlight` (`!root`, hover:none, reduced-motion, touch)
-- DOMContentLoaded 등록: `safeInit(initCardSpotlight, 'initCardSpotlight')` 등록, 삭제 3건 등록 해제
-- -webkit-backdrop-filter: 알약에 함께 작성, `-webkit-backface-visibility`도 모토 front/back에 추가
-- 파일 간 정합성: `profile__eyebrow(-dot/-arrow)`, `featured-item__meta/__source`, `.page-wrapper`, `.link-card`, `--spot-x/y` — HTML·CSS·JS 일치
+- BEM 네이밍: 준수 — `.embed-item` 블록 + `__frame/__caption/__link/__index/__title/__by/__arrow`, 모디파이어 `.link-card--embed`
+- CSS 변수 사용: 준수 — 새 규칙의 색은 전부 기존 변수(`--brand-08/35`, `--brand-text`, `--brand`, `--text*`, `--border`, `--bg-dark`). 하드코딩 색 추가 0건 (iframe URL의 `%23b07068`은 SPEC D3 결정의 위젯 파라미터)
+- CSS 네이티브 중첩: 준수 — `&.link-card--embed`, `&.is-visible:hover`, `& .embed-item__*` (`&--` 사용 없음)
+- 반응형 520px: 대응 — `--embed-h` 260px를 기존 `:root` 재정의 블록 안에 추가. 앱 행 식은 토큰 기반이라 별도 규칙 불필요
+- reduced-motion: 대응 — `.embed-item__arrow` transform 해제 추가. 카드 리프트는 기존 `.link-card:hover { transform:none }`로 처리됨
+- esc()/safeUrl(): 해당 없음 — 임베드는 정적 HTML, JS 변경 없음
+- 가드 클래스: 해당 없음 (JS 변경 없음)
+- DOMContentLoaded 등록: 해당 없음 (새 init 함수 없음)
+- -webkit-backdrop-filter: 해당 없음 (새 backdrop-filter 없음)
+- 파일 간 정합성: HTML의 `link-card--embed`, `embed-item*` 클래스 ↔ CSS 정의 일치. `icon--instagram` 정의 존재. 삭제된 클래스(`icon--game`, `icon--instagram2`, `link-card--feature`)는 HTML/CSS 모두 0건
+
+## 필수 연동 변경
+- `docs/css-rules.md` §8의 "카테고리 탭바가 6개를 한 줄에" → "5개"로 수정. SPEC §문서에 명시는 없으나 탭 수 변경으로 낡은 사실 기술이 되어 문서 정합을 위해 1단어만 수정.
+- `docs/components.md`의 main.js 줄 수 표기 `~640줄` → `~680줄` (실측 684줄, SPEC "실제 값으로" 지시)
+
+## 하고 싶었으나 범위 외로 미구현
+- 없음 (`tests/ui-check.js`의 낡은 데스크톱 분기 문구는 SPEC대로 손대지 않음)
+
+---
+
+## QA 합격 후 후속 정리 (오케스트레이터, 2026-11-18)
+
+QA_REPORT.md R1 판정은 합격(가중 7.8). P2 권장 6건 중 사소하고 확실한 4건을 바로 반영했다.
+
+| QA P2 | 처리 |
+|---|---|
+| 1. components.md 중복 문장 | 반영 — 한 문장으로 합침 |
+| 2. components.md style.css 줄 수 | 반영 — `~2000줄` |
+| 3. 캡션 링크 label-in-name | 반영 — aria-label에 `· HG` 포함 (SPEC.md 마크업도 동기화) |
+| 5. `padding: 2px 2px` | 반영 — `padding: 2px` (SPEC.md도 동기화) |
+| 4. 터치 기기 sticky hover 링 | 미반영 — 탭한 앨범에 링이 남는 것이 "지금 이 앨범" 의도와 어긋나지 않음 |
+| 6. 앱 행 개수 하드코딩 | 미반영 — `repeat(2, …)`가 렌더 검증된 값. 앱 수가 바뀌면 주석대로 규칙을 지운다 |
+
+렌더 검증(헤드리스 Chrome, 1280×900 / 390×844, 다크·라이트): 탭 5개·섹션 4개, 키보드 순환 정상, 앱 타일 폭이 다른 카드 썸네일과 동일, 임베드 높이 300px/260px, 임베드 카드 hover 시 transform 없음, 가로 넘침 0, 깨진 이미지 0, 콘솔 오류 0.
+
+---
+
+## 기준 커밋 재정렬 + 점검 수정 (오케스트레이터, 2026-11-18)
+
+위 내용은 로컬 `c2c6462` 기준 작업 기록이다. 원격 `main`이 `b8545e7`까지 나가 있어 변경분을 그 위에 다시 얹었고, 이어서 사이트 점검에서 나온 문제를 고쳤다. 상세는 SPEC.md 부록 A.
+
+### 검증 (헤드리스 Chrome · 실제 Inter/Cormorant 글꼴 · 외부 API는 가짜 응답)
+| 항목 | 결과 |
+|---|---|
+| 탭 5개 ↔ 섹션 4개, 키보드 순환(→ ×5) | 일치, `writing → music → app → social → all` |
+| 탭 알약 가운데 정렬 (1280 / 700 / 390px) | 수정 전 데스크톱 +31.9px → 수정 후 0 / 0 / 0 |
+| 앱 타일 폭 = 다른 카드 썸네일 폭 | 208.7 / 187.3 / 101.3px 동일, 좌우 여백 대칭 |
+| 임베드 높이 | 300px (모바일 260px), 가로 넘침 0 |
+| 임베드 카드 hover | transform 없음, 주황 글로우 유지. 다른 카드는 -2px 리프트 유지 |
+| 닫힌 모달 | `visibility: hidden`, 닫기 버튼에 `focus()` 불가 |
+| 모달 포커스 | 열면 닫기 버튼 → Shift+Tab은 마지막 링크 → Esc 후 연 트리거(Profile 버튼 / 아바타)로 복귀 |
+| 테마 | 토글·새로고침 후 `html.light` 복원(인라인 스크립트가 CSP 아래 실행됨), `theme-color` `#0f0e15` ↔ `#f5f4f8` |
+| CSP 위반 (`securitypolicyviolation`) | 0건 (정상 / rss2json 실패 / 전부 실패 시나리오 모두) |
+| 주입 테스트 — GitHub·rss2json·codetabs 응답에 `<script>`, `onerror=`, `javascript:`, 따옴표 탈출 삽입 | 실행 0건, `on*` 속성 0개, 삽입된 `<script>`·`<img>` 0개, `javascript:` 링크는 `#`으로 대체 |
+| Velog 대체 경로 | rss2json 실패 → codetabs 결과 표시 / 둘 다 실패 → 오류 문구 표시 |
+| 정적 검사 | 죽은 CSS 클래스 0, 미정의 변수 0, 미사용 keyframes 0, 중복 id 0, 미사용 이미지 0, 없는 에셋 참조 0 |
+
+운영 사이트에서 직접 확인한 것: Velog 프록시 무응답(15초 타임아웃 2회), rss2json 정상 응답(200, 10건), 작업 문서 배포(`/SPEC.html` 등 200), HTTPS 인증서 불일치(`ERR_CERT_COMMON_NAME_INVALID`).
+
+하지 못한 것: 저장소의 `npm run ui-check`는 이 환경에 Playwright 브라우저가 없어 원본 그대로는 실행하지 못했다.
+
+### QA R2(합격, 가중 8.0) 뒤 반영한 권장 사항
+QA_REPORT.md R2의 P2 7건을 모두 반영하고 같은 검증을 다시 돌렸다.
+
+| QA P2 | 처리 | 재검증 |
+|---|---|---|
+| 1. 모달 닫힘 끝에 오버레이가 다시 번쩍임 (기존 결함) | `.is-closing`에서 backdrop 전체를 내림 | 닫힘 0.33s 시점 backdrop opacity 0.00 |
+| 2. docs의 CSP 해시 명령이 따옴표에서 깨짐 | 파일에서 직접 읽는 python 한 줄로 교체 | 명령 결과 = 메타의 해시 |
+| 3. Velog 오류 문구가 원인과 어긋날 수 있음 | 빈 결과면 `lastError`를 'No items'로 갱신 | — |
+| 4. theme-color 색을 JS에 중복 기재 | 현재 테마의 `--bg`를 읽어 씀 | `#0f0e15` ↔ `#f5f4f8` 동일하게 동작 |
+| 5. http 썸네일이 CSP에 막혀 깨진 이미지가 됨 | https가 아니면 대체 썸네일(SVG) | http 썸네일 응답 → `<img>` 없음 |
+| 6. `firstImageSrc()`가 엔티티를 풀지 않음 | 정규식 → DOMParser(비활성 문서) | `?a=1&amp;b=2` → `?a=1&b=2`, 본문 `<img onerror>`는 실행·삽입 0건 |
+| 7. docs ↔ 코드 사소한 불일치 | 화살표 3px, `--bg-item` 추가, `safeInit`을 함수 선언식으로 유틸리티 구역에, `fetchWithTimeout` JSDoc | — |
+
+`npm run ui-check`: 시스템 Chrome으로 대신 실행해 13개 중 12개 통과. 남은 1개(콘솔 에러)는 검증 환경이 외부 망을 막아 생긴 `ERR_TUNNEL_CONNECTION_FAILED`로, 사이트 결함이 아니다.

@@ -10,22 +10,19 @@
 / (루트)
 ├── index.html              ← 메인 페이지
 ├── assets/
-│   ├── css/style.css       ← 메인 페이지 스타일 전부 (~1900줄)
-│   ├── css/game.css        ← 게임 전용 스타일 (style.css 변수를 상속)
-│   ├── js/main.js          ← 메인 페이지 스크립트 전부 (~640줄)
-│   ├── js/game.js          ← 게임 로직 (게임 페이지에서만 로드)
+│   ├── css/style.css       ← 메인 페이지 스타일 전부 (~1850줄)
+│   ├── js/main.js          ← 메인 페이지 스크립트 전부 (~670줄)
 │   └── img/                ← 이미지 에셋
-├── pages/
-│   └── game.html           ← 미니게임 서브페이지
+├── pages/                  ← (현재 비어 있음, 서브페이지용)
+├── _archive/               ← 내린 기능 백업 (게임: _archive/game-2026-11-18/)
 ├── docs/                   ← 이 문서들 (Claude가 필요할 때 읽음)
 ├── tests/ui-check.js       ← Playwright 스모크 테스트 (npm run ui-check)
+├── _config.yml             ← GitHub Pages 빌드 설정 — 작업 문서·테스트를 배포에서 제외
 ├── robots.txt · sitemap.xml · CNAME
 └── favicon.ico
 ```
 
-**메인 페이지는 `index.html` + `style.css` + `main.js` 3개 파일이 전부다.**
-게임은 별도 페이지라 `game.css` / `game.js`로 분리되어 있으며, 이것이 유일한 예외다.
-게임 파일들은 `style.css`의 `:root` 변수를 상속해 쓰므로 변수를 지울 때 함께 확인해야 한다.
+**메인 페이지는 `index.html` + `style.css` + `main.js` 3개 파일이 전부다.** 예외 없음.
 
 ### 파일 접근 권한
 
@@ -34,9 +31,8 @@
 | `index.html` | O |
 | `assets/css/style.css` | O |
 | `assets/js/main.js` | O |
-| `assets/img/*` | 읽기만 |
+| `assets/img/*` | 읽기 (미사용 이미지 삭제는 SPEC에 명시된 경우만) |
 | `pages/*.html` | O (서브페이지 생성 시) |
-| `assets/css/game.css`, `assets/js/game.js` | O (게임 페이지 작업 시) |
 | `tests/ui-check.js` | O (셀렉터가 낡았을 때) |
 
 ### 핵심 제약
@@ -49,19 +45,17 @@
 
 ## 2. 컴포넌트 목록
 
-본문은 `.link-card` **한 종류**로 통일되어 있다. 아래 10개 행이 전부다.
+본문은 `.link-card` **한 종류**로 통일되어 있다. 아래 8개 행이 전부다.
 
 | 행 | 티어 | 클래스 / ID | JS 함수 |
 |---|---|---|---|
-| Velog | A | `.link-card` `#velog-items` | `fetchVelog()` — RSS 최근 3개 |
+| Velog | A | `.link-card` `#velog-items` | `fetchVelog()` — RSS 최근 3개 (중계 서비스 rss2json → codetabs 순으로 시도) |
 | GitHub | A | `.link-card` `#github-items` | `fetchGitHub()` — API 최근 3개 |
 | Brunch | A | `.link-card` | — (정적 3개) |
 | Melon | A | `.link-card` | — (정적 3개) |
-| SoundCloud | A | `.link-card` | — (정적 3개) |
-| App Store | A | `.link-card` | — (정적 3개) |
-| Game | B | `.link-card.link-card--feature` | — (내부 링크) |
-| Instagram | C | `.link-card` | — |
-| 지식산책 | C | `.link-card` | — |
+| SoundCloud | B | `.link-card.link-card--embed` > `.embed-item` ×3 | — (정적 iframe 3개) |
+| App Store | A | `.link-card.link-card--app` | — (정적 2개, 가운데 정렬) |
+| 지식산책 | C | `.link-card` (`.icon--instagram`) | — |
 | 네이버 | C | `.link-card` | — |
 
 티어 정의는 `css-rules.md` §4 참조. 새 링크는 셋 중 하나를 고르는 것이지 새 컴포넌트를 만드는 게 아니다.
@@ -98,7 +92,6 @@
 | All | `all` (전체 표시) | — |
 | Study & Writing & Dev | `writing` | `#section-writing` |
 | Music | `music` | `#section-music` |
-| Game | `game` | `#section-game` |
 | Released Apps | `app` | `#section-app` |
 | Social | `social` | `#section-social` |
 
@@ -108,7 +101,7 @@ GitHub/Velog 카드 내부 아이템만 런타임 동적 생성, 나머지는 �
 ### ARIA — tabs가 아니라 radiogroup이다
 
 겉모습은 탭바지만 **`role="radiogroup"` + `role="radio"`** 를 쓴다. WAI-ARIA의 tabs 패턴은
-"선택된 탭 하나당 패널 하나"를 전제하는데, 이 필터의 **All은 5개 섹션을 동시에 보여주므로**
+"선택된 탭 하나당 패널 하나"를 전제하는데, 이 필터의 **All은 4개 섹션을 동시에 보여주므로**
 tabs로 표기하면 스크린리더에 거짓말이 된다. 단일 선택 필터의 정확한 패턴은 radiogroup이다.
 
 지켜야 할 규칙:
@@ -131,7 +124,7 @@ tabs로 표기하면 스크린리더에 거짓말이 된다. 단일 선택 필�
 
 ```css
 :root      { --bg: #0f0e15; }   /* 다크 = 기본값 */
-html.light { --bg: #faf9fb; }   /* 라이트 = 오버라이드 */
+html.light { --bg: #f5f4f8; }   /* 라이트 = 오버라이드 */
 ```
 
 ```js
@@ -140,6 +133,12 @@ const isLight = root.classList.toggle('light');   // initThemeToggle()
 
 `localStorage`의 `theme` 키에 저장하며, `index.html` `<head>`의 인라인 스크립트가
 스타일시트보다 먼저 클래스를 붙여 **첫 페인트 깜빡임을 막는다.** 이 스크립트는 지우면 안 된다.
+또 이 스크립트는 CSP에 해시로 등록되어 있어, **내용을 고치면 `index.html`의 CSP 메타에 있는
+`sha256-…` 값도 다시 계산해야 실행된다** (`docs/js-rules.md` §6).
+
+브라우저 UI 색인 `<meta name="theme-color">`도 OS 설정이 아니라 이 클래스를 따라간다.
+`initThemeToggle()`이 로드 시와 전환 시에 현재 테마의 `--bg` 값을 읽어 넣으므로 따로 맞출 값이 없다.
+(`<meta>`에 적힌 `#0f0e15`는 스크립트가 돌기 전의 초기값이다. 다크 `--bg`를 바꾸면 이것만 함께 바꾼다.)
 
 새 색상을 추가할 때는 `:root`와 `html.light` **양쪽 모두**에 선언한다.
 한쪽만 넣으면 반대 테마에서 값이 새어나온다.
@@ -162,6 +161,7 @@ const isLight = root.classList.toggle('light');   // initThemeToggle()
 - [ ] 장식용 `<i>` / `<svg>`에 `aria-hidden="true"`
 - [ ] 버튼이 아닌 클릭 트리거에는 `role="button"` + `tabindex="0"` + `aria-label` + keydown 핸들러
 - [ ] 새 섹션을 추가하면 카테고리 탭도 같은 순서로 추가
+- [ ] 외부 리소스(스크립트·스타일·폰트·API·iframe)를 추가하면 `<head>`의 CSP 메타에 출처 추가
 
 ### CSS 작업
 - [ ] 색상은 CSS 변수 사용 (새 색상은 `:root`와 `html.light` **양쪽**에 추가)
@@ -179,7 +179,7 @@ const isLight = root.classList.toggle('light');   // initThemeToggle()
 - [ ] `DOMContentLoaded` 블록에 `safeInit()`으로 등록
 - [ ] 가드 클래스 (`if (!el) return;`)
 - [ ] 외부 데이터: `esc()` 필수. URL은 `safeUrl()` **후에도** `esc()`
-- [ ] API: `fetchWithTimeout()` + `try/catch/finally`
+- [ ] API: `fetchWithTimeout()` + `try/catch`
 - [ ] 에러: `console.warn()` + `showFetchError()`
 - [ ] JSDoc 주석 + 섹션 구분선
 - [ ] 등장 애니메이션이 필요하면 `REVEAL_SELECTOR`에 추가
