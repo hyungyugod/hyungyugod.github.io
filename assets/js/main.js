@@ -251,61 +251,11 @@ document.addEventListener('DOMContentLoaded', () => {
   safeInit(initModal, 'initModal');
   safeInit(initCategoryFilter, 'initCategoryFilter');
   safeInit(initThemeToggle, 'initThemeToggle');
-  safeInit(initTyping, 'initTyping');
   safeInit(initScrollReveal, 'initScrollReveal');
   safeInit(initScrollProgress, 'initScrollProgress');
   safeInit(initNameShine, 'initNameShine');
   safeInit(initCardSpotlight, 'initCardSpotlight');
 });
-
-// -------------------------------------------------------
-// 타이핑 인트로 애니메이션
-// -------------------------------------------------------
-
-function initTyping() {
-  const el = document.getElementById('typingText');
-  if (!el) return;
-
-  // prefers-reduced-motion 시 정적 표시
-  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    el.textContent = 'Developer';
-    return;
-  }
-
-  const words = ['Developer', 'Music Producer', 'Writer', 'Thinker'];
-  let wordIdx = 0;
-  let charIdx = 0;
-  let deleting = false;
-
-  function tick() {
-    const word = words[wordIdx];
-
-    if (!deleting) {
-      charIdx++;
-      el.textContent = word.substring(0, charIdx);
-
-      if (charIdx === word.length) {
-        deleting = true;
-        setTimeout(tick, 1500);
-        return;
-      }
-      setTimeout(tick, 80);
-    } else {
-      charIdx--;
-      el.textContent = word.substring(0, charIdx);
-
-      if (charIdx === 0) {
-        deleting = false;
-        wordIdx = (wordIdx + 1) % words.length;
-        setTimeout(tick, 400);
-        return;
-      }
-      setTimeout(tick, 50);
-    }
-  }
-
-  setTimeout(tick, 600);
-}
 
 // -------------------------------------------------------
 // 스크롤 페이드인 (Intersection Observer)

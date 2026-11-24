@@ -225,10 +225,6 @@ html.light .profile__name {
   }
 }
 
-html.light .profile__bio-quote strong {
-  color: var(--brand-text);
-}
-
 html.light .icon--brunch {
   background: #f0f0f0;
   color: #333;
@@ -341,16 +337,6 @@ html.light .modal-close {
     }
   }
 
-  /* 최신 릴리즈 알약 — heroEntrance(fill both)가 transform을 붙잡으므로 hover transform 금지 */
-  & .profile__eyebrow {
-    margin: 0 0 8px;
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 2.4px;
-    text-transform: uppercase;
-    color: var(--brand-text);
-  }
-
   & .profile__dot {
     color: var(--brand-text);
     margin: 0 2px;
@@ -386,16 +372,6 @@ html.light .modal-close {
     color: var(--text-muted);
     margin-bottom: 10px;
     font-weight: 500;
-  }
-
-  & .profile__statement {
-    max-width: 560px;
-    margin: 0 auto 14px;
-    color: var(--text);
-    font-size: 16px;
-    font-weight: 500;
-    line-height: 1.6;
-    letter-spacing: 0;
   }
 
   & .profile__actions {
@@ -549,69 +525,6 @@ html.light .modal-close {
     text-align: center;
     line-height: 1.4;
   }
-
-  & .profile__bio {
-    max-width: 640px;
-    margin: 0 auto;
-    background: var(--bg-card);
-    backdrop-filter: blur(14px) saturate(1.1);
-    -webkit-backdrop-filter: blur(14px) saturate(1.1);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: var(--card-pad-y) var(--card-pad-x);
-  }
-
-  & .profile__bio-quote {
-    font-size: 15px;
-    font-style: italic;
-    font-weight: 300;
-    color: var(--text);
-    line-height: 1.65;
-    margin-bottom: 10px;
-    letter-spacing: 0.1px;
-
-    & strong {
-      font-family: var(--font-serif);
-      font-weight: 600;
-      font-style: normal;
-      color: var(--brand-text);
-    }
-  }
-
-  & .profile__bio-divider {
-    width: 60px;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, var(--brand-35), transparent);
-    margin: 0 auto 10px;
-  }
-
-  & .profile__bio-kr {
-    font-size: 13px;
-    color: var(--text-muted);
-    line-height: 1.7;
-    margin-bottom: 12px;
-    font-weight: 400;
-  }
-
-  & .profile__bio-attr {
-    font-size: 10px;
-    color: var(--text-dim);
-    letter-spacing: 2.5px;
-    text-transform: uppercase;
-
-    & .typing {
-      color: var(--brand-text);
-      display: inline-block;
-      min-width: 1ch;
-    }
-
-    & .typing-cursor {
-      color: var(--brand-text);
-      font-weight: 300;
-      animation: blink-caret 0.7s step-end infinite;
-    }
-  }
-
 }
 
 /* ---- Hero Section ---- */
@@ -637,11 +550,6 @@ html.light .modal-close {
   animation: heroEntrance var(--hero-entrance-duration) var(--ease-out-expo) 0s both;
 }
 
-.hero .profile__eyebrow {
-  opacity: 0;
-  animation: heroEntrance var(--hero-entrance-duration) var(--ease-out-expo) 0.08s both;
-}
-
 .hero .profile__name {
   opacity: 0;
   animation: heroEntrance var(--hero-entrance-duration) var(--ease-out-expo) 0.14s both;
@@ -650,11 +558,6 @@ html.light .modal-close {
 .hero .profile__subtitle {
   opacity: 0;
   animation: heroEntrance var(--hero-entrance-duration) var(--ease-out-expo) 0.20s both;
-}
-
-.hero .profile__statement {
-  opacity: 0;
-  animation: heroEntrance var(--hero-entrance-duration) var(--ease-out-expo) 0.26s both;
 }
 
 .hero .profile__actions {
@@ -669,11 +572,6 @@ html.light .modal-close {
 
   &:nth-child(2) { animation-delay: 0.44s; }
   &:nth-child(3) { animation-delay: 0.50s; }
-}
-
-.hero .profile__bio {
-  opacity: 0;
-  animation: heroEntrance var(--hero-entrance-duration) var(--ease-out-expo) 0.58s both;
 }
 
 @keyframes avatar-ring-rotate {
@@ -1470,12 +1368,8 @@ html.light .modal-close {
   .profile {
     & .profile__name           { font-size: var(--hero-name-size-mobile); }
     & .profile__avatar         { width: 96px; height: 96px; }
-    & .profile__eyebrow        { font-size: 10px; letter-spacing: 1.6px; }
-    & .profile__statement      { font-size: 14px; line-height: 1.7; margin-bottom: 14px; }
     & .profile__actions        { gap: 8px; margin-bottom: 12px; }
     & .profile__action         { flex: 1 1 0; min-width: 0; min-height: 40px; padding: 0 10px; font-size: 12px; }
-    & .profile__bio-quote      { font-size: 14px; }
-    & .profile__bio-kr         { font-size: 12px; }
     & .profile__motto          { gap: 6px; }
     & .profile__motto-item     { padding: 10px 6px 8px; min-height: 82px; }
     & .profile__motto-letter   { font-size: 22px; }
@@ -1510,11 +1404,6 @@ html.light .modal-close {
     }
   }
 
-}
-
-@keyframes blink-caret {
-  from, to { opacity: 1; }
-  50% { opacity: 0; }
 }
 
 /* ---- Profile Modal ---- */
@@ -1797,13 +1686,10 @@ html.light .modal-close {
   .embed-item .embed-item__link:focus-visible .embed-item__arrow { transform: none; }
 
   .hero .profile__avatar-wrap,
-  .hero .profile__eyebrow,
   .hero .profile__name,
   .hero .profile__subtitle,
-  .hero .profile__statement,
   .hero .profile__actions,
-  .hero .profile__motto-item,
-  .hero .profile__bio { animation: none; opacity: 1; transform: none; }
+  .hero .profile__motto-item { animation: none; opacity: 1; transform: none; }
 }
 
 /* ---- Scroll Progress Bar ---- */
